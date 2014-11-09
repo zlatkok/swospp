@@ -220,3 +220,5 @@ bin/
 etc/
 map/
 out/
+test/xml/xml/lex-random.xml
+test/xml/xml/parse-random.xml
