@@ -1,0 +1,118 @@
+INTERNAL LIST OF STUFF DONE:
+2.0:
+- 64k registers implemented as unions in C, to avoid casts (but disabled, seems
+  even more kludgy that way, and might introduce subtle errors)
+- comments starting with ### in filter.txt pass over to swossym.h
+- 68k register now have their proper names
+- when choosing joypad buttons it's possible to cancel special fire (assign
+  normal fire to it that is), so guys with Amiga joypad don't need to carry
+  mouse anymore ;)
+- options are now saved to and loaded from xml file, and checks for
+  modifications have been implemented so they're not saved many times
+  needlessly anymore; also simple internal format for describing options has
+  been introduced
+- sprintf is now in release build too
+- end program code refactored, assertations now work even with start-up code
+- buffered files introduced, built on top of DOS files
+- main.asm refactored, looks much better now
+- custom tactics added, seems still needs few bug fixes tho
+- custom Perl build script for core SWOS++, source directory reorganized, now
+  there can be subdirectories, we have debug subdir that only compiles in debug
+  build
+- crash log handler
+- DOSBox detection
+- assert support
+- static_assert support
+- ubacen util.c i tu ce biti sve util f-je da ne bi bile svugde po malo
+- sada se opcije snimaju i kad se iz igre izadje sa ALT-F1
+- ubivena SWOS2004 pizdarija
+- ispravljen (konacno) bag za snimanje friendly games - kad se ide na replay,
+  snimak bi sadrzao sve utakmice zajedno
+- patched: size mismatch - veliko S!
+- sada se na pocetku vrsi testiranje brzine video memorije (kod iz install.exe)
+  pa kursor vise ne treperi kao blesav u menijima (to je takodje dobro ako se
+  pokrece igra iz dosbox-a i vmware-a naizmenicno iz istog direktorijuma, video
+  indeks ce imati razlicite vrednosti)
+- sad error-ok modalni dijalog ima malu animacijicu, igrac se kao pokunji ;)
+- ubacena "podrska" za DOSBox (za javni change log)
+- sredjen printf da podrzava %hhd/%hhx, pri tom ispravljen i bag -
+  specifikacija se nije resetovala izmedju polja
+- napravljen perl skript koji proverava da li ima nekoriscenih simbola iz
+  filter.txt (putem jednostavne tekstualne pretrage), izbaceni suvisni
+  zastareli simboli
+- sredjen options.dat da ne snima vise puta ako nema promena u opcijama
+- dodata %#s opcija u printf (print string as hex)
+- napravljen perl skript koji proverava da li ima opasne upotrebe calla (poziv
+  preko eax registra u kom f-ja ocekuje parametar, recimo)
+- izbacena suvisna mesta za pecovanje opcija, sad je taman kako treba
+- uvedene klase debug poruka, sad je malo manji haos
+- ispravljen bag kod alt-F1, sada vraca u stari graficki mod (ah nije bio
+  setovan pred int 0x10 poziv) + sada mozemo i da ispisemo poruku sa assert_msg
+- ispravljeno zakucavanje igre ako se ne pritisne neki taster na pocetku, dok
+  idu animacije - sada lepo predje u SWOS meni
+- ispravljeno: kontrole se totalno blokiraju ako se u SWOS++-u ukljuci drugi
+  igrac na tastaturi, a preko install-a iskljuci (stavi se keyboard only ili
+  keyboard+joypad) [u ovom slucaju brisanje OPTIONS.DAT resava problem]
+  (sada se joyKbdWord setuje na 4 (kbd+joy) ako je pl2Keyboard true)
+- onemogucena funkcija u igri tastera koji su izabrani za kontrole bilo igraca
+  jedan, bilo igraca dva (npr. S za statistiku, P za pauzu - nema toga ako neki
+  igrac igra sa njima)
+- popravljen desync (for good! nadam se) izmedju uzastopnih partija - jebeni
+  frameCount se nije bio resetovao
+- ispravljeno menjanje igraca pred partiju, lord praise cpu log compare
+  debugging technique
+- server nije ispravno inicijalizovao svog igraca, sto je rezultovalo slanjem
+  flegova iz prethodne partije novim klijentima koji se povezu
+- ispravljen bagic u slucaju kada je server odbijao konekciju
+- switched to own 64kb stack
+- fixed section ordering bug, binary file is now slightly smaller
+- display of debug variables on/off by pressing `d'
+
+1.4:
+- resetovanje broja highlights-a na jedan nakon snimanja replay-a je sredjeno,
+  kao i pucanje view highlights nakon snimanja (koristio sam bafer od
+  highlights-a za kopiranje) - ukratko sada replay-i i highlights-i suzive
+  zajedno
+- u log fajl se na pocetku upisuju adrese ucitavanja SWOS-a i SWOS++-a kako
+  bi se u slucaju pucanja mogla utvrditi tacna instrukcija
+- sredjeno: highlight-i ne postoje, ali nakon gledanja replay-a, pojavi se
+  jedan highlight
+- sredjen replay file kada se naglo izadje iz igre (sa alt+f1 recimo)
+- sredjen je gadni bag koji prouzrokuje korumpiranje *.rpl fajlova - snimanje
+  za vreme klupe je iskljuceno i brisanje bafera za snimak je ubiveno - sada
+  rpl-ovi rade kako bi trebalo, mada cu pokusati da namestim prekid snimanja
+  tek kad kamera dodje do klupe i provede tu jedan frejm
+- mali bugchitj je ispravljen u CloseReplayFile kada se setuje greska odmah na
+  pocetku, ali se ne resetuje u slucaju da fajl nije otvoren; to dovodi do
+  laznog upozorenja pri pustanju sledeceg replay-a
+- provera da li ima gresaka pri pustanju replay-a je pomerena u ReplaysInit,
+  inace se greska prijavljuje tek kada se pokusa pustiti sledeci replay
+- na 'f' se ubrzavaju replay-i, i to piche strava brzo :)
+- screen dump na f2 - ozivljena stara debug opcija, snima u *.256 format
+- namestena je na pocetku auto-detekcija joypada, i ako nije pronadjen setuju
+  kontrole na keyboard only ili joypad + keyboard ako je samo jedan joypad
+  prisutan
+
+1.2:
+- napravljen je fajl version.inc sa makroom ver koji vraca broj verzije, tako
+  je mnogo lakse odrzavanje - to jos uvek ne radi zbog kretenskog asemblera
+- dodana FatalError(char *msg) procedura za prisilni izlazak iz SWOS-a
+- konacno je resen djavolji problem sa vsprintf (__prtf_) - isti simbol je bio
+  definisan i u swos sekciji, koja je imala prioritet nad simbolima iz
+  biblioteke i tako se generisao skok u prazno; sada sam napravio filter i samo
+  oni simboli koji su u njemu ulaze u proces asemblovanja, a tu je i opcioni
+  prefix za izbegavanje kolizije imena; sada ce i asemblovanje biti mnogo brze
+- debug log system proradio - ukljucen je i custom vsprintf
+- napravljen filter za map file - sada je asemblovanje mnogo brze
+- presli smo sa cygwin-a na djgpp - mnogo jednostavnije i brze
+- brojeve igraca veci od 16 centrirani
+- napravljen swos.h - header za C fajlove i od sada se sto vise radi u C (a ne
+  u asembleru, osim ako nije apsolutno neophodno)
+- util programi prebaceni na Watcom, sada je dovoljan samo jedan C kompajler
+- debug log system proradio - ukljucen je i custom vsprintf
+- napravljen filter za map file - sada je asemblovanje mnogo brze
+- presli smo sa cygwin-a na djgpp - mnogo jednostavnije i brze
+- brojeve igraca veci od 16 centrirani
+- napravljen swos.h - header za C fajlove i od sada se sto vise radi u C (a ne
+  u asembleru, osim ako nije apsolutno neophodno)
+- util programi prebaceni na

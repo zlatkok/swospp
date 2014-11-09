@@ -1,0 +1,4 @@
+<!-- remove whitespace but don't touch it if it's inside the string -->
+<SpacePirates type="string" Remix =   "\x09Ghostbusters\x09"    >
+    gamemusicparadise
+</SpacePirates>

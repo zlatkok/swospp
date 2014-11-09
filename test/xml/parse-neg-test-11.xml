@@ -1,0 +1,4 @@
+<!-- empty nodes are not allowed to have content -->
+<thingAMaJig flying = Fortress type="empty">
+    Rich Content
+</thingAMaJig>

@@ -1,0 +1,37 @@
+Pri izdavanju nove verzije:
+
+ove dve promene su sada obuhvacene preko version.inc:
+  swppmenu.asm: about string
+  pdata.asm: new_message string
+file_id.diz, datum i verzija
+todo/history, upisati promene, datum i verziju (uradi dir sync da se sve pokrije)
+download, linkovati, verzija + velicine fajlova
+news, objaviti + datum
+files, preimenovati
+screenshots, slike ako ima nekih promena
+readme.txt: koliko program zahteva memorije za ucitavanje (ali RELEASE!)
+
+na kraju obavezno sve proveriti!
+
+Test verzija:
+- create archive: swospp-<build-number>.zip
+    root\
+        loader.bin
+        netplay-info.txt
+        changes.txt
+        readme.txt
+        file_id.diz
+        debug\
+            swospp.bin
+        release\
+            swospp.bin
+- bump build number (version.inc)
+- edit changes.txt
+- edit/bump version number in netplay-info.txt
+- edit file_id.diz
+- edit year in readme.txt if necessary :P
+- remove int 1's :P
+- backup archive
+- backup source
+
+Naravno probati dal radi uopste :P

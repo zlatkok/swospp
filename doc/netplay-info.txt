@@ -1,0 +1,145 @@
+Accompanying SWOS++ version: 1.9.1.4
+
+DISCLAIMER:
+
+This is an incomplete version meant to be used for testing. It contains bugs
+and deficiencies, and should not be considered a final product. Same goes for
+this document :)
+
+NETPLAY GUIDE:
+
+SWOS++ uses DOSBox and it's ipxnet program to establish a network connection
+over UDP channel. There are few steps to take before successfully playing a
+network game:
+
+0) Install SWOS++
+
+   Install SWOS++ as usual if not already installed. Refer to readme.txt for
+   more detailed instructions.
+
+1) Verify your DOSBox configuration file
+
+  You have to turn on IPX emulation in configuration file, since it is off by
+  default. Under [ipx] section there should be a line:
+
+  ipx=true
+
+  If that line is commented (starts with a #) remove #. If it is missing add
+  it. Restart DOSBox if it was already running.
+
+2) Verify port and connection
+
+   In order to join games you will have to be able to connect to UDP port 213
+   (or whatever was server configured to). In order to host games, you need to
+   be able to accept incoming connections. Port forwarding goes beyond the
+   scope of this document, but a good resource on how to do it is
+   www.portforward.com.
+
+3) Start IPXNet server/client
+
+   One of players has to start IPXNet server in their DOSBox using command:
+
+   ipxnet startserver
+
+   Optionally you can type port number at the end, if something other than
+   port 213 is needed. Other player then connects using command:
+
+   ipxnet connect <server ip>
+
+   Optionally, port can be typed at the end, if it's not default.
+   Once connected, you can verify that everything is in order by issuing:
+
+   ipxnet ping
+
+4) Set up the network game
+
+   After running SWOS with SWOS++ correctly installed, multiplayer entry will
+   show up in SWOS++ menu. There you will have to fill in nickname for network
+   play or one will be created for you. Host has to fill a game name, and go
+   to 'CREATE GAME'. This will bring up game lobby menu. Host is free to set up
+   game configuration here. Client goes to 'JOIN GAME'. There they should be
+   able to see game that was created, and join it. Both players have to select
+   their team in the 'TEAMS' column. After both players signal that they're
+   ready, host is allowed to start the game.
+
+5) Set up teams
+
+   Now players go into standard play match menu, where they set up their teams
+   similar to local game. Player 1 gets controls to set up their team (usually
+   host), presses play game when done then other player takes over. Once they
+   too select play game actual game starts. Enjoy!
+
+Debug version has negative impact on performance, but it will generate log file
+in SWOS directory named 'swospp.log'. It is a valuable aid for debugging.
+Please include it if you wish to report a bug.
+
+SKIP FRAMES:
+
+Game host can set value for skip frames variable. This value influences game
+network performance, and is directly related to players geographic locations.
+Higher value will allow game to run smoother, but will make controls lag more.
+It should be set to lowest value that still makes game runs fast enough.
+
+TESTING:
+
+Need to test various situations, like yellow/red cards, own goals,
+substitutes, repeated games, menu entries...
+
+Anything strange happening?
+Fan colors swapped?
+Strange results displaying for watchers in games with many scorers?
+Controls not responding properly?
+Goalkeeper not doing his job well? :P
+Is it possible to reach some menu entries when they shouldn't be accessible?
+
+Game working slowly (whole time)?
+Game slows down at certain times (or in certain situations)?
+
+Does multiplayer game interferes with normal games played later?
+
+Any differences from single player version?
+Care has been taken to ensure game play is as much similar as possible to
+locally played version but some small differences had to be made to be certain
+everything goes as smoothly as possible.
+
+THINGS TO NOTE:
+
+- Your DOSBox version and settings (dosbox.conf, cycles=? etc.)
+- SWOS++ version (can be seen in SWOS++ -> ABOUT menu)
+- What are you playing with (control configuration)? (keyboard only,
+  keyboard + joypad etc.)
+- Teams playing
+- Number of games played
+- Log file, named SWOSPP.LOG
+- Anything you can think of :)
+
+BUGS FOUND:
+
+If you think you found a bug, please record as much informations about it as
+possible. Ideally a log file and game replay, with steps to reproduce.
+
+Which half was it? Which minute was it? (approximately)
+
+What was happening in the game:
+- "I was about to take throw-in"
+- "It crashed on halftime transition"
+- "Goalkeeper was holding the ball"
+etc.
+
+Screenshots are welcome too :)
+
+Outcome:
+Crash, assertion failed message, team data mismatch
+DOSBox Status Window - illegal reads/writes etc.
+
+NOTES/KNOWN ISSUES:
+
+- Fire doesn't cancel pause or statistics screen.
+- Custom tactics are not currently supported.
+- Auto-save game is currently not supported.
+- Currently no notifications about network activity so it might seem like game
+  froze if network lags
+- Watchers support is nearly complete - only sounds are missing
+- Pitch type selection in game lobby does not work correctly
+- Changing teams after joining lobby might not work correctly
+- Surely more but focus on the good sides please :)

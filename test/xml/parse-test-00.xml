@@ -1,0 +1,9 @@
+<!-- test negative numeric values, overflows and digit separator -->
+<Yngwie>
+    <charTag1 type="char">-99</charTag1>
+    <charTag2 type="char">-1000</charTag2>
+    <shortTag1 type="short">-25000</shortTag1>
+    <shortTag2 type="short">-125000</shortTag2>
+    <intTag1 type="int">-5`000`000</intTag1>
+    <intTag2 type="int">-72`915`000`000</intTag2>
+</Yngwie>

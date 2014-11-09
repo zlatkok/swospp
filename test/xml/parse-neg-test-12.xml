@@ -1,0 +1,7 @@
+<!-- invalid numerical value, and value out of range -->
+<thingAMaJig flying = Fortress type="short">
+    128539
+    <not_a_number type="short">
+        5rrrr55
+    </not_a_number>
+</thingAMaJig>

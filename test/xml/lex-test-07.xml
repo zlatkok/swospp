@@ -1,0 +1,4 @@
+<!-- there was an infinite loop causing bug in peek char so cover it;
+     single whitespace char at the end of the file, following a non-whitespace -->
+<tagZorg>
+</tagZorg>

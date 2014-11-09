@@ -1,0 +1,6 @@
+<!-- only allow strings and arrays to have split content -->
+<thingAMaJig flying = Fortress type="short">
+    Split content part #1
+    <Draconian />
+    Split content part #2
+</thingAMaJig>

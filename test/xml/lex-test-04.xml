@@ -1,0 +1,3 @@
+<!-- test string escapes, overflows, whitespace removal and string merging -->
+""" " ""  a  ""    123 "  \xaBa037D\\\x\42\254\255\256\257\2123409545554\9999\345rr54\x\t\r\n\r\b\\\
+    " "a\tak" 4\t456

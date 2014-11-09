@@ -1,0 +1,403 @@
+# This is list of symbols from SWOS map file that are allowed to go into SWOS++.
+#
+# syntax is:
+# <symbol> [, prefix <prefix>][, function |, (array | pointer | ptr) <type>['['<size>']'] |, <type>]
+#
+# If prefix is present, symbol will be prefixed with it to avoid name clashes.
+# Optional part following will also add the symbol to C header file, with
+# specified type. Symbols without type will not go into C header file.
+
+start, prefix swos_
+scanCode
+prevVideoMode, byte
+StopAIL
+CDROM_StopAudio
+RestoreOldInt9Handler
+SWOS_StackTop
+conversion_table_small
+EGA_graphics, word
+currentTeamNumber
+FindFiles, function
+aHigh
+SelFilesBeforeDrawCommon
+joy1_X_value
+joy2_X_value
+Initialization
+SWOSMainMenuInit
+GetTextSize
+GameLoop, function
+isGameFriendly
+IncrementHilBufferPointer
+ValidateHilPointerAdd
+Flip, function
+SetPrevVideoModeEndProgram
+EndProgram, prefix SWOS_, function
+CommonMenuExit
+nextGoalPtr
+goal_base_ptr
+currentMenu
+current_hil_ptr
+hil_num_goals
+hil_file_buffer
+hil_filename
+ShowHighlights
+GetFilenameAndExtension
+SelectFileToSaveDialog
+ShowMenu, function
+CalcMenuEntryAddress, function
+aSetup_dat
+setup_dat_buffer
+WriteFile
+controlWord, word
+joy1Status, word
+joy2Status, word
+SetControlWord
+Joy2SetStatus, function
+Player1StatusProc, function
+Player2StatusProc, function
+smallCharsTable, pointer char
+DrawMenuText
+DrawSprite, prefix SWOS_
+FlipInMenu
+DrawMenuTextCentered
+lin_adr_384k, char *
+ShowErrorMenu, function
+aExit
+SetExitMenuFlag, function
+
+### controls
+
+UP
+joy1_min_X
+joy1_min_Y
+joy1_max_X
+joy1_max_Y
+joy1_center_X
+joy1_center_Y
+joy1_X_negative_divisor
+joy1_X_positive_divisor
+joy1_Y_negative_divisor
+joy1_Y_positive_divisor
+numLoopsJoy1, word
+joy2_min_X
+joy2_min_Y
+joy2_max_X
+joy2_max_Y
+joy2_center_X
+joy2_center_Y
+joy2_X_negative_divisor
+joy2_X_positive_divisor
+joy2_Y_negative_divisor
+joy2_Y_positive_divisor
+numLoopsJoy2, word
+joy1_fire_1
+joy1_fire_2
+joy2_fire_1
+joy2_fire_2
+
+### SWOS original options
+
+gameLength, word
+autoReplays, word
+menuMusic, word
+autoSaveHighlights, word
+allPlayerTeamsEqual, word
+pitchType, word
+commentary, word
+chairmanScenes, word
+
+SetDefaultOptions
+joyKbdWord, word
+sineCosineTable, array short[256]
+vsPtr, char *
+
+### 68k register set
+
+D0, dword
+D1, dword
+D2, dword
+D3, dword
+D4, dword
+D5, dword
+D6, dword
+D7, dword
+A0, dword
+A1, dword
+A2, dword
+A3, dword
+A4, dword
+A5, dword
+A6, dword
+
+SaveSprite, function
+spritesIndex, array SpriteGraphics *
+DrawControlledPlayerNumbers
+Int2Ascii
+DrawSubstitutesMenuEntry
+SetBenchPlayersNumbers
+DumpTimerVariables
+BookPlayer
+benchTeam, TeamGeneralInfo *
+SetCurrentEntry, function
+DrawMenu, function
+LoadDIYFile, function
+PrimitivePrintf, function
+numSelectedTeams, word
+selectedTeamsBuffer, array byte
+gameType, word
+aComputer
+aPlayerCoach_0
+aCoach_3
+pitch_dat_buffer, array byte
+DoContinueAbortMenu
+aContinue
+aAbort
+ChooseTeamsDialog
+found_filenames_buffer
+BenchCheckControls
+SaveCoordinatesForHighlights
+inSubstitutesMenu, word
+goToSubsTimer
+SetHilFileHeader
+MainKeysCheck, function
+convertedKey
+lastKey, word
+DumpScreen
+VerifyJoypadControls, function
+aAsave_256
+SetName
+currentTick, volatile ushort
+seed, byte
+seed2, byte
+Rand, function
+ChangeGameLength
+ChangePitchType
+game_length_str_table
+pitch_type_str_table
+aPlayer_0
+aPitchType
+aGameLength
+aSubstitutes
+aFrom
+SaveOptions
+RestoreOptions
+DrawMenuItem
+aOff
+aOn
+exitMenu
+InputText
+DrawMenuBack
+MenuProc
+WaitRetrace
+ReadGamePort, function
+DrawOuterFrame
+bigCharsTable, pointer char
+aOk
+color_table_shine
+DrawMenuFrame
+PIT_countdown
+ProgramPIT
+CheckControls
+fire
+videoSpeedIndex
+menuCycleTimer
+final_controls_status
+key_count
+short_fire
+GetKey, function
+aDataTeam_nnn
+aCustoms_edt
+aReplay
+FilterKeys
+Int9KeyboardHandler
+convert_keys_table
+inputing_text_ok
+
+### custom tactics
+
+USER_A, array Tactics
+USER_B, array Tactics
+USER_C, array Tactics
+USER_D, array Tactics
+USER_E, array Tactics
+USER_F, array Tactics
+
+InitAndPlayGame
+Joy1SetStatus, function
+player1_clear_flag
+player2_clear_flag
+controlsHeldTimer
+longFireFlag, word
+playMatchMenu
+PlayMatchAfterDraw
+PlayMatchSelected
+ExitPlayMatch
+main_loop, function
+ReadTimerDelta, function
+pl1_fire
+pl2_fire
+teamSwitchCounter, word
+InitTeamsData, function
+left_team_player_no, word
+left_team_coach_no, word
+right_team_player_no, word
+right_team_coach_no, word
+leftTeamData, array TeamGeneralInfo
+rightTeamData, array TeamGeneralInfo
+SetupPlayers, function
+random_seed, word
+stoppageTimer, volatile word
+TimerProc, function
+CalculateIfPlayerWinsBall, function
+UpdateStatistics, function
+paused, word
+showStats, word
+showingStats, word
+ClearBackground, function
+AllowStatistics, function
+StatisticsOff, function
+TeamsControlsCheck, function
+gameState, word
+gameStatePl, word
+replayState, word
+bench1Called, word
+bench2Called, word
+halfNumber, word
+replaySelected, word
+playGame, word
+AIL_stop_play, function
+SWOS
+currentMenuPtr
+ExitChooseTeams
+menuFade
+contAbortResult
+CallAfterDraw
+continueAbortMenu
+aPlus
+aMinus
+teamPlayingUp, word
+pl1LastFired, word
+pl2LastFired, word
+pl1ShortFireCounter, word
+pl2ShortFireCounter, word
+gameStoppedTimer, word
+goalCounter, word
+stateGoal, word
+benchCounter, word
+benchCounter2, word
+longFireCounter, word
+longFireTime, word
+ballSprite, array Sprite
+frameCount, word
+DrawSprites, function
+numSpritesToRender, word
+allSpritesArray, array Sprite *
+sortedSprites, array Sprite *
+DrawSprite16Pixels, prefix SWOS_, function
+deltaColor, byte
+DarkenRectangle, function
+cameraX, short
+cameraY, short
+ScrollToCurrent, function
+gameTime, dword
+CopySprite, function
+selTeamsPtr, char *
+team1Scorers, array SWOS_ScorerInfo[8]
+team2Scorers, array SWOS_ScorerInfo[8]
+cameraXFraction, word
+cameraYFraction, word
+team1Scorer1Sprite, array Sprite
+team2Scorer1Sprite, array Sprite
+ClearSprite, function
+leftTeamPtr, TeamGame *
+rightTeamPtr, TeamGame *
+alreadyScoredTable, array char *[3]
+firstGoalScoredTable, array char *[3]
+Text2Sprite, prefix SWOS_, function
+animPatternsState, word
+DrawAnimatedPatterns, function
+team1StatsData, pointer TeamStatsData
+DrawStatistics, function
+advert1Pointers, array byte *[8]
+advert2Pointers, array byte *[8]
+advert3Pointers, array byte *[8]
+statsTimeout, word
+eventTimer, word
+DrawSpriteInColor, function
+DrawBenchAndSubsMenu, function
+DrawBenchPlayersAndCoach, function
+DrawSpriteInGame, prefix SWOS_, function
+DrawSubstitutesMenu, function
+DrawFormationMenu, function
+SubstitutePlayerIfFiring, function
+EnqueueSubstituteSample, function
+subsState, short
+currentSubsTeam, TeamGame *
+plToBeSubstitutedPos, short
+plToEnterGameIndex, short
+selectedFormationEntry, word
+subsMenuX, word
+plToBeSubstitutedOrd, short
+selectedPlayerInSubs, short
+formationMenuX, word
+LoadTeamFile, function
+teamFileBuffer, array char
+InitLittlePlayerSprites, function
+editTacticsMenu, array char
+chosenTactics, short
+chooseTacticsTeamPtr, char *
+DrawSpriteCentered, function
+DrawLittlePlayersAndBall, function
+pl1Tactics, word
+pl2Tactics, word
+tacticsTable, array Tactics *
+ShowFormationMenu, function
+ChangeFormationIfFiring, function
+CheckContinueAbortPrompt, function
+saveFileTitle, array char
+saveFileName, array char
+SaveCareerSelected, function
+StartContest, function
+PrepareMenu, function
+SWOS_MainMenu, array byte
+playMatchTeam1Ptr, TeamFile *
+playMatchTeam2Ptr, TeamFile *
+tact_4_4_2, array Tactics
+editTacticsCurrentTactics, array Tactics
+_STACKTOP
+_STACKLOW
+
+
+
+### Watcom C library
+
+stackavail_,    prefix swos_libc_, function
+strncpy_,       prefix swos_libc_, function
+strlen_,        prefix swos_libc_, function
+strcmp_,        prefix swos_libc_, function
+strncmp_,       prefix swos_libc_, function
+strnicmp_,      prefix swos_libc_, function
+int386x_,       prefix swos_libc_, function
+segread_,       prefix swos_libc_, function
+exit_,          prefix swos_libc_, function
+memset_,        prefix swos_libc_, function
+memmove_,       prefix swos_libc_, function
+time_,          prefix swos_libc_, function
+ctime_,         prefix swos_libc_, function
+
+
+### debug stuff
+
+#testvar
+#goalie1_sprite
+#team1_player2_sprite
+#team1_player3_sprite
+#team1_player4_sprite
+#team1_player5_sprite
+#team1_player6_sprite
+#team1_player7_sprite
+#team1_player8_sprite
+#team1_player9_sprite
+#team1_player10_sprite
+#team1_player11_sprite
+#timer_index

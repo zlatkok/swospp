@@ -1,0 +1,6 @@
+<!-- can't have split content for other than string and array -->
+<BigTag type="int">
+    15
+    <start></start>
+    25
+</BigTag>

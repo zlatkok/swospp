@@ -1,0 +1,18 @@
+<!-- a more realistic example -->
+<Krynn>
+    <node attr="string" attr2 = "another string"  attr3 = no-strings-attached type="string" >
+        Some content," \"with strings too\""
+        <someTag type="empty"><miniMe /></someTag>
+        ". This should get concatenated."
+    </node>
+    <single ondelete="fast_delete()" alloc_type="fast" />
+    <chapterMarker />
+    <stop></stop>
+    <formOfLife significance="insignificant" />
+    <message from="another_time" type="string">
+        "Some more text, and binary strings:\n"
+        "\x4c\x61\x73\x65\x72\x64\x61\x6e\x63\x65"
+        "\x20\x2d\x20\x4d\x6f\x6f\x6e\x20\x4d\x61"
+        "\x63"  "\x68\x69"  "\x6e"  "\x65"  "\x00"
+    </message>
+</Krynn>

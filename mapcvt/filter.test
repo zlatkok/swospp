@@ -1,0 +1,36 @@
+# test filter for parsemap.pl
+# 25.05.2014.
+
+#
+# a few comments
+#
+
+symbol1
+symbol2
+symbol3
+
+Beograd, prefix Novi
+Murder, prefix Mitch
+
+#dzu,                # error, missing part after comma
+#0, prefix           # error, missing prefix name
+
+#Beograd             # error, duplicate symbol
+
+DrawSprite16Pixels, prefix SWOS_, function
+GameLoop, function
+#GameLoop, function  # error, duplicate function
+#Flip, function 32   # error, additional input after keyword function
+
+allSpritesArray, array SpriteGraphics *
+allSprites, array SpriteGraphics *
+leftTeamData, pointer TeamGeneralInfo
+#allSprites, array Sprite *          # error, duplicate array
+#invalid, array                      # error, missing type of array
+#invalid, pointer                    # alias, should be same as above
+
+sine_cosine_table, array short[256]
+#sampleTable, array int[]            # error, empty dimension
+
+tmp01, unsigned long int
+#tmp01, dword                        # error, redefinition

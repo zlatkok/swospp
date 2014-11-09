@@ -1,0 +1,99 @@
+Format za dump varijabli.
+
+Osnovni tipovi:
+    - byte
+    - word
+    - dword
+
+Modifikatori osnovnih tipova:
+    - signed
+    - unsigned
+
+Slozeni tipovi:
+    - nizovi osnovnih tipova
+    - strukture osnovnih tipova
+
+Dodatno:
+    - hex dump
+
+Najbolje bi bilo sve promenljive koje treba ispisivati drzati u statickom nizu
+terminisanom sa -1 ili nekim posebnim kodom. Taj niz bi najbolje bilo drzati
+u asm fajlu jer je odatle najpotpuniji pristup SWOS promenljivama. Napraviti
+format slican printf-u.
+
+Opcije ispisa (flegovi):
+    - decimalno
+    - hex
+    - oktalno
+    - binarno
+    - signed
+    - unsigned (ignorisu se kod ne-decimalnih ispisa, idu u jedan bit,
+                unsigned je default)
+    - left align
+    - right align (ova dva idu na jedan bit, left align je default)
+    - sign prefix
+    - pad with zeros
+    - prefix value with space if it is signed and positive
+    - prefix hex value with 0x
+    Alignment flagovi od PrintString()-a:
+    #define NO_ALIGNMENT      0
+    #define ALIGN_LEFT        1 << ALIGN_LEFT_BIT
+    #define ALIGN_RIGHT       1 << ALIGN_RIGHT_BIT
+    #define ALIGN_CENTERX     1 << ALIGN_CENTERX_BIT
+    #define ALIGN_UP          1 << ALIGN_UP_BIT
+    #define ALIGN_DOWN        1 << ALIGN_DOWN_BIT
+    #define ALIGN_CENTERY     1 << ALIGN_CENTERY_BIT
+
+    #define ALIGN_CENTER      ALIGN_CENTERX | ALIGN_CENTERY
+    #define ALIGN_UPRIGHT     ALIGN_RIGHT | ALIGN_UP
+    #define ALIGN_UPLEFT      ALIGN_LEFT | ALIGN_UP
+    #define ALIGN_DOWNRIGHT   ALIGN_DOWN | ALIGN_RIGHT
+    #define ALIGN_DOWNLEFT    ALIGN_DOWN | ALIGN_LEFT
+
+Prvo ide tip podatka. Zatim bi isao format ispisa. Sledeca je opciona sirina
+ispisa, pa onda opciona preciznost. Na kraju dolazi pointer na podatak koji se
+ispisuje. Takodje bi opciono mogao da dodje i pointer na ime podatka.
+
+{type flags ptr to data [.ptr to name]} '\0'
+
+Prvi bajt (type) moze biti:
+
+c - karakter
+b - byte
+w - word
+d - dword
+s - string karaktera, null terminated
+f - broj u fiksnom zarezu, signed word. signed word
+m - mantisa broja u fiksnom zarezu
+p - pointer, bice ispisan kao dword (bez dereferenciranja)
+a - niz, zatim ide broj elemenata koji se ispisuju
+t - struktura, zatim sledi broj elemenata, pa niz tipova elemenata
+n - nop, ukoliko bude potrebe za alignment-om
+u - hex dump: odmah sledi dword - duzina dumpa, zatim idu dva worda, broj
+    bajtova po redovima i kolonama, zatim flags itd; u ovom slucaju pointer na
+    podatke oznacava pocetnu adresu
+i - ispis narednog polja je disable-ovan; ostavljeno za lako ukljucivanje i
+    iskljucivanje promenljivih bez brisanja
+
+Prefix width-u moze biti i zvezdica, u tom slucaju nakon nje sledi pointer na
+short koji ce sadrzati sirinu. Ukoliko je ; prefix precision-u, onda se
+precision uzima po istom pravilu kao i width. Koordinate su dva worda, i
+ukoliko postoje, ispis ce se vrsiti na toj lokaciji.
+
+ispis oznacenog bajta:
+
+db 'b'          ; type - byte
+dw SIGNED       ; flags - signed byte
+db '%'          ; width - present
+dw 6            ; print in 6 positions
+dd my_byte      ; ptr to data, note - no precision
+db '.'          ; ptr to name of data follows
+dd my_byte_str  ; ptr to name of data
+
+ispis stringa:
+
+db 's'          ; type - string
+dw 0            ; no flags
+db '.'          ; precision - present, note - no width
+dw 255          ; max. 255 chars
+dd my_string    ; ptr to data

@@ -1,0 +1,2 @@
+<!-- test xml escapes and potentially ambiguous comment end ---->
+&lt;&lt; &quot;&apos;&amp;&apos;&amp;&apos;&quot; &gt;&gt; &quo

@@ -1,0 +1,16 @@
+- ono sa zvukom kada se utakmica zavrsi nereseno
+- kada golman izvodi loptu, i sam sebi zabije gol, ponekad nije dobro podesena
+  globalna ko je zadnji dirao loptu, pa se ispise kao strelac poslednji
+  protivnicki igrac koji je imao kontakt s' loptom
+- ClearBackground - setuje samo donji deo edx-a, a koristi citav 32-bitni
+  registar, radice samo slucajno ako je hi word edx 0 pri pozivu
+- I za ovo moze da se kaze da je bag interne prirode, u ReadGamePort se u cx
+  ucitava vrednost petlje, ali se prvo dekrementuje pa proverava - medjutim
+  loop koristi citav ecx pa ukoliko je nula sledi zakucavanje (kompletan 2^32
+  loop sa iskljucenim interaptima)
+- ne inicijalizuju kompletno sve promenljive pred partiju, ali se to nije
+  manifestovalo pre multiplayer-a (npr. razlomljeni deo koordinata lopte ostaje
+  od prethodne partije, pa se nakupi vremenom i predje jedan)
+- SaveRandState overwrites first byte of big_S_Sprite. That byte is part of
+  first word - team number which is not used anyway. But still it remains
+  unknown whether this is intentional or not.

@@ -1,0 +1,28 @@
+1.9.1.5.
+- it is now possible to use custom tactics via multiplayer options menu
+- fixed editing tactics for teams with high player numbers
+- instead of binary files options are now saved to and loaded from xml-like files
+- multiplayer options are preserved between games, including user tactics
+- added crash logging
+- selection of second joypad button can be skipped
+
+1.9.1.4
+- fixed return from game and stuff broken in 1.9.1.3 :)
+- fixed watchers not seeing ball shadow
+- fixed result rectangle rendering for watchers
+- watcher support almost complete now
+
+1.9.1.3
+- fixed prematch player selection
+- aborting game with escape should work properly now
+- initial support for watchers (unfinished, just a preview!)
+
+1.9.1.2
+- skip frames are working now
+- multiple games in one session should work now
+
+1.9.1.1
+- multiplayer :)
+- fixed bug: when replaying friendly game, saved replay file would contain more than one game
+- added guard against invalid joypad configuration
+- keys assigned to players will not have their default meaning (such as P, S...)

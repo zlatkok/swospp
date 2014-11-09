@@ -1,0 +1,327 @@
+This is collection of random useful bits of knowledge, of which some are
+crucial for understanding and modifying the source code.
+
+
+Mixing assembly code with Watcom
+--------------------------------
+Watcom by default uses Watcom calling convention, and that is what we
+exclusively use through the entire program. Parameters are passed in registers,
+in the following order: eax, edx, ebx, ecx. If there are more than 4 parameters
+they are passed via stack, just like stdcall. Return value goes through eax.
+By default function names will have underscore appended to it (variables on the
+contrast will have it prepended).
+As for the asm functions that get called from Watcom, they have to abide to the
+following:
+- all registers must be preserved unless they are used to transfer parameters
+  (eax is exception - it is always considered used)
+- direction flag has to be clear
+- if there were any parameters on the stack, called function has to clean it up
+
+
+Intel x86 Stack
+---------------
+Stack raste na dole, pokazivac se postavlja na najvisu adresu, i ide ka
+najnizoj kako se puni.
+PUSH - smanji stack pointer, stavi operand na vrh steka
+POP - uzmi operand sa vrha steka, povecaj stack pointer
+
+
+Motorola 68k Registers
+----------------------
+;TODO
+AMIGA emulator
+registri, pozivanje, konvencije...
+
+
+SWOS Stack
+----------
+We were very limited with stack, less than 4k. So start-up code will replace
+SWOS stack with our own - static buffer with size of 64kb.
+
+
+DPMI host
+---------
+DOS4/GW implementira delimicno DPMI standard. Za alociranje memorije moze se
+koristiti:
+Int 31H Function 0501H: Allocate Memory Block
+Allocates and commits a block of linear memory.
+Call With
+AX = 0501H
+BX:CX = size of block (bytes, must be nonzero)
+
+
+Interfacing SWOS code
+---------------------
+Posto se ne nalazimo u uzastopnom memorijskom bloku sa SWOS-om, pozivi moraju
+da se vrse preko specijalnih makroa - calla i jmpa, indirektno preko registra,
+da bi mogao da se izvrsi fixup lokacije. Inace bih morao da ih implementiram
+kao importe, hmmm.....
+
+
+Startup
+-------
+Na pocetku se poziva main f-ja u main.asm koja obavlja jednostavnu
+inicijalizaciju. Garantuje se da ce direction flag biti nula. Pocetne vrednosti
+registara su... TODO
+Pisi o sanaciji steka
+
+
+BSS Sekcija
+-----------
+BSS je u potpunosti implementiran, i podaci deklarisani u .bss sekciji (u asm
+kodu) ili kao ne-lokalne neinicijalizovane C promenljive ce ici tamo, i nece
+povecavati velicinu izlaznog fajla.
+
+
+Dibagovanje
+-----------
+Na raspolaganju su WriteToLog rutine, dostupne i iz C-a i iz asemblera.
+Parametri su u printf stilu. Izlaz se snima u SWOSPP.LOG fajl. U release
+verziji pozivi su izbaceni. WriteToLogM prima dodatni parametar - klasu poruke,
+tako da se promenom bit maske citave klase poruka mogu selektivno prikazivati
+ili sakrivati po potrebi.
+WriteToLog je takodje dostupna i za pozivanje iz asm koda, u vidu makroa.
+Registri i flegovi se cuvaju, tako da je moguce pozvati je sa bilo kog mesta.
+Makro takodje vodi racuna o parametrima i steku, tako da korisnik moze samo da
+se opusti i fokusira na dibagovanje. ;)
+assert() je takodje dostupan, manje-vise standardan, izlaz ide takodje u
+SWOSPP.LOG. Dostupna je i verzija sa custom porukom, assert_msg().
+Dampovanje promenljivih: moguce je prikazivati promenljive na ekranu dok traje
+igra. Adrese i formati promenljivih se upisuju u dumpvars.asm. Format i detalje
+me mrzi sad da provaljujem, lejtr :P
+Za pravljenje hex damp-ova tu je HexDumpToLog rutina. Na osnovu parametara
+snimice hex dump u log fajl, postoji samo u debug verziji.
+Takodje se prave listinzi svih objektnih fajlova u etc direktorijumu, kao i map
+fajl.
+Skoro je opravljen DOSBox debugger, tako da moze da ucita i prikaze simbole.
+Postoji perl skript koji ce od map fajlova napraviti text file koji moze da se
+ucita u debugger i sadrzi sve javne simbole.
+In DOSBox options CPU core must not be set to dynamic, or it will skip
+instructions in debugger, making it impossible to debug. Set it to normal and
+it will works just fine.
+Test programs in test directory are built with CodeView debug info, so they can
+be debugged with Visual C++ 6.0 debugger (only good debugger I managed to run
+successfully in a Windows 98 virtual machine). Functionality is limited - e.g.
+breakpoints aren't working, but they can be compensated by placing int 3's in
+user code.
+
+
+printf()
+--------
+open watcom rip off :P
+sprintf() je prisutna u debug verziji, uglavnom za formatiranje parametara za
+log fajl. Implementacija nije apsolutno kompletna, ali najvaznije stvari su tu
+sa par dodataka:
+- dodata je podrska za %hhd i %hhx (stampa se 8-bitna vrednost)
+- kombinacija %#s se tretira kao hex string: bajtovi iz stringa se stampaju kao
+  hex vrednosti, ako se doda preciznost npr. %#.12s stampace se tacno 12
+  karaktera bez obzira da li sadrze nul-terminator
+
+
+strcpy()
+--------
+Jedna bitna izmena je napravljena na koju treba obratiti paznju. strcpy()
+umesto pocetka odredisnog stringa vraca pokazivac na zavrsnu nulu. To omogucava
+da se izbegnu pozivi strcat()-u koji bi ionako samo isao ponovo kroz string da
+nadje tu nulu. Ova cinjenica se koristi na vise mesta u programu gde postoji
+potreba za nadovezivanjem stringova. Isto vazi i za strncpy(). Npr:
+strcpy(strcpy(strcpy(resultBuffer, player1Score), " - "), player2Score);
+Isto vazi i za strcat.
+strncpy has been patched to return a pointer to one character after the last
+character written if the string copying operation ran out of space, or pointer
+to terminating zero if the string could fit. This results in the following
+idiom for copying zero-terminated string to fixed buffer:
+    *strncpy(dst, src, dstSize - 1) = '\0';
+Note that this will work in any case: if the copy operation ran out of space,
+pointer to last character in dst will be returned - so the string gets
+terminating zero, and in case copy was successful terminating zero will get
+written once more.
+
+
+Velicina bafera
+---------------
+Prema konvenciji kada definisemo bafer uvek alociramo jedan bajt vise za nulu.
+Ako je velicina nekog imena npr. 16 karaktera, za bafer se mora odvojiti 17
+bajtova, tako da mozemo smestiti maksimalnih 16 karaktera zajedno sa nulom i da
+to bude validan string. primer za strncpy
+
+Ne postoji read-only sekcija
+----------------------------
+Sve const i read-only sekcije se spajaju u .data sekciju. Ovo se koristi na par
+mesta, gde se pise po konstantnim stringovima da se ustedi nesto prostora.
+
+
+pe2bin
+------
+pe2bin konvertuje win32 PE executable u SWOS++ custom binary format. Taj PE
+executable je malo specifican, sa odredjenim ogranicenjima i pretpostavkama.
+pe2bin prepoznaje samo odredjene sekcije: .text, .data, .rdata, .swos, .reloc,
+.ptdata. Sve ostale sekcije se ignorisu. Od direktorijuma dozvoljeni su samo
+import, export, basereloc i iat. Bilo sta drugo prouzrokuje izlazak iz
+programa.
+Entry point se ocekuje u .text sekciji!
+bss je razlika izmedju virtuelne i stvarne velicine .data sekcije.
+Sekcija sa eksportima mora doci pre .ptdata.
+U najnovijoj verziji sekcije vise ne moraju da idu odredjenim redosledom.
+
+
+Alink
+-----
+Alink je open-source jednostavan linker na koji sam naleteo na netu.
+Ispostavilo se da ima solidnu OMF podrsku, i uspeo sam da ga izmenim dovoljno
+da moze da proizvodi ispravne SWOS++ executables :)
+
+
+Mrezni protokol
+---------------
+Sastoji se iz 3 celine:
+- Lobby protokol
+- Sinhronizacija
+- Deo u glavnoj petlji (sama igra)
+
+Postoje dve vrste paketa: 'simple' i 'important'. Simple paket se jednostavno
+salje i zaboravi se na njega - ako stigne stigne. Oni ne mogu biti izdeljeni,
+i imaju ogranicenje velicine (zavisno od implementacije, ali 1023 za DOSBox sa
+sve hederima). Za bitne (important) paket se garantuje isporuka, i ako su
+previse veliki za jedan fizicki paket, bice izdeljeni u vise. Protokol kojim se
+garantuje isporuka je sledeci:
+TODO
+
+Integracija sa menijima je uradjena preko OnIdle f-je koju poziva menu loop.
+
+U fazi sinhronizacije igraci razmenjuju timove i taktike. Na kraju uspesno
+zavrsene sinhronizacije svaki igrac ili posmatrac ce imati timove i taktike
+svih igraca. Svaki igrac ima svoju "instancu" custom taktika, i one se
+prikazuju po potrebi - u meniju trenutno kontrolisuceg igraca, i kod zamena za
+igraca koji je pozvao klupu. Na tim u samoj igri se uvek primenjuje korektna
+taktika, koju je igrac izabrao i to na oba klijenta.
+
+Glavna SWOS petlja je prepravljena tako da se na pocetku vrsi cekanje na frejm
+koji treba da stigne, ukoliko tog frejma nema igra je blokirana u busy loop-u.
+Za vreme cekanja se salju prethodni frejmovi u slucaju da nam nas frejm ne
+stize jer se paket koji smo poslali drugom klijentu zagubio.
+
+Imamo bafer za prihvatanje frejmova koji funkcionise ovako:
+frejmovi koji pristizu -> framesToRender bafer -> frejmovi koji se renderuju
+(nesto kao producer/consumer u javi hehe)
+
+Game engine je tako koncipiran da se u jednom frejmu ocitavaju kontrole jednog
+igraca, a u sledecem drugog (naizmenicno). Multiplayer kod prati ovu
+konvenciju.
+
+Svaki frejm partije definisan je kao kombinacija 'stanja' igre i kontrola koje
+generise odgovarajuci igrac. Stanje obuhvata pauzu, prikaz statistike,
+menadzment tima, ...
+
+Levi i desni tim na oba klijenta su sinhronizovani, s tim sto ce se na prvom
+klijentu ulaz igraca 1 usmeravati na levi tim, a ulaz sa mreze ce biti
+primenjen na desni tim. Na drugom klijentu je ocigledno obrnuta situacija.
+Promenljiva teamPlayingUp moze poremetiti ovu situaciju, i ako ima vrednost dva
+levi i desni tim ce biti zamenjeni (druga dozvoljena vrednost je jedan, i u tom
+slucaju nema izmena).
+Realni lokalni ulaz se uvek cita za igraca 1, jer timovi imaju polje od kog
+igraca primaju ulaz, i to se podesava u init - npr. levi tim = igrac 1 na prvom
+klijentu, a igrac 2 na drugom.
+U debug verziji imamo asertaciju na stanja timova, ona moraju biti jednaka
+izmedju klijenata. Svaki klijent salje drugom hash stanja i drugi klijent
+poredi sa svojim lokalnim i okida asertaciju ukoliko se razlikuju.
+
+Skip frames funkcionise tako sto klonira odredjeni broj frejmova, tako da
+dobijamo bolje performanse jer se jedan paket salje a vise renderuje, ali
+naustrb kasnjenja kontrola, koje je na 3 dosta primetno.
+
+Kada se udje u mod statistike, promena se vrsi tek sledeci frejm, dok kod pauze
+paused loop odmah krece (pre renderinga).
+
+
+IPX
+---
+Salje uvek momentalno, i oslobadja paket, stoga se jedan te isti paket moze
+koristiti neprekidno za slanje. Sto se tice prijema, ima bafer za samo jedan
+paket, i onda trazi u listi ECB-ova slobodne pakete, i u njih upisuje. Ukoliko
+nema nijedan slobodan prijavljen, paket je izgubljen.
+IPXBUFFERSIZE je ogranicenje velicine paketa u DOSBoxu, ali koliko vidim kod
+slanja ako se posalje paket te velicine bice odbacen, sto znaci da je efektivni
+kapacitet za slanje za jedan manji. Sto se primanja tice, moze biti primljen
+paket pune velicine.
+Kod samih paketa IPX header ulazi u same podatke koje saljemo, i mora biti uvek
+prisutan, dok se ECB header tretira odvojeno i nije deo podataka. Tako da je
+maksimalna velicina podataka za slanje jednaka maksimalna velicina paketa minus
+velicina IPX headera.
+
+
+Join i Game ID
+--------------
+Da bi se izbegla situacija kada klijent pokusa da se poveze na server, ne uspe,
+a server misli da je povezan, i ne dozvoljava mu opet da se poveze uvodimo join
+id. To je nasumicni broj koji klijent generise i salje serveru pri svakom
+pokusaju povezivanja. Server cuva ovaj id za svakog povezanog klijenta, i u
+stanju je da razlikuje legitimne ponovne pokusaje povezivanja.
+Game ID je uveden da se spreci doduse redak slucaj - kada klijent pokusa da se
+poveze na nepostojecu partiju na istom IP-u. To moze da se desi kada se partija
+zatvori i ponovo otvori pre nego sto klijent krene da se povezuje na vec
+enumerisanu partiju. Implementirano je tako da se salje random game id pri
+objavi partije i server prihvata samo one klijente koji mu vrate korektan game
+id. Kod povezivanja iz komandne linije ovo se ignorise (samo je IP bitan).
+
+
+Konverzija memorijska lokacija <-> funkcija
+-------------------------------------------
+Na pocetku log fajla bice ispisana adresa na koju je SWOS++ ucitan, kao i
+odakle pocinju SWOS code i data segmenti. Na osnovu toga se lako moze odrediti
+funkcija koja je u pitanju. Za lokaciju u IDI dodati 0x10000 za kod, i 0xc0000
+za podatke.
+Za lokaciju u fajlu na relativni offset dodati 48 (velicina ZKBF header-a).
+Standardne lokacije u DOSBox-u su:
+SWOS++:     0x387000
+SWOS code:  0x220000
+SWOS data:  0x2c1000
+MAP fajl ce biti napravljen u etc direktorijumu, i cesto ume da bude koristan
+za utvrdjivanje koja se funkcija izvrsavala na osnovu lokacije.
+
+
+Patch-ovanje relativnih poziva
+------------------------------
+Ukoliko zelimo da promenimo relativni poziv (0xe8 opkod), formula za to je:
+adresa f-je koja se ubacuje - adresa lokacije koja se patch-uje - 5
+(5 jer se adresa poziva uvek racuna relativno od sledece instrukcije, a duzina
+call instrukcije je ukupno 5 bajtova). Ista prica za relativni jmp (0xe9
+opkod). Ovo se moze izvesti samo dinamicki.
+
+
+Format fiksnog zareza
+---------------------
+Za preciznije kalkulacije SWOS koristi 32-bitne brojeve u fiksnom zarezu, 16
+bita za celi i 16 bita za razlomljeni deo. Oba dela imaju bit za znak, najvisi
+bit, i 15 bitova za vrednost. Koji je uticaj bita za znak razlomljenog dela
+nisam siguran, mislim da se ignorise.
+
+s|aaaaaaaaaaaaaaa.s|bbbbbbbbbbbbbbb
+
+Vrednost = a + 2^-16 * b
+Kada su smesteni u memoriji prvi word je razlomljeni deo, drugi word je celi
+deo (offset 2) - i uglavnom se u programu samo celi deo i koristi.
+
+
+Virtualizovane taktike
+----------------------
+Svaki od igraca ima sopstvenih 6 custom taktika.
+TODO :)
+
+
+XML - opisati
+-------------
+TODO
+
+
+Menu macros
+-----------
+TODO
+
+
+Becoming:
+kako su se prvo pecovali bajtici, pa asm, pa C (Watcom pa Open Watcom), pa nadamo se C++ (via GCC)
+
+TODO: map fajl/mapcvt, listinzi
+.pdata i kako se koristi
+mozda detaljniji opis sekcija za linker

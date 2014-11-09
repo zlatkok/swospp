@@ -1,0 +1,38 @@
+version 1.4: (19.07.2004)
+- fixed nasty bug that occasionally caused replay file corruption after calling bench
+- now lastgame.rpl is properly saved even if game is aborted (e.g. alt+f1)
+- replays can be speeded up by pressing 'f'
+- screenshots by pressing 'f2'
+- fixed higlights crashing after saving replay - now both can be watched
+- joypad auto-detection at startup, so controls won't get blocked if joypad is not present
+
+version 1.3: (30.05.2004)
+- new load diy menu added, with long competition names and ability to change team controls
+- startup Windows version check
+
+version 1.2.3: (03.05.2004)
+- fixed player number display when getting booked
+- player number is hidden in substitutes menu when player is booked (if not, it would be seen behing card sprite, which looks bad)
+
+version 1.2.2: (25.04.2004)
+- fixed bench player numbers getting set to 12..16 regardless of real number
+
+version 1.2.1: (22.04.2004)
+- fixed invalid numbers display in substitutes menu and expanded it a bit to hold bigger numbers
+
+version 1.2: (17.04.2004)
+- player shirt numbers can now be anything from 0 to 127
+- optimized loader and reduced its size
+- patcher should now work fine with Underdogs SWOS
+
+version 1.1: (23.09.2003)
+- more intelligent auto-save options
+- controls configuration inside the game, with support for two players on keyboard
+
+version 1.0: (06.09.2003)
+- completely integrated into SWOS menu system
+- auto-replays are off by default
+- spinning "S" is off by default
+- auto-save options
+- partial support for serbian latin letters
+- save and replay complete game
