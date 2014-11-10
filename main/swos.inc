@@ -131,6 +131,7 @@ extern DrawOuterFrame
 extern CheckControls
 extern InputText
 extern FilterKeys
+extern InitializeTacticsPositions
 extern ChangePitchType
 extern ChangeGameLength
 extern SetDefaultOptions
@@ -207,6 +208,12 @@ extern aPlayer_0
 extern aPlayerCoach_0
 extern aCoach_3
 extern aHigh
+extern aUSER_A
+extern aUSER_B
+extern aUSER_C
+extern aUSER_D
+extern aUSER_E
+extern aUSER_F
 extern aReplay
 extern aComputer
 extern aContinue
@@ -340,6 +347,7 @@ extern team2Scorer1Sprite
 extern ballSprite
 extern allSpritesArray
 extern sortedSprites
+extern tacticsStringTable
 extern color_table_shine
 extern playMatchTeam1Ptr
 extern playMatchTeam2Ptr

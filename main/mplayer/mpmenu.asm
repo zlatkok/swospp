@@ -42,10 +42,10 @@ bits 32
         EndEntry
 
         ; [3] enter game name
-        StartEntry 115, 60, 136, 11
+        StartEntry 115, 60, 136, 11, gameName
             NextEntries -1, -1, 1, 4
             EntryColor 13
-            EntryString 0, _gameName
+            EntryString 0, -1
             OnSelect SetGameName
         EndEntry
 
@@ -105,7 +105,16 @@ InitMultiplayerMenu:
         mov  ax, [currentTick]
         mov  [seed], ax
         call InitPlayerNick_
-        jmp  InitGameName_
+        call InitGameName_
+        push eax
+        mov  [D0], word multiplayerMenu_gameName
+        calla CalcMenuEntryAddress
+        mov  eax, [A0]
+        mov  eax, [eax + MenuEntry.string]
+        pop  edx
+        push byte 20
+        pop  ebx
+        jmpa swos_libc_strncpy_
 .err_exit:
         call strupr_            ; it'll tell us what the error was
         mov dword [A0], eax
@@ -120,12 +129,22 @@ ExitMultiplayerMenu:
         call FinishMultiplayer_
         jmpa SetExitMenuFlag
 
+extern GetPlayerNick_
 SetGameName:
         mov  esi, [A5]
         mov  eax, [esi + MenuEntry.string]
         mov  [A0], eax
         mov  dword [D0], NICKNAME_LEN
-        jmpa InputText
+        calla InputText
+        jnz   .out
+        call GetPlayerNick_
+        mov  esi, [A5]
+        mov  eax, [esi + MenuEntry.string]
+        push byte NICKNAME_LEN
+        pop  ebx
+        jmpa swos_libc_strncpy_
+.out:
+        retn
 
 ShowGameLobbyMenu:
         mov  al, [_playerNick]  ; don't let them in without a nickname
@@ -1144,6 +1163,8 @@ FillOptions:
         retn
 
 
+; ApplyOptions
+;
 ; in:
 ;     edi -> MP_Options struc, initialized
 ;
@@ -1675,6 +1696,7 @@ HookExitPlayMatch:
     extern IncreaseSkipFrames_, DecreaseSkipFrames_
     extern ChooseMPTactics_, ExitMultiplayerOptions_
     extern NetworkTimeoutBeforeDraw_, SkipFramesBeforeDraw_, mpOptSelectTeamBeforeDraw_
+    extern _MP_Tactics
 
     StartMenu mpOptionsMenu, InitializeMPOptionsMenu_, 0, 0, 1
         %assign START_Y         30
@@ -1694,7 +1716,7 @@ HookExitPlayMatch:
             EntryString 0, "NICKNAME"
         EndEntry
 
-        ; [1] enter name
+        ; [1] nickname value
         StartEntry X_COLUMN_2, previousEntryY, WIDTH_COLUMN_2, OPTION_HEIGHT, nickname
             NextEntries -1, -1, -1, 3
             EntryColor 13
@@ -1796,27 +1818,27 @@ HookExitPlayMatch:
 
         StartEntry  TACTICS_X, TACTICS_Y, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries -1, mpOptionsTacticsStart + 3, mpOptionsMenu_selectedTeam, currentEntry + 1
-            EntryString 0, USER_A
+            EntryString 0, _MP_Tactics
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries -1, mpOptionsTacticsStart + 4, currentEntry - 1, currentEntry + 1
-            EntryString 0, USER_B
+            EntryString 0, _MP_Tactics + TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries -1, mpOptionsTacticsStart + 5, currentEntry - 1, 19
-            EntryString 0, USER_C
+            EntryString 0, _MP_Tactics + 2 * TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryEndX + 5, TACTICS_Y, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries mpOptionsTacticsStart, -1, mpOptionsMenu_selectedTeam, currentEntry + 1
-            EntryString 0, USER_D
+            EntryString 0, _MP_Tactics + 3 * TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries mpOptionsTacticsStart + 1, -1, currentEntry - 1, currentEntry + 1
-            EntryString 0, USER_E
+            EntryString 0, _MP_Tactics + 4 * TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries mpOptionsTacticsStart + 2, -1, currentEntry - 1, 19
-            EntryString 0, USER_F
+            EntryString 0, _MP_Tactics + 5 * TACTICS_SIZE
         EndEntry
 
         ; [19] exit

@@ -37,6 +37,7 @@ typedef struct XmlNode {
     XmlNodeType type;
     size_t length;
     XmlValue value;
+    size_t savedLength;
     XmlValue savedValue;
     size_t numAttributes;
     XmlAttribute *attributes;

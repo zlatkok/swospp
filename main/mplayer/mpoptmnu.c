@@ -9,21 +9,55 @@
 #include "mplayer.h"
 #include "options.h"
 
-static Tactics mpTactics[6];
+/* has to be public for the menu */
+Tactics MP_Tactics[6];
+
+/** initMpTactic
+
+    tactic -> tactic to initialize
+    name   -> name of the tactic
+
+    Initialize single user tactic to "factory settings". That means copy it
+    from 4-4-2, and set name to USER_[A-F].
+*/
+static void initMpTactic(Tactics *tactic, const char *name)
+{
+    memcpy(tactic, tact_4_4_2, sizeof(Tactics));
+    strcpy((char *)tactic, name);
+}
+
+/** initMpTactics
+
+    Put user tactics for multiplayer in initial state. We duplicate SWOS initialization
+    but we must must since it's not run until menu initialization.
+*/
+static void initMpTactics()
+{
+    int i;
+    for (i = 0; i < TACTICS_USER_F - TACTICS_USER_A + 1; i++)
+        initMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
+    calla(InitializeTacticsPositions);
+}
 
 void RegisterUserTactics(RegisterOptionsFunc registerOptions)
 {
+    initMpTactics();
     registerOptions("tactics", 7, "User tactics in multiplayer games", 33, "%n"
         "%370b/USER_A" "%370b/USER_B" "%370b/USER_C"
         "%370b/USER_D" "%370b/USER_E" "%370b/USER_F",
-        &mpTactics[0], &mpTactics[1], &mpTactics[2], &mpTactics[3], &mpTactics[4], &mpTactics[5]);
+        &MP_Tactics[0], &MP_Tactics[1], &MP_Tactics[2], &MP_Tactics[3], &MP_Tactics[4], &MP_Tactics[5]);
 }
 
-/**
+Tactics *GetUserMpTactics()
+{
+    return MP_Tactics;
+}
+
+/** validateUserMpTactic
 
     Validate single user tactic, return true if it passes.
 */
-static bool validateUserTactics(const Tactics *tactics)
+static bool validateUserMpTactic(const Tactics *tactics)
 {
     char c = 0;
     int i;
@@ -41,19 +75,18 @@ static bool validateUserTactics(const Tactics *tactics)
     return true;
 }
 
-/**
+/** ValidateUserMpTactics
 
     Validate all user tactics. Call it right after saved user tactics are loaded.
     Return true if tactics are ok, false if there had to be some changes.
 */
-bool ValidateUserTactics()
+bool ValidateUserMpTactics()
 {
     int i;
     bool modified = true;
-    for (i = 0; i < sizeofarray(mpTactics); i++)
-        if (!validateUserTactics(mpTactics + i)) {
-            /* if nul tactics just put 4-4-2 default tactics, just like SWOS does */
-            mpTactics[i] = *tact_4_4_2;
+    for (i = 0; i < sizeofarray(MP_Tactics); i++)
+        if (!validateUserMpTactic(MP_Tactics + i)) {
+            initMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
             modified = false;
         }
     return modified;
@@ -117,6 +150,10 @@ void mpOptSelectTeamBeforeDraw()
     entry->u2.string = currentTeamId == -1 ? aTeamNotChosen : LoadTeam() + 5;
 }
 
+/** ChooseMPTactics
+
+    Invoked when user selects a user tactic to edit in multiplayer options menu.
+*/
 void ChooseMPTactics()
 {
     int tacticsIndex;
@@ -126,16 +163,16 @@ void ChooseMPTactics()
         calla(ShowErrorMenu);
         return;
     }
-    tacticsIndex = (entry->u2.string - (char *)USER_A) / TACTICS_SIZE;
+    tacticsIndex = (entry->u2.string - (char *)MP_Tactics) / TACTIC_SIZE;
     assert(tacticsIndex >= 0 && tacticsIndex < 6);
     chosenTactics = TACTICS_USER_A + tacticsIndex;
-    WriteToLog(("Editing tactics %s", entry->u2.string));
+    WriteToLog(("Editing tactics: %s", entry->u2.string));
     chooseTacticsTeamPtr = LoadTeam();
-    WriteToLog(("Team ptr = %#x", chooseTacticsTeamPtr));
     calla(InitLittlePlayerSprites);
     A6 = (dword)editTacticsMenu;
     calla(ShowMenu);
-    mpTactics[tacticsIndex] = *editTacticsCurrentTactics;
+    MP_Tactics[tacticsIndex] = *editTacticsCurrentTactics;
+    WriteToLog(("Finished editing tactics: %s", editTacticsCurrentTactics));
 }
 
 void ExitMultiplayerOptions()

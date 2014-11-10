@@ -71,7 +71,8 @@ typedef void (*UpdateLobbyFunction)(const LobbyState *state);
 void InitMultiplayer();
 void FinishMultiplayer();
 void InitPlayerNick();
-void InitGameName();
+char *GetPlayerNick();
+char *InitGameName();
 void DisbandGame();
 bool CanGameStart();
 char *SetTeam(char *newTeamName, dword teamIndex);
@@ -115,7 +116,8 @@ int GetSkipFrames();
 void SetSkipFrames(int newSkipFrames);
 
 /* Options bookkeeping */
-bool ValidateUserTactics();
+bool ValidateUserMpTactics();
+Tactics *GetUserMpTactics();
 
 /* return code from the game */
 enum gameStatus {

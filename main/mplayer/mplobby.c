@@ -333,8 +333,13 @@ void InitPlayerNick()
     }
 }
 
+char *GetPlayerNick()
+{
+    return playerNick;
+}
+
 #pragma disable_message(200);
-void InitGameName()
+char *InitGameName()
 {
     if (!gameName[0]) {
         unsigned short year;
@@ -353,7 +358,7 @@ void InitGameName()
             mov  minute, cl
             mov  second, dh
         };
-        /* Watcom is optimizing following call by calling int2str successively,
+        /* Watcom is over-optimizing following call by calling int2str successively,
            which fails because it's returning static buffer:
            strcpy(strcpy(strcpy(strcpy(strcpy(strcpy(gameName, "SWPP-"),
                int2str(year)), "-"), int2str(month)), "-"), int2str(day)); */
@@ -366,6 +371,7 @@ void InitGameName()
         WriteToLog(("Generated game name: %s", gameName));
     }
     inLobby = false;
+    return gameName;
 }
 #pragma enable_message(200);
 
@@ -405,13 +411,13 @@ void DisbandGame()
 #pragma aux aDataTeam_nnn "*";
 #pragma aux aCustoms_edt "*";
 
-/* LoadTeam
+/** LoadTeam
 
-   teamId -  id of team to load
-   dest   -> pointer to buffer that will receive loaded team, if everything ok
+    teamId -  id of team to load
+    dest   -> pointer to buffer that will receive loaded team, if everything ok
 
-   Load specified team into memory, do some basic check if id is valid. Return
-   true if everything went well, false for error.
+    Load specified team into memory, do some basic check if id is valid. Return
+    true if everything went well, false for error.
 */
 static bool LoadTeam(dword teamId, char *dest)
 {
@@ -642,7 +648,7 @@ void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const Lobb
     currentChatLine = -1;
 }
 
-static const MP_Options defaultOptions = {DEFAULT_MP_OPTIONS};
+static const MP_Options defaultOptions = { DEFAULT_MP_OPTIONS };
 
 void InitializeMPOptions(const MP_Options *newOptions)
 {
@@ -663,7 +669,7 @@ MP_Options *getMPOptions()
 /* Update this whenever MP_Options get changed! */
 void registerMPOptions(RegisterOptionsFunc registerOptions)
 {
-    assert(sizeof(MP_Options) == 12);
+    static_assert(sizeof(MP_Options) == 12);
     registerOptions("game", 4, "Default settings for multiplayer match", 38,
         "%n%c" "%2d/version" "%2d/gameLength" "%2d/pitchType" "%1d/numSubs" "%1d/maxSubs"
         "%1d/skipFrames" "%1d/networkTimeout", getMPOptions);
@@ -759,12 +765,12 @@ void AddChatLine(const char *line)
     }
 }
 
-/* CanGameStart
+/** CanGameStart
 
-   See if conditions are fullfiled for starting a game. Those can be summarized as:
-   - having exactly 2 players
-   - both players must be ready
-   - both players must have their teams selected
+    See if conditions are fullfiled for starting a game. Those can be summarized as:
+    - having exactly 2 players
+    - both players must be ready
+    - both players must have their teams selected
 */
 bool CanGameStart()
 {
@@ -1067,7 +1073,8 @@ static bool CheckIncomingClientLobbyTraffic()
                     ConnectTo(&connectedPlayers[i].address);
             /* players send their teams and tactics */
             if (isPlayer(ourPlayerIndex)) {
-                char *packet = createTeamAndTacticsPacket(&length, connectedPlayers[ourPlayerIndex].team, USER_A);
+                char *packet = createTeamAndTacticsPacket(&length,
+                    connectedPlayers[ourPlayerIndex].team, GetUserMpTactics());
                 for (i = 0; i < numConnectedPlayers; i++)
                     if (i != ourPlayerIndex) {
                         //mozda neki resend fleg ako ne uspe?
@@ -1119,11 +1126,11 @@ static void MenuTransitionAfterTheGame()
         updateLobbyFunction(putOurPlayerOnTop(initLobbyState(lobbyState)));
 }
 
-/* SyncOnIdle
+/** SyncOnIdle
 
-   Handle state transition during synchronization - when teams and tactics are
-   exchanged among all clients. Server supervises the process and issues final
-   result when everything is finished.
+    Handle state transition during synchronization - when teams and tactics are
+    exchanged among all clients. Server supervises the process and issues final
+    result when everything is finished.
 */
 static bool SyncOnIdle()
 {
@@ -1163,7 +1170,7 @@ static bool SyncOnIdle()
                     connectedPlayers[i].flags &= ~PL_IS_CONTROLLING;
             assert(controllingPlayer >= 0);
             /* make controlling player tactics current */
-            memcpy(USER_A, connectedPlayers[controllingPlayer].userTactics, TACTICS_SIZE * 6);
+            memcpy(USER_A, connectedPlayers[controllingPlayer].userTactics, TACTIC_SIZE * 6);
             if (weAreTheServer) {
                 if ((i = FindPlayer(&node)) >= numConnectedPlayers)
                     WriteToLog(("Received PT_SYNC_OK from non-connected player."));
@@ -1643,13 +1650,13 @@ static void EnterSyncingState(bool (*modalSyncFunc)(int), void (*showTeamMenuFun
     syncDone = false;
     if (isPlayer(ourPlayerIndex)) {
         if (!connectedPlayers[ourPlayerIndex].userTactics)
-            connectedPlayers[ourPlayerIndex].userTactics = qAlloc(TACTICS_SIZE * 6);
+            connectedPlayers[ourPlayerIndex].userTactics = qAlloc(TACTIC_SIZE * 6);
         assert(connectedPlayers[ourPlayerIndex].userTactics);
-        memcpy(connectedPlayers[ourPlayerIndex].userTactics, USER_A, TACTICS_SIZE * 6);
+        memcpy(connectedPlayers[ourPlayerIndex].userTactics, GetUserMpTactics(), sizeof(Tactics) * 6);
     }
     if (weAreTheServer && isPlayer(0)) {
         int i, length;
-        char *packet = createTeamAndTacticsPacket(&length, connectedPlayers[0].team, USER_A);
+        char *packet = createTeamAndTacticsPacket(&length, connectedPlayers[0].team, GetUserMpTactics());
         for (i = 1; i < numConnectedPlayers; i++) {
             //mozda neki resend fleg ako ne uspe?
             SendImportantPacket(&connectedPlayers[i].address, packet, length);

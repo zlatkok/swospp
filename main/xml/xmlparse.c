@@ -982,7 +982,7 @@ bool SaveXmlFile(XmlNode *root, const char *fileName, bool checkIfNeeded)
         XmlTreeSnapshot(root);
 
     if (result)
-        WriteToLog(("Xml file %s written successfully.", fileName));
+        WriteToLog(("%s written successfully.", fileName));
     CloseBFile(file);
     return result;
 }

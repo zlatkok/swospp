@@ -364,6 +364,14 @@ playMatchTeam1Ptr, TeamFile *
 playMatchTeam2Ptr, TeamFile *
 tact_4_4_2, array Tactics
 editTacticsCurrentTactics, array Tactics
+tacticsStringTable, array char *
+InitializeTacticsPositions, function
+aUSER_A, array char
+aUSER_B, array char
+aUSER_C, array char
+aUSER_D, array char
+aUSER_E, array char
+aUSER_F, array char
 _STACKTOP
 _STACKLOW
 

@@ -110,6 +110,7 @@ void __cdecl RegisterOptions(const char *section, int sectionLen, const char *de
 
     assert(strlen(section) == sectionLen);
     assert(strlen(desc) == descLen);
+    assert(sectionNode);
 
     va_start(va, format);
     while (*p) {
@@ -213,6 +214,6 @@ void InitializeOptions()
         XmlTreeSnapshot(rootNode);  /* options loaded from the file */
     }
     XmlDeallocateTree(fileRoot);
-    if (!ValidateUserTactics())
+    if (!ValidateUserMpTactics())
         XmlTreeSnapshot(rootNode);  /* additional fixes to default or file options */
 }

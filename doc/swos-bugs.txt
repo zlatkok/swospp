@@ -1,3 +1,5 @@
+- InputText doesn't limit text input correctly if buffer is initialized with
+  string longer than limit
 - ono sa zvukom kada se utakmica zavrsi nereseno
 - kada golman izvodi loptu, i sam sebi zabije gol, ponekad nije dobro podesena
   globalna ko je zadnji dirao loptu, pa se ispise kao strelac poslednji

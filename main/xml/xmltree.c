@@ -78,6 +78,7 @@ XmlNode *NewXmlNode(const char *name, int nameLen, XmlNodeType type, int length,
     x->type = type;
     x->length = length;
     x->savedValue.ptr = xmlAlloc(length);
+    x->savedLength = length;
     x->value.ptr = alloc ? xmlAlloc(length) : nullptr;
     assert(x->savedValue.ptr && (!alloc || x->value.ptr));
     x->children = x->nextChild = nullptr;
@@ -125,6 +126,7 @@ static void snapshotNode(XmlNode *node)
     case XML_INT:
     case XML_STRING:
     case XML_ARRAY:
+        node->savedLength = node->length;
         memcpy(node->savedValue.ptr, node->value.ptr, node->length);
         break;
     case XML_FUNC:
@@ -156,7 +158,7 @@ static bool nodeUnmodified(const XmlNode *node)
     case XML_STRING:
     case XML_ARRAY:
         assert(node->value.ptr && node->savedValue.ptr);
-        return !memcmp(node->value.ptr, node->savedValue.ptr, node->length);
+        return node->length == node->savedLength && !memcmp(node->value.ptr, node->savedValue.ptr, node->length);
     case XML_FUNC:
         RefreshFuncData(node);
     case XML_EMPTY:

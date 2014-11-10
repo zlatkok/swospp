@@ -243,6 +243,10 @@ global FilterKeys
 times 0x10fef-($-$$) resb 1
 FilterKeys:
 
+global InitializeTacticsPositions
+times 0x113dd-($-$$) resb 1
+InitializeTacticsPositions:
+
 global ChangePitchType
 times 0x1181f-($-$$) resb 1
 ChangePitchType:
@@ -551,6 +555,30 @@ aCoach_3:
 global aHigh
 times 0xb2895-($-$$) resb 1
 aHigh:
+
+global aUSER_A
+times 0xb3098-($-$$) resb 1
+aUSER_A:
+
+global aUSER_B
+times 0xb309f-($-$$) resb 1
+aUSER_B:
+
+global aUSER_C
+times 0xb30a6-($-$$) resb 1
+aUSER_C:
+
+global aUSER_D
+times 0xb30ad-($-$$) resb 1
+aUSER_D:
+
+global aUSER_E
+times 0xb30b4-($-$$) resb 1
+aUSER_E:
+
+global aUSER_F
+times 0xb30bb-($-$$) resb 1
+aUSER_F:
 
 global aReplay
 times 0xb45fe-($-$$) resb 1
@@ -1083,6 +1111,10 @@ allSpritesArray:
 global sortedSprites
 times 0x103130-($-$$) resb 1
 sortedSprites:
+
+global tacticsStringTable
+times 0x103a62-($-$$) resb 1
+tacticsStringTable:
 
 global color_table_shine
 times 0x103c58-($-$$) resb 1

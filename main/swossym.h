@@ -216,6 +216,14 @@ extern TeamFile *playMatchTeam1Ptr;
 extern TeamFile *playMatchTeam2Ptr;
 extern Tactics tact_4_4_2[];
 extern Tactics editTacticsCurrentTactics[];
+extern char *tacticsStringTable[];
+extern void (*InitializeTacticsPositions[])();
+extern char aUSER_A[];
+extern char aUSER_B[];
+extern char aUSER_C[];
+extern char aUSER_D[];
+extern char aUSER_E[];
+extern char aUSER_F[];
 /*
     Watcom C library
 */
@@ -432,6 +440,14 @@ extern void (*swos_libc_ctime_[])();
 #pragma aux playMatchTeam2Ptr "*";
 #pragma aux tact_4_4_2 "*";
 #pragma aux editTacticsCurrentTactics "*";
+#pragma aux tacticsStringTable "*";
+#pragma aux InitializeTacticsPositions "*";
+#pragma aux aUSER_A "*";
+#pragma aux aUSER_B "*";
+#pragma aux aUSER_C "*";
+#pragma aux aUSER_D "*";
+#pragma aux aUSER_E "*";
+#pragma aux aUSER_F "*";
 #pragma aux swos_libc_stackavail_ "*";
 #pragma aux swos_libc_strncpy_ "*";
 #pragma aux swos_libc_strlen_ "*";

@@ -18,7 +18,7 @@ enum debugMessageClasses {
 #define GAME_WIDTH 384
 
 #define TEAM_SIZE       684
-#define TACTICS_SIZE    370
+#define TACTIC_SIZE     370
 
 #define KEY_BUFFER_SIZE 10
 

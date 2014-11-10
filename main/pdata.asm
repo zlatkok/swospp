@@ -679,6 +679,11 @@ PatchStart:
         calla FixJoypadNumLoopsZero
     EndRecord
 
+    ; fix InputText to limit text properly when we start with buffer already filled more than limit
+    StartRecord InputText + 0x25d
+        db 0x83
+    EndRecord
+
 
 ; --------------------------------------
 ; do not edit lines below

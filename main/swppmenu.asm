@@ -65,7 +65,6 @@ LoadSWPPMenu:
 ; swospp menu
 
 SWOSPPAbout:
-int 1
         mov  dword [A6], aboutMenu
 show_menu:
         jmpa ShowMenu
@@ -97,7 +96,7 @@ section .data
 
 global aboutText
 aboutText:
-    db 2
+    db 3
     xorstr "SWOS++ V"
     xorstr verStr, 8
 %ifdef DEBUG
@@ -105,6 +104,8 @@ aboutText:
 %endif
     db 0
     xorstr "PROGRAMMED BY ZLATKO KARAKAŠ"
+    db 0
+    xorstr "SPECIAL THANKS TO PLAYAVELI"
     db 0
 
 
@@ -186,7 +187,7 @@ aboutText:
         EndEntry
 
         ; about string
-        StartEntry 55, 125, 200, 40
+        StartEntry 55, 143, 200, 40
             MultiLineText 0, aboutText
             AfterDraw   AnimateBalls
         EndEntry

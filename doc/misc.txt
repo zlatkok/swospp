@@ -5,11 +5,11 @@ crucial for understanding and modifying the source code.
 Mixing assembly code with Watcom
 --------------------------------
 Watcom by default uses Watcom calling convention, and that is what we
-exclusively use through the entire program. Parameters are passed in registers,
-in the following order: eax, edx, ebx, ecx. If there are more than 4 parameters
-they are passed via stack, just like stdcall. Return value goes through eax.
-By default function names will have underscore appended to it (variables on the
-contrast will have it prepended).
+exclusively use throughout the entire program. Parameters are passed in
+registers, in the following order: eax, edx, ebx, ecx. If there are more than 4
+parameters they are passed via stack, just like stdcall. Return value goes
+through eax. By default function names will have underscore appended to it
+(variables on the contrast will have it prepended).
 As for the asm functions that get called from Watcom, they have to abide to the
 following:
 - all registers must be preserved unless they are used to transfer parameters
@@ -20,10 +20,10 @@ following:
 
 Intel x86 Stack
 ---------------
-Stack raste na dole, pokazivac se postavlja na najvisu adresu, i ide ka
-najnizoj kako se puni.
-PUSH - smanji stack pointer, stavi operand na vrh steka
-POP - uzmi operand sa vrha steka, povecaj stack pointer
+Stack grows downards, pointer is set to highest address, and approaches lowest
+as the stack gets more full.
+PUSH - decrease stack pointer, put operand on top of the stack
+POP - get operand from stack top, increase stack pointer
 
 
 Motorola 68k Registers
@@ -35,8 +35,9 @@ registri, pozivanje, konvencije...
 
 SWOS Stack
 ----------
-We were very limited with stack, less than 4k. So start-up code will replace
-SWOS stack with our own - static buffer with size of 64kb.
+We were very limited with stack, I think they left default 4k setting. So
+start-up code will replace SWOS stack with our own - static buffer currently
+sized 64kb.
 
 
 DPMI host

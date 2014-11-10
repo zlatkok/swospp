@@ -205,7 +205,7 @@ FatalError:
 ; DetectDOSBox
 ;
 ; Detects if DOSBox is running. No way to do it through Int 21/AX=3306h so we
-; need a special method - search 128 bytes from F000:E000 for string "DOSBox"
+; need a special method - search 128 bytes from F000:E000 for string "DOSBox".
 ;
 ; out:
 ;      zero flag clear = DOSBox successfully detected, set otherwise
@@ -427,7 +427,7 @@ Write16BytesToVideoMemory:
         retn
 
 
-; DexorAbout - no parameters
+; DexorAbout
 ;
 ; Dexors about string back to ascii.
 ;
