@@ -1,10 +1,8 @@
 INTERNAL LIST OF STUFF DONE:
 2.0:
-- added importing dll functions from command line to alink, fixed incorrect
-  terminating of import thunks array introduced in conversion while I was at it
 - fixed InputText to correctly handle case when input buffer already contains
   string longer than max length
-- 68k registers implemented as unions in C, to avoid casts (but disabled, seems
+- 64k registers implemented as unions in C, to avoid casts (but disabled, seems
   even more kludgy that way, and might introduce subtle errors)
 - comments starting with ### in filter.txt pass over to swossym.h
 - 68k register now have their proper names

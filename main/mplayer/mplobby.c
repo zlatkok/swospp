@@ -47,7 +47,7 @@ static void (*onGameEndFunction)();     /* called when game ends naturally */
 /* local info: addresses, names, ids and number of games collected so far */
 typedef struct WaitingGame {
     IPX_Address address;
-    char name[GAME_NAME_LENGTH + 6 + 1];
+    char name[GAME_NAME_LENGTH + 1];
     byte id;
 } WaitingGame;
 
@@ -830,6 +830,8 @@ static void CheckIncomingServerLobbyTraffic()
     switch (getRequestType(packet, length)) {
     case PT_GET_GAME_INFO:  /* someone's querying about open games */
         WriteToLog(("Received game info request"));
+        calla(Rand);
+        gameId = D0;
         response = createGameInfoPacket(&respLength, numConnectedPlayers, gameName, gameId);
         WriteToLog(("Responding to enumerate games request."));
         SendSimplePacket(&node, response, respLength);
@@ -1489,7 +1491,7 @@ static void UpdateRefreshing()
 static void CheckForWaitingGameReply()
 {
     word type;
-    char *packet, respondingGameName[GAME_NAME_LENGTH + 1], *p;
+    char *packet, respondingGameName[GAME_NAME_LENGTH + 10], *p;
     int length;
     IPX_Address node;
     int i;
@@ -1502,11 +1504,8 @@ static void CheckForWaitingGameReply()
             /* danger Will Robinson, stack reserves are burning out */
             WriteToLog(("Stack available: %d", stackavail()));
             if (unpackGameInfoPacket(packet, length, &networkVersion, &networkSubversion,
-                &numPlayers, &maxPlayers, respondingGameName, GAME_NAME_LENGTH, &gameId)) {
+                &numPlayers, &maxPlayers, respondingGameName, GAME_NAME_LENGTH + 1, &gameId)) {
                 WriteToLog(("Game response received: %s, id = %d", respondingGameName, gameId));
-                assert(numPlayers > 0 && numPlayers < 10 && maxPlayers > 0 && maxPlayers < 10);
-                numPlayers = max(numPlayers, 9);
-                maxPlayers = max(maxPlayers, 9);
                 if (networkVersion > NETWORK_VERSION) {
                     WriteToLog(("Ignoring game with too new server (%d.%d)", networkVersion, networkSubversion));
                     qFree(packet);
@@ -1514,17 +1513,16 @@ static void CheckForWaitingGameReply()
                 }
                 /* check if we already have this game */
                 for (i = 0; i < numWaitingGames; i++)
-                    if (addressMatch(&waitingGames[i].address, &node))
+                    if (!memcmp(&waitingGames[i].address, &node, sizeof(IPX_Address)))
                         break;
                 if (i < MAX_GAMES_WAITING) {
                     /* add a new game/update old */
                     waitingGames[i].id = gameId;
-                    /* this is why we need additional space in waiting game name */
                     p = strcpy(strcpy(strcpy(strcpy(waitingGames[i].name, respondingGameName),
                         " ("), int2str(numPlayers)), "/");
                     strcpy(strcpy(p, int2str(maxPlayers)), ")");
                     if (i >= numWaitingGames) {
-                        copyAddress(&waitingGames[i].address, &node);
+                        memcpy(&waitingGames[i].address, &node, sizeof(node));
                         numWaitingGames++;
                     }
                 }

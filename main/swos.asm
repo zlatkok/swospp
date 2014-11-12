@@ -996,13 +996,13 @@ global teamFileBuffer
 times 0xeed68-($-$$) resb 1
 teamFileBuffer:
 
-global player1ClearFlag
+global player1_clear_flag
 times 0xfe792-($-$$) resb 1
-player1ClearFlag:
+player1_clear_flag:
 
-global player2ClearFlag
+global player2_clear_flag
 times 0xfe794-($-$$) resb 1
-player2ClearFlag:
+player2_clear_flag:
 
 global saveFileName
 times 0xfe81c-($-$$) resb 1

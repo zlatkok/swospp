@@ -480,7 +480,7 @@ void calln(void *p);
 #pragma aux calln = \
     "call eax"  \
     parm [eax]  \
-    modify exact [eax];
+    modify [];
 
 /** It's so annoying, it's not accepting this function as no return.
     So better comment it out until that is sorted, or we have a time bomb. */

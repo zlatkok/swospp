@@ -224,8 +224,8 @@ USER_F, array Tactics
 
 InitAndPlayGame
 Joy1SetStatus, function
-player1ClearFlag
-player2ClearFlag
+player1_clear_flag
+player2_clear_flag
 controlsHeldTimer
 longFireFlag, word
 playMatchMenu
