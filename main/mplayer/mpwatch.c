@@ -875,13 +875,13 @@ static void applyWatcherPacket(const WatcherPacket *packet)
         /* remember to reapply sign of x and y coordinates */
         D1 = signExtend10Bits(packet->sprites[i] & 0x3ff);
         D2 = signExtend10Bits((packet->sprites[i] >> 10) & 0x3ff);
-        D3 = (packet->sprites[i] >> 20) & 0x7ff;
+        D0 = (packet->sprites[i] >> 20) & 0x7ff;
         /* handle player numbers greater than 16, they will start from SPR_MAX */
         if (D0 >= SPR_MAX && D0 < SPR_MAX + 256) {
             PrintSmallNumber(D0 - SPR_MAX, D1, D2, true);
             continue;
         }
-        if (D1 >= SPR_MAX)   /* just in case... */
+        if (D0 >= SPR_MAX)   /* just in case... */
             continue;
         /* incy wincy hack so we don't need to send separate bit - draw bench sprites with deltaColor 16 */
         if (isBenchSprite(D0))

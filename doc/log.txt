@@ -1,3 +1,22 @@
+11.11.2014.
+- was well on my way implementing SWOS calls through dll import table, but
+  after giving it some more thought decided against it; if implemented that
+  way, each API would need to have 4 bytes set aside to hold function address,
+  and indirect call would take 6 bytes, so 10 bytes in total per call; current
+  calla implementation only requires 7; we don't really need separate table for
+  those function addresses, since they're actually known before hand - it's
+  enough to reference the symbol; entire problem comes from a fact that it's
+  hard to instruct compiler to call functions in a specific way - normally
+  they're just relative calls, or go through a pointer; we actually need
+  absolute call to be generated (like calla does)
+- thought I could change calla macro in asm to generate absolute call from
+  memory location, but Intel never made instruction to do that.. we can only
+  call indirect or far absolute.. no near absolute
+- and fixed a little buffer overflow when we receive game name from network...
+  oopsie!
+10.11.2014.
+- caught a mistake renaming 68k registers in two places.. yikes! so double
+  checked everything again, it looks good now
 07.11.2014.
 - finally switched to real 68k register names... finally!
 06.11.2014.

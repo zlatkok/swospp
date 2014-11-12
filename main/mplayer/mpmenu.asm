@@ -544,6 +544,7 @@ JoinGameModalDialogProc:
 
 .reinitialize:
         test edx, edx           ; set which string we're showing
+        mov  byte [disabledInputCycles], 15
         mov  dword [errorModalDialogInitData + 10], failedToConnectStrTable
         jz   .set_init_data
 
@@ -580,7 +581,6 @@ JoinGameModalDialogProc:
         mov  al, [disabledInputCycles]
         test al, al
         jnz  .out
-        mov  byte [disabledInputCycles], 5
         inc  eax
         mov  byte [lastModalState], 0   ; reset this so we don't remain in error state forever ;)
 .out:
@@ -1547,8 +1547,8 @@ ShowPlayMatchMenu:
         pushad
         mov  byte [lastFireState], 0
         mov  byte [disabledInputCycles], -1 ; signal to ask keys from network
-        mov  word [player2_clear_flag], -1  ; block player2 input
-        mov  word [player1_clear_flag], 0   ; just in case
+        mov  word [player2ClearFlag], -1    ; block player2 input
+        mov  word [player1ClearFlag], 0     ; just in case
         mov  esi, playMatchMenu
         mov  dword [esi + Menu.afterDraw], FixPlayMatchMenuAfterDraw
         mov  dword [esi + Menu.onDraw], FixPlayMatchMenu
@@ -1601,7 +1601,7 @@ UnpatchAfterSettingTeams:
         mov  dword [esi + Menu.afterDraw], PlayMatchAfterDraw
         mov  dword [esi + Menu.onDraw], 0
         mov  byte [disabledInputCycles], 0
-        mov  word [player2_clear_flag], 0
+        mov  word [player2ClearFlag], 0
         mov  word [key_count], 0
         retn
 
@@ -1618,7 +1618,7 @@ disabledPlayMatchMenuEntries:
 FixPlayMatchMenuAfterDraw:
         calla PlayMatchAfterDraw            ; let it do it's thing first
 FixPlayMatchMenu:
-        mov  dword [player1_clear_flag], 0xffff0000 ; keep player 1 clear player 2 set
+        mov  dword [player1ClearFlag], 0xffff0000   ; keep player 1 clear player 2 set
         mov  esi, disabledPlayMatchMenuEntries
 
 .next:

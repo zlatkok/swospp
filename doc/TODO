@@ -212,7 +212,6 @@ TODO:
 - napisati test programcic za IPX stek
 - zaista i proveri da li DOSBox odbacuje max length paket
 - ubaciti testiranje pinga mozda (pa prikazivati sa onim SWOS zvezdicama)
-- da li bi mogli swos pozivi da se implementiraju kao importi? :)
 - stavi opis u readme sta je to options.dat, sta je sve u njemu i sta ce se
   desiti ako se izgubi
 - implementiraj '_' (donju crtu) u font (samo spustiti i eventualno produziti

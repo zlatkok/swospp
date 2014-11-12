@@ -152,7 +152,7 @@ void RegisterUserTactics(RegisterOptionsFunc registerOptions)
         &mpTactics[0], &mpTactics[1], &mpTactics[2], &mpTactics[3], &mpTactics[4], &mpTactics[5]);
 }
 
-bool ValidateUserTactics()
+bool ValidateUserMpTactics()
 {
     return true;
 }

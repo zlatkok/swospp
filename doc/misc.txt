@@ -9,12 +9,12 @@ exclusively use throughout the entire program. Parameters are passed in
 registers, in the following order: eax, edx, ebx, ecx. If there are more than 4
 parameters they are passed via stack, just like stdcall. Return value goes
 through eax. By default function names will have underscore appended to it
-(variables on the contrast will have it prepended).
+(in contrast to variables which will have it prepended).
 As for the asm functions that get called from Watcom, they have to abide to the
 following:
 - all registers must be preserved unless they are used to transfer parameters
   (eax is exception - it is always considered used)
-- direction flag has to be clear
+- direction flag has to be clear (it is assumed to be clear on entry)
 - if there were any parameters on the stack, called function has to clean it up
 
 
@@ -35,7 +35,7 @@ registri, pozivanje, konvencije...
 
 SWOS Stack
 ----------
-We were very limited with stack, I think they left default 4k setting. So
+We were very limited with stack, I think they left default 4kb setting. So
 start-up code will replace SWOS stack with our own - static buffer currently
 sized 64kb.
 

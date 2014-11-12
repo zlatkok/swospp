@@ -81,6 +81,7 @@ static dword GetClientNextSendingGroupId(const IPX_Address *address);
 bool addressMatch(const IPX_Address *a, const IPX_Address *b)
 {
     const dword *aa = (dword *)a, *bb = (dword *)b;
+    assert(a && b);
     return aa[0] == bb[0] && aa[1] == bb[1] && aa[2] == bb[2];
 }
 
@@ -88,6 +89,7 @@ void copyAddress(IPX_Address *dest, const IPX_Address *source)
 {
     dword *dst = (dword *)dest;
     const dword *src = (const dword *)source;
+    assert(dest && source);
     dst[0] = src[0];
     dst[1] = src[1];
     dst[2] = src[2];

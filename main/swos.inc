@@ -318,8 +318,8 @@ extern menuFade
 extern aDataTeam_nnn
 extern aCustoms_edt
 extern teamFileBuffer
-extern player1_clear_flag
-extern player2_clear_flag
+extern player1ClearFlag
+extern player2ClearFlag
 extern saveFileName
 extern hil_filename
 extern exitMenu

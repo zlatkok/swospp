@@ -649,7 +649,7 @@ PatchStart:
 
     ; fix upper half of edx getting dirty in ClearBackground
     StartRecord ClearBackground + 0x3e
-        mov  edx, 384
+        mov  edx, 384   ; overwrites next instruction size prefix and all fits perfectly
     EndRecord
 
     ; record all open menus to the stack, so we can return to arbitrary one
@@ -680,9 +680,7 @@ PatchStart:
     EndRecord
 
     ; fix InputText to limit text properly when we start with buffer already filled more than limit
-    StartRecord InputText + 0x25d
-        db 0x83
-    EndRecord
+    PatchByte InputText + 0x25d, 0x83
 
 
 ; --------------------------------------

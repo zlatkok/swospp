@@ -84,11 +84,12 @@ bool ValidateUserMpTactics()
 {
     int i;
     bool modified = true;
-    for (i = 0; i < sizeofarray(MP_Tactics); i++)
+    for (i = 0; i < sizeofarray(MP_Tactics); i++) {
         if (!validateUserMpTactic(MP_Tactics + i)) {
             initMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
             modified = false;
         }
+    }
     return modified;
 }
 
