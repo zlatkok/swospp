@@ -8,7 +8,7 @@
 [list +]
 
 extern GetPreviousMenu, ReturnToMenu, SetMenuToReturnToAfterTheGame
-extern GetSkipFrames_, SetSkipFrames_
+extern GetSkipFrames, SetSkipFrames
 
 section .data
 bits 32
@@ -17,7 +17,7 @@ bits 32
     ; multiplayer menu
     ;
 
-    extern _playerNick, _gameName, SetTeam_
+    extern playerNick, gameName, SetTeam
     global multiplayerMenu
     StartMenu multiplayerMenu, InitMultiplayerMenu, 0, 0, 4
 
@@ -31,7 +31,7 @@ bits 32
         StartEntry 115, 45, 136, 11
             NextEntries -1, -1, -1, 3
             EntryColor 13
-            EntryString 0, _playerNick
+            EntryString 0, playerNick
             OnSelect SetName
         EndEntry
 
@@ -93,19 +93,19 @@ section .text
 
 ; functions from Multiplayer menu
 
-extern InitializeNetwork_, ShutDownNetwork_, InitPlayerNick_, InitGameName_,
-extern InitMultiplayer_, FinishMultiplayer_
+extern InitializeNetwork, ShutDownNetwork, InitPlayerNick, InitGameName,
+extern InitMultiplayer, FinishMultiplayer
 
 InitMultiplayerMenu:
-        call InitializeNetwork_ ; forbid entering this menu if network isn't installed
+        call InitializeNetwork  ; forbid entering this menu if network isn't installed
         test eax, eax
         jnz  .err_exit
-        call InitMultiplayer_
+        call InitMultiplayer
         call PatchMenu
         mov  ax, [currentTick]
         mov  [seed], ax
-        call InitPlayerNick_
-        call InitGameName_
+        call InitPlayerNick
+        call InitGameName
         push eax
         mov  [D0], word multiplayerMenu_gameName
         calla CalcMenuEntryAddress
@@ -116,7 +116,7 @@ InitMultiplayerMenu:
         pop  ebx
         jmpa swos_libc_strncpy_
 .err_exit:
-        call strupr_            ; it'll tell us what the error was
+        call strupr             ; it'll tell us what the error was
         mov dword [A0], eax
 ShowErrorMenuAndExit:
         calla ShowErrorMenu
@@ -125,11 +125,11 @@ ShowErrorMenuAndExit:
 
 ExitMultiplayerMenu:
         call UnpatchMenu
-        call ShutDownNetwork_   ; free memory from network buffers
-        call FinishMultiplayer_
+        call ShutDownNetwork    ; free memory from network buffers
+        call FinishMultiplayer
         jmpa SetExitMenuFlag
 
-extern GetPlayerNick_
+extern GetPlayerNick
 SetGameName:
         mov  esi, [A5]
         mov  eax, [esi + MenuEntry.string]
@@ -137,7 +137,7 @@ SetGameName:
         mov  dword [D0], NICKNAME_LEN
         calla InputText
         jnz   .out
-        call GetPlayerNick_
+        call GetPlayerNick
         mov  esi, [A5]
         mov  eax, [esi + MenuEntry.string]
         push byte NICKNAME_LEN
@@ -147,10 +147,10 @@ SetGameName:
         retn
 
 ShowGameLobbyMenu:
-        mov  al, [_playerNick]  ; don't let them in without a nickname
+        mov  al, [playerNick]   ; don't let them in without a nickname
         test al, al
         jz   .nick_error
-        mov  al, [_gameName]    ; don't let then in without game name either
+        mov  al, [gameName]     ; don't let then in without game name either
         test al, al
         jz   .game_name_error
         mov  byte [weAreTheServer], 1
@@ -165,7 +165,7 @@ ShowGameLobbyMenu:
         jmpa ShowErrorMenu
 
 
-; ReturnToMPMenuAfterGame [called from Watcom]
+; ReturnToMPMenuAfterGame [called from C++]
 ;
 ReturnToMPMenuAfterGame:
         pushad
@@ -193,7 +193,7 @@ UnpatchSWOSProc:
         jmpa CallAfterDraw
 
 
-; ReturnToGameLobbyAfterGame [called from Watcom]
+; ReturnToGameLobbyAfterGame [called from C++]
 ;
 ReturnToGameLobbyAfterGame:
         pushad
@@ -253,7 +253,7 @@ section .data
             EntryColor 13
             EntryString 0, 0
             InvisibleEntry
-            OnSelect JoinGame
+            OnSelect JoinRemoteGame
         EndEntry
 
         MarkNextEntryOrdinal mpGamesStartIndex
@@ -301,21 +301,21 @@ ShowJoinGameMenu:
         mov dword [A6], joinGameMenu
         jmpa ShowMenu
 
-extern EnterWaitingToJoinState_
+extern EnterWaitingToJoinState
 InitJoinGameMenu:
         mov  eax, RefreshWaitingGames
-        call EnterWaitingToJoinState_
+        call EnterWaitingToJoinState
         retn
 
-extern LeaveWaitingToJoinState_
+extern LeaveWaitingToJoinState
 ExitJoinGameMenu:
-        call LeaveWaitingToJoinState_
+        call LeaveWaitingToJoinState
         jmpa SetExitMenuFlag
 
 ; Refresh button is pressed.
-extern RefreshList_
+extern RefreshList
 RequestListRefresh:
-        call RefreshList_
+        call RefreshList
         mov  word [prevRefreshDisabled], 0
         retn
 
@@ -376,7 +376,7 @@ ToggleRefreshing:
         retn
 
 
-; EnterGameLobby [called from Watcom]
+; EnterGameLobby [called from C++]
 ;
 ; We have been granted the priviledge by the gaming gods.
 ;
@@ -389,7 +389,7 @@ EnterGameLobby:
         retn
 
 
-; RefreshWaitingGames [called from Watcom]
+; RefreshWaitingGames [called from C++]
 ;
 ; in:
 ;      eax -> pointer to state info structure, see below for details
@@ -442,26 +442,26 @@ RefreshWaitingGames:
         retn
 
 
-extern JoinGame_, InitModalDialog
-JoinGame:
+extern JoinGame, InitModalDialog
+JoinRemoteGame:
         mov  eax, modalDialogInitData
         mov  dword [modalDialogStrTable], connectingPleaseWaitStrTable
         call InitModalDialog
         xor  eax, eax
         mov  edx, JoinGameModalDialogProc
-        mov  ebx, EnterGameLobby
-        mov  ecx, DisconnectedFromServer
-        push ReturnToGameLobbyAfterGame
+        mov  ecx, EnterGameLobby
+        push SyncModalDialogProc
         push ReturnToMPMenuAfterGame
         push ShowPlayMatchMenu
-        push SyncModalDialogProc
-        call JoinGame_
+        push ReturnToGameLobbyAfterGame
+        push DisconnectedFromServer
+        call JoinGame
         mov  word [D0], joinGameMenu_Exit
         calla SetCurrentEntry
         retn
 
 
-; DisconnectedFromServer [called from Watcom]
+; DisconnectedFromServer [called from C++]
 ;
 ; Called when we get disconnected from the server. Show error message and go
 ; back to trying to find some games.
@@ -506,7 +506,7 @@ MiniMenuLoop:
         retn
 
 
-; JoinGameModalDialogProc [called from Watcom]
+; JoinGameModalDialogProc [called from C++]
 ;
 ; in:
 ;       al - status code:
@@ -544,6 +544,7 @@ JoinGameModalDialogProc:
 
 .reinitialize:
         test edx, edx           ; set which string we're showing
+        mov  byte [disabledInputCycles], 15
         mov  dword [errorModalDialogInitData + 10], failedToConnectStrTable
         jz   .set_init_data
 
@@ -555,7 +556,7 @@ JoinGameModalDialogProc:
         calla swos_libc_strncpy_, ecx
         mov  byte [eax], 0
         mov  eax, edi
-        call strupr_
+        call strupr
         mov  eax, esi
 
 .set_init_data:
@@ -580,7 +581,6 @@ JoinGameModalDialogProc:
         mov  al, [disabledInputCycles]
         test al, al
         jnz  .out
-        mov  byte [disabledInputCycles], 5
         inc  eax
         mov  byte [lastModalState], 0   ; reset this so we don't remain in error state forever ;)
 .out:
@@ -888,7 +888,7 @@ entriesToDisable:
 
 section .text
 
-extern CreateNewGame_, CanGameStart_, strupr_
+extern CreateNewGame, CanGameStart, strupr
 InitGameLobbyMenu:
         mov  byte [syncDialogInitialized], 0
         push byte gameLobbyMenu_chatInput
@@ -904,9 +904,9 @@ InitGameLobbyMenu:
         mov  edx, UpdateGameLobby
         movzx ecx, byte [weAreTheServer]
         push ecx
-        mov  ebx, ReturnToMPMenuAfterGame
-        mov  ecx, ReturnToGameLobbyAfterGame
-        call CreateNewGame_
+        push ReturnToGameLobbyAfterGame
+        mov  ecx, ReturnToMPMenuAfterGame
+        call CreateNewGame
         mov  byte [isReady], 0          ; not ready by default
         mov  word [playerOrWatcher], 0  ; player (not watcher) by default
         call SetNumSubstitutesText
@@ -958,7 +958,7 @@ DisableServerOnlyEntries:
         jmp  .disable_next_entry
 
 
-; UpdateGameLobby [called from Watcom]
+; UpdateGameLobby [called from C++]
 ;
 ; in:
 ;     eax -> LobbyState structure (described in mplayer.h)
@@ -966,7 +966,7 @@ DisableServerOnlyEntries:
 ; Update entire game lobby screen based on informations received from the
 ; network module.
 ;
-extern _currentTeamId
+extern currentTeamId
 UpdateGameLobby:
         pushad
         cmp  byte [choosingTeam], 0
@@ -1042,7 +1042,7 @@ UpdateGameLobby:
         mov  dword [esi + MenuEntry.onSelect], ToggleReadyState
         pop  esi
         mov  dword [esi + MenuEntry.onSelect], ChooseTeam   ; enable our player to select team
-        mov  eax, [_currentTeamId]
+        mov  eax, [currentTeamId]
         cmp  eax, -1
         jz   .set_choose_team
 
@@ -1095,7 +1095,7 @@ UpdateGameLobby:
         retn
 
 
-extern UpdateMPOptions_
+extern UpdateMPOptions
 ChangeGameLengthAndNotify:
         calla ChangeGameLength
 NotifyOptionsChange:
@@ -1103,23 +1103,23 @@ NotifyOptionsChange:
         mov   edi, esp
         call  FillOptions
         mov   eax, esp
-        call  UpdateMPOptions_
+        call  UpdateMPOptions
         add   esp, MP_Options_size
         retn
 
 
 IncDecSkipFramesAndNotify:
-        call GetSkipFrames_
+        call GetSkipFrames
 .opByte:
         dec  eax
         jns  .set_frames
         inc  eax
 .set_frames:
-        call SetSkipFrames_
+        call SetSkipFrames
         push byte gameLobbyMenu_optSkipFrames
         pop  dword [D0]
         calla CalcMenuEntryAddress
-        call GetSkipFrames_
+        call GetSkipFrames
         mov  esi, [A0]
         mov  [esi + MenuEntry.number], eax
         jmp  NotifyOptionsChange
@@ -1158,7 +1158,7 @@ FillOptions:
         shl eax, 16
         mov ax, [pitchType]
         stosd
-        call GetSkipFrames_
+        call GetSkipFrames
         stosd
         retn
 
@@ -1188,12 +1188,12 @@ ApplyOptions:
         mov  [numSubstitutes], al
         mov  [maxSubstitutes], ah
         mov  eax, [edi + MP_Options.skipFrames]
-        call SetSkipFrames_
+        call SetSkipFrames
 .out:
         retn
 
 
-extern AddChatLine_
+extern AddChatLine
 ChatLineInput:
         mov  word [D0], MAX_CHAT_LINE_LENGTH + 1
         mov  esi, [A5]
@@ -1207,7 +1207,7 @@ ChatLineInput:
         test ax, ax
         jnz  .out
         mov  eax, ebx
-        call AddChatLine_
+        call AddChatLine
 .out:
         mov  eax, ebx
         mov  [eax], byte 0
@@ -1273,7 +1273,7 @@ ChooseTeam:
         cmp  dx, -1
         jz   .out
         mov  edx, [eax]     ; selected team unique number
-        call SetTeam_
+        call SetTeam
 .out:
         retn
 
@@ -1328,7 +1328,7 @@ SetSkipFramesText:
         pop  dword [D0]
         calla CalcMenuEntryAddress
         mov  esi, [A0]
-        call GetSkipFrames_
+        call GetSkipFrames
         mov  [esi + MenuEntry.number], eax
         retn
 
@@ -1360,7 +1360,7 @@ ToggleSaveAutoReplays:
 
 
 ; called before creating Multiplayer menu
-extern GetMPOptions_, EnableAdditionalInputKeys, DisableAdditionalInputKeys
+extern GetMPOptions, EnableAdditionalInputKeys, DisableAdditionalInputKeys
 PatchMenu:
         call EnableInputTextOnEnter
         call EnableAdditionalInputKeys
@@ -1372,7 +1372,7 @@ PatchMenu:
         mov  word [gameType], 0
         sub  esp, MP_Options_size
         mov  eax, esp
-        call GetMPOptions_              ; get loaded multiplayer options
+        call GetMPOptions               ; get loaded multiplayer options
         mov  edi, eax
         call ApplyOptions
         add  esp, MP_Options_size
@@ -1393,7 +1393,7 @@ GameLobbyBeforeDraw:
         call SaveCurrentGLEntry
         call SetNumSubstitutesText
         call SetSkipFramesText
-        call CanGameStart_
+        call CanGameStart
         neg  eax
         sbb  eax, eax
         push eax
@@ -1452,16 +1452,16 @@ UpdateReadyState:
         retn
 
 
-extern SetPlayerReadyState_
+extern SetPlayerReadyState
 ToggleReadyState:
         xor  byte [isReady], 1
         movzx eax, byte [isReady]
-        call SetPlayerReadyState_
+        call SetPlayerReadyState
         jmp  UpdateReadyState
 
 
 ; show confirmation dialog when leaving multiplayer game
-extern DisbandGame_
+extern DisbandGame
 ExitGameLobbyMenu:
         cmp  byte [weAreTheServer], 0
         movstr dword [A0], "DISBAND MULTIPLAYER ROOM"
@@ -1476,7 +1476,7 @@ ExitGameLobbyMenu:
         mov  dword [A3], aAbort
         calla DoContinueAbortMenu
         jnz  .out
-        call DisbandGame_
+        call DisbandGame
         calla SetExitMenuFlag
         cmp  byte [weAreTheServer], 0
         jnz  .out
@@ -1485,7 +1485,7 @@ ExitGameLobbyMenu:
         retn
 
 
-extern SetPlayerOrWatcher_
+extern SetPlayerOrWatcher
 ChangePlayerWatcher:
         xor  eax, eax
         mov  ax, [playerOrWatcher]
@@ -1496,7 +1496,7 @@ ChangePlayerWatcher:
         xor  eax, eax
 .out:
         mov  [playerOrWatcher], ax
-        call SetPlayerOrWatcher_
+        call SetPlayerOrWatcher
         retn
 
 
@@ -1505,15 +1505,15 @@ ChangePlayerWatcher:
 ; Play match was selected in game lobby. Show play match menu for players to
 ; set up their teams.
 ;
-extern SetupTeams_
+extern SetupTeams
 OnStartGame:
         WriteToLog "Play match selected... going to synchronization..."
         mov  eax, SyncModalDialogProc
         mov  edx, ShowPlayMatchMenu
-        jmp SetupTeams_         ; let's rock'n'roll
+        jmp SetupTeams          ; let's rock'n'roll
 
 
-; SyncModalDialogProc [called from Watcom]
+; SyncModalDialogProc [called from C++]
 ;
 ; Draw modal dialog while player team synchronization is being done.
 ;
@@ -1533,7 +1533,7 @@ SyncModalDialogProc:
         retn
 
 
-; ShowPlayMatchMenu [called from Watcom]
+; ShowPlayMatchMenu [called from C++]
 ;
 ; in:
 ;     eax -> team1
@@ -1547,8 +1547,8 @@ ShowPlayMatchMenu:
         pushad
         mov  byte [lastFireState], 0
         mov  byte [disabledInputCycles], -1 ; signal to ask keys from network
-        mov  word [player2_clear_flag], -1  ; block player2 input
-        mov  word [player1_clear_flag], 0   ; just in case
+        mov  word [player2ClearFlag], -1    ; block player2 input
+        mov  word [player1ClearFlag], 0     ; just in case
         mov  esi, playMatchMenu
         mov  dword [esi + Menu.afterDraw], FixPlayMatchMenuAfterDraw
         mov  dword [esi + Menu.onDraw], FixPlayMatchMenu
@@ -1601,7 +1601,7 @@ UnpatchAfterSettingTeams:
         mov  dword [esi + Menu.afterDraw], PlayMatchAfterDraw
         mov  dword [esi + Menu.onDraw], 0
         mov  byte [disabledInputCycles], 0
-        mov  word [player2_clear_flag], 0
+        mov  word [player2ClearFlag], 0
         mov  word [key_count], 0
         retn
 
@@ -1618,7 +1618,7 @@ disabledPlayMatchMenuEntries:
 FixPlayMatchMenuAfterDraw:
         calla PlayMatchAfterDraw            ; let it do it's thing first
 FixPlayMatchMenu:
-        mov  dword [player1_clear_flag], 0xffff0000 ; keep player 1 clear player 2 set
+        mov  dword [player1ClearFlag], 0xffff0000   ; keep player 1 clear player 2 set
         mov  esi, disabledPlayMatchMenuEntries
 
 .next:
@@ -1643,11 +1643,11 @@ FixPlayMatchMenu:
 ; Notifies network to go to next state. Patches main loop and control status
 ; procs to call our hooks.
 ;
-extern SwitchToNextControllingState_
+extern SwitchToNextControllingState
 HookPlayMatchSelected:
         mov  byte [lastFireState], 0
         mov  word [joy1Status], 0
-        call SwitchToNextControllingState_  ; return true if we're starting (player2 finished setup)
+        call SwitchToNextControllingState   ; return true if we're starting (player2 finished setup)
         test eax, eax
         mov  byte [pl1_fire], 1             ; must set these, as they will be used to determine
         mov  byte [pl2_fire], 0             ; player numbers in teams later
@@ -1666,10 +1666,10 @@ HookPlayMatchSelected:
 ; that we're leaving play match menu, so it can go back to lobby state.
 ; Unpatches main loop and control status procs.
 ;
-extern GoBackToLobby_
+extern GoBackToLobby
 HookExitPlayMatch:
         mov  ebx, gameLobbyMenu
-        call GoBackToLobby_
+        call GoBackToLobby
         call GetPreviousMenu
         cmp  eax, ebx
         jz   .out
@@ -1692,13 +1692,13 @@ HookExitPlayMatch:
     ; multiplayer options menu
     ;
 
-    extern InitializeMPOptionsMenu_, IncreaseNetworkTimeout_, DecreaseNetworkTimeout_
-    extern IncreaseSkipFrames_, DecreaseSkipFrames_
-    extern ChooseMPTactics_, ExitMultiplayerOptions_
-    extern NetworkTimeoutBeforeDraw_, SkipFramesBeforeDraw_, mpOptSelectTeamBeforeDraw_
-    extern _MP_Tactics
+    extern InitializeMPOptionsMenu, IncreaseNetworkTimeout, DecreaseNetworkTimeout
+    extern IncreaseSkipFrames, DecreaseSkipFrames
+    extern ChooseMPTactics, ExitMultiplayerOptions
+    extern NetworkTimeoutBeforeDraw, SkipFramesBeforeDraw, mpOptSelectTeamBeforeDraw
+    extern MP_Tactics
 
-    StartMenu mpOptionsMenu, InitializeMPOptionsMenu_, 0, 0, 1
+    StartMenu mpOptionsMenu, InitializeMPOptionsMenu, 0, 0, 1
         %assign START_Y         30
         %assign WIDTH_COLUMN_1  124
         %assign WIDTH_COLUMN_2  136
@@ -1720,7 +1720,7 @@ HookExitPlayMatch:
         StartEntry X_COLUMN_2, previousEntryY, WIDTH_COLUMN_2, OPTION_HEIGHT, nickname
             NextEntries -1, -1, -1, 3
             EntryColor 13
-            EntryString 0, _playerNick
+            EntryString 0, playerNick
             OnSelect SetName
         EndEntry
 
@@ -1735,14 +1735,14 @@ HookExitPlayMatch:
             NextEntries -1, 5, mpOptionsMenu_nickname, 7
             EntryColor 13
             EntryString 0, aPlus
-            OnSelect IncreaseNetworkTimeout_
+            OnSelect IncreaseNetworkTimeout
         EndEntry
 
         ; [4] network timeout value
         StartEntry previousEntryEndX + 1, previousEntryY, CHANGER_OPTION_WIDTH, OPTION_HEIGHT
             EntryColor 13
             EntryString 0, -1
-            BeforeDraw NetworkTimeoutBeforeDraw_
+            BeforeDraw NetworkTimeoutBeforeDraw
         EndEntry
 
         ; [5] "-" to decrease network timeout
@@ -1750,7 +1750,7 @@ HookExitPlayMatch:
             NextEntries mpOptionsMenu_incNetworkTimeout, -1, mpOptionsMenu_nickname, 9
             EntryColor 13
             EntryString 0, aMinus
-            OnSelect DecreaseNetworkTimeout_
+            OnSelect DecreaseNetworkTimeout
         EndEntry
 
         ; [6] "skip frames"
@@ -1764,14 +1764,14 @@ HookExitPlayMatch:
             NextEntries -1, 9, mpOptionsMenu_incNetworkTimeout, 11
             EntryColor 13
             EntryString 0, aPlus
-            OnSelect IncreaseSkipFrames_
+            OnSelect IncreaseSkipFrames
         EndEntry
 
         ; [8] skip frames value
         StartEntry previousEntryEndX + 1, previousEntryY, CHANGER_OPTION_WIDTH, OPTION_HEIGHT
             EntryColor 13
             EntryString 0, -1
-            BeforeDraw SkipFramesBeforeDraw_
+            BeforeDraw SkipFramesBeforeDraw
         EndEntry
 
         ; [9] "-" to decrease skip frames
@@ -1779,7 +1779,7 @@ HookExitPlayMatch:
             NextEntries mpOptionsMenu_incSkipFrames, -1, mpOptionsMenu_decNetworkTimeout, 11
             EntryColor 13
             EntryString 0, aMinus
-            OnSelect DecreaseSkipFrames_
+            OnSelect DecreaseSkipFrames
         EndEntry
 
         ; [10] "team"
@@ -1794,7 +1794,7 @@ HookExitPlayMatch:
             EntryColor  12
             EntryString 0, 0
             OnSelect    ChooseTeam
-            BeforeDraw  mpOptSelectTeamBeforeDraw_
+            BeforeDraw  mpOptSelectTeamBeforeDraw
         EndEntry
 
         ; [12] tactics title
@@ -1813,32 +1813,32 @@ HookExitPlayMatch:
         StartTemplateEntry
         StartEntry
             EntryColor  0x0e
-            OnSelect ChooseMPTactics_
+            OnSelect ChooseMPTactics
         EndEntry
 
         StartEntry  TACTICS_X, TACTICS_Y, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries -1, mpOptionsTacticsStart + 3, mpOptionsMenu_selectedTeam, currentEntry + 1
-            EntryString 0, _MP_Tactics
+            EntryString 0, MP_Tactics
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries -1, mpOptionsTacticsStart + 4, currentEntry - 1, currentEntry + 1
-            EntryString 0, _MP_Tactics + TACTICS_SIZE
+            EntryString 0, MP_Tactics + TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries -1, mpOptionsTacticsStart + 5, currentEntry - 1, 19
-            EntryString 0, _MP_Tactics + 2 * TACTICS_SIZE
+            EntryString 0, MP_Tactics + 2 * TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryEndX + 5, TACTICS_Y, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries mpOptionsTacticsStart, -1, mpOptionsMenu_selectedTeam, currentEntry + 1
-            EntryString 0, _MP_Tactics + 3 * TACTICS_SIZE
+            EntryString 0, MP_Tactics + 3 * TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries mpOptionsTacticsStart + 1, -1, currentEntry - 1, currentEntry + 1
-            EntryString 0, _MP_Tactics + 4 * TACTICS_SIZE
+            EntryString 0, MP_Tactics + 4 * TACTICS_SIZE
         EndEntry
         StartEntry  previousEntryX, previousEntryEndY + 4, TACTICS_WIDTH, TACTICS_HEIGHT
             NextEntries mpOptionsTacticsStart + 2, -1, currentEntry - 1, 19
-            EntryString 0, _MP_Tactics + 5 * TACTICS_SIZE
+            EntryString 0, MP_Tactics + 5 * TACTICS_SIZE
         EndEntry
 
         ; [19] exit
@@ -1846,7 +1846,7 @@ HookExitPlayMatch:
             NextEntries -1, -1, mpOptionsTacticsStart + 5, -1
             EntryColor  12
             EntryString 0, aExit
-            OnSelect    ExitMultiplayerOptions_
+            OnSelect    ExitMultiplayerOptions
         EndEntry
 
         ; [20] title

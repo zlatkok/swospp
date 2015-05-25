@@ -5,7 +5,7 @@ Programs needed for full recompilation:
 - any working Unix environment (for shell, and some UNIX utilities) - I'm using DJGPP + MINGW make
 - Open Watcom C Compiler
 - NASM 0.98.36 my patched version (because they broke some macros... see if we can fix this)
-- Perl (any not-totally-ancient version will do)
+- Perl (any not-totally-ancient version will do), with Switch module
 - alink, my modified version
 - go32, my util [OBSOLETE - not needed with the new Perl build script]
 - winzip, for dist package packing [not used atm, see if we can use it again or remove it]

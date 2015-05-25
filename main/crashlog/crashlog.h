@@ -6,4 +6,4 @@
 
 #pragma once
 
-bool InstallCrashLogger();
+extern "C" bool InstallCrashLogger();

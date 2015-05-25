@@ -54,7 +54,7 @@ char *createSyncPacket(int *length, const IPX_Address **addresses, int numPlayer
     const byte *randomVars, int randomVarsLength);
 bool unpackSyncPacket(const char *data, int length, IPX_Address **addresses, int numPlayers,
     byte *randomVars, int *randomVarsLength);
-char *createTeamAndTacticsPacket(int *length, const char *teamData, const Tactics *tacticsData);
-bool unpackTeamAndTacticsPacket(const char *data, int length, char *teamData, Tactics *tacticsData);
+char *createTeamAndTacticsPacket(int *length, const TeamFile *teamData, const Tactics *tacticsData);
+bool unpackTeamAndTacticsPacket(const char *data, int length, TeamFile *teamData, Tactics *tacticsData);
 char *createControlsPacket(int *length, byte controls, word longFireFlag);
 bool unpackControlsPacket(const char *data, int length, byte *controls, word *longFireFlag);

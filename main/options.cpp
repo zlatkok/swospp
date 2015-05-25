@@ -7,16 +7,15 @@
 #include "mplayer.h"
 #include "dos.h"
 
-byte pl2Keyboard;
-#pragma aux pl2Keyboard "*";
+byte pl2Keyboard asm("pl2Keyboard");
 
 static XmlNode *rootNode;
 static XmlNode *optionsNode;
 static XmlNode *lastSectionNode;
 
-extern void RegisterNetworkOptions(RegisterOptionsFunc registerOptions);
-extern void RegisterControlsOptions(RegisterOptionsFunc registerOptions);
-extern void RegisterUserTactics(RegisterOptionsFunc registerOptions);
+extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions);
+extern "C" void RegisterControlsOptions(RegisterOptionsFunc registerOptions);
+extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions);
 
 /** SaveOptionsIfNeeded
 

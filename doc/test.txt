@@ -1,0 +1,3 @@
+- drawing of player numbers >16 during the game
+-           -||-                during edit tactics menu
+- test YU letters (in about menu)

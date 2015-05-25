@@ -39,7 +39,7 @@ static void initMpTactics()
     calla(InitializeTacticsPositions);
 }
 
-void RegisterUserTactics(RegisterOptionsFunc registerOptions)
+extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions)
 {
     initMpTactics();
     registerOptions("tactics", 7, "User tactics in multiplayer games", 33, "%n"
@@ -60,9 +60,8 @@ Tactics *GetUserMpTactics()
 static bool validateUserMpTactic(const Tactics *tactics)
 {
     char c = 0;
-    int i;
     /* check if name is all zeros */
-    for (i = 0; i < member_size(Tactics, name); i++)
+    for (size_t i = 0; i < sizeof(tactics->name); i++)
         c |= tactics->name[i];
     if (!c) {
         WriteToLog(("User tactics without name found."));
@@ -82,13 +81,13 @@ static bool validateUserMpTactic(const Tactics *tactics)
 */
 bool ValidateUserMpTactics()
 {
-    int i;
     bool modified = true;
-    for (i = 0; i < sizeofarray(MP_Tactics); i++)
+    for (size_t i = 0; i < sizeofarray(MP_Tactics); i++) {
         if (!validateUserMpTactic(MP_Tactics + i)) {
             initMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
             modified = false;
         }
+    }
     return modified;
 }
 
@@ -141,13 +140,12 @@ void DecreaseSkipFrames()
     SetSkipFrames(GetSkipFrames() - 1);
 }
 
-extern char aTeamNotChosen[];
-#pragma aux aTeamNotChosen "*";
+extern char aTeamNotChosen[] asm("aTeamNotChosen");
 
 void mpOptSelectTeamBeforeDraw()
 {
     MenuEntry *entry = (MenuEntry *)A5;
-    entry->u2.string = currentTeamId == -1 ? aTeamNotChosen : LoadTeam() + 5;
+    entry->u2.string = currentTeamId == (dword)-1 ? aTeamNotChosen : LoadTeam() + 5;
 }
 
 /** ChooseMPTactics
@@ -158,7 +156,7 @@ void ChooseMPTactics()
 {
     int tacticsIndex;
     MenuEntry *entry = (MenuEntry *)A5;
-    if (currentTeamId == -1) {
+    if (currentTeamId == (dword)-1) {
         A0 = (dword)"PLEASE CHOOSE A TEAM FIRST";
         calla(ShowErrorMenu);
         return;

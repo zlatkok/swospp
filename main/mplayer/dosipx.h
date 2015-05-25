@@ -15,7 +15,7 @@ typedef struct RM_Info {
 typedef struct IPX_Address {
     byte network[4];    // Big-Endian
     byte node[6];       // Big-Endian
-    byte socket[2];     // Big-Endian
+    word socket;        // Big-Endian
 } IPX_Address;
 
 typedef struct IPX_Header {
@@ -61,11 +61,11 @@ typedef struct UnAckPacket {
     IPX_Address address;
     struct UnAckPacket *next;
     byte type;
-    byte data[];
+    dword data[];
 } UnAckPacket;
 
-char *InitializeNetwork();
-void ShutDownNetwork();
+extern "C" const char *InitializeNetwork();
+extern "C" void ShutDownNetwork();
 
 word GetNetworkTimeout();
 void SetNetworkTimeout(word newTimeout);
@@ -87,13 +87,15 @@ void CancelSendingPackets();
 void CancelPackets();
 
 /* Raw IPX interface */
-bool IPX_IsInstalled(); /* return true if IPX Network driver is installed    */
-void IPX_OnIdle();      /* give IPX driver a slice of CPU                    */
-IPX_Address *IPX_GetInterNetworkAddress(); /* get our address                */
-void IPX_Listen(ECB *ecb);  /* put this ECB into listening queue             */
-uint IPX_GetMaximumPacketSize();                 /* including header         */
-void IPX_Disconnect(const IPX_Address *address); /* disconnect from target machine */
-int  IPX_OpenSocket();
-void IPX_CloseSocket(int socketNumber);
-void IPX_Send(ECB *ecb);
-void IPX_Cancel(ECB *ecb);
+extern "C" {
+    bool IPX_IsInstalled(); /* return true if IPX Network driver is installed           */
+    void IPX_OnIdle();      /* give IPX driver a slice of CPU                           */
+    IPX_Address *IPX_GetInterNetworkAddress(char *addr);    /* get our address          */
+    void IPX_Listen(ECB *ecb);  /* put this ECB into listening queue                    */
+    uint IPX_GetMaximumPacketSize();                 /* including header                */
+    void IPX_Disconnect(const IPX_Address *address); /* disconnect from target machine  */
+    int  IPX_OpenSocket();
+    void IPX_CloseSocket(int socketNumber);
+    void IPX_Send(ECB *ecb);
+    void IPX_Cancel(ECB *ecb);
+}

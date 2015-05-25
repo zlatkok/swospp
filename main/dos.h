@@ -42,13 +42,6 @@ enum DOS_fileAttributes {
 
 #define INVALID_HANDLE  ((dword)-1)
 
-dword OpenFile(enum DOS_accessMode accessMode, const char *fileName);
-dword CreateFile(enum DOS_fileAttributes fileAttribute, const char *fileName);
-int WriteFile(dword handle, const void *pData, int size);
-int ReadFile(dword handle, void *pData, int size);
-int SeekFile(dword handle, uchar mode, int ofsHi, int ofsLo);
-void CloseFile(dword handle);
-
 #pragma pack(push, 1)
 typedef struct DTA {
     byte  searchAttribute;
@@ -66,87 +59,285 @@ typedef struct DTA {
 } DTA;
 #pragma pack(pop)
 
-void SetDTA(DTA *newDTA);
-int FindFirstFile(const char *fileSpec);
-int FindNextFile();
 
-#pragma aux OpenFile =  \
-        "mov  ah, 3dh"  \
-        "int  21h"      \
-        "sbb  ebx, ebx" \
-        "or   eax, ebx" \
-        parm [al] [edx] \
-        modify [ebx];
+static inline __attribute__((always_inline)) dword OpenFile(enum DOS_accessMode accessMode, const char *fileName)
+{
+    dword result;
+    int dummy;
+    asm volatile (
+        "mov  ah, 0x3d          \n\t"
+        "int  0x21              \n\t"
+        "sbb  %[tmp], %[tmp]    \n\t"
+        "or   eax, %[tmp]       \n\t"
+        : "=a" (result), [tmp] "=r" (dummy)
+        : "a" (accessMode), "d" (fileName)
+        : "cc"
+    );
+    return result;
+}
 
-#pragma aux CreateFile = \
-        "mov  ah, 3ch"   \
-        "int  21h"       \
-        "sbb  ebx, ebx"  \
-        "or   eax, ebx"  \
-        parm [cx] [edx]  \
-        modify [ebx];
+static inline __attribute__((always_inline)) dword CreateFile(enum DOS_fileAttributes fileAttribute, const char *fileName)
+{
+    dword result;
+    int dummy;
+    asm volatile (
+        "mov  ah, 0x3c          \n\t"
+        "int  0x21              \n\t"
+        "sbb  %[tmp], %[tmp]    \n\t"
+        "or   eax, %[tmp]       \n\t"
+        : "=a" (result), [tmp] "=r" (dummy)
+        : "c" (fileAttribute), "d" (fileName)
+        : "cc"
+    );
+    return result;
+}
 
-#pragma aux WriteFile = \
-        "mov  ah, 40h"  \
-        "int  21h"      \
-        parm [ebx] [edx] [ecx];
+static inline __attribute__((always_inline)) int WriteFile(dword handle, const void *pData, int size)
+{
+    int result;
+    asm volatile (
+        "mov  ah, 0x40  \n\t"
+        "int  0x21      \n\t"
+        : "=a" (result)
+        : "b" (handle), "d" (pData), "c" (size)
+        : "cc"
+    );
+    return result;
+}
 
-#pragma aux CloseFile = \
-        "mov  ah, 3eh"  \
-        "int  21h"      \
-        parm [ebx];
+static inline __attribute__((always_inline)) void CloseFile(dword handle)
+{
+    asm volatile (
+        "mov  ah, 0x3e  \n\t"
+        "int  0x21      \n\t"
+        :
+        : "b" (handle)
+        : "cc", "eax"
+    );
+}
 
-#pragma aux ReadFile =  \
-        "mov  ah, 3fh"  \
-        "int  21h"      \
-        "sbb  ecx, ecx" \
-        "or   eax, ecx" \
-        parm [ebx] [edx] [ecx] \
-        modify [ecx];
+static inline __attribute__((always_inline)) int ReadFile(dword handle, void *pData, int size)
+{
+    int result;
+    int dummy;
+    asm volatile (
+        "mov  ah, 0x3f          \n\t"
+        "int  0x21              \n\t"
+        "sbb  %[tmp], %[tmp]    \n\t"
+        "or   eax, %[tmp]       \n\t"
+        : "=a" (result), [tmp] "=r" (dummy)
+        : "b" (handle), "d" (pData), "c" (size)
+        : "cc", "memory"
+    );
+    return result;
+}
 
-#pragma aux SeekFile =  \
-        "mov  ah, 42h"  \
-        "int  21h"      \
-        "sbb  ecx, ecx" \
-        "or   eax, ecx" \
-        parm [ebx] [al] [ecx] [edx] \
-        modify [ecx];
+static inline __attribute__((always_inline)) int SeekFile(dword handle, uchar mode, int ofsHi, int ofsLo)
+{
+    int result;
+    int dummy;
+    asm volatile (
+        "mov  ah, 0x42          \n\t"
+        "int  0x21              \n\t"
+        "sbb  %[tmp], %[tmp]    \n\t"
+        "or   eax, %[tmp]       \n\t"
+        : "=a" (result), [tmp] "=r" (dummy)
+        : "b" (handle), "a" (mode), "c" (ofsHi), "d" (ofsLo)
+        : "cc"
+    );
+    return result;
+}
 
-#pragma aux SetDTA =   \
-        "mov  ah, 1ah" \
-        "int  21h"     \
-        parm [edx];
+static inline __attribute__((always_inline)) void SetDTA(DTA *newDTA)
+{
+    asm volatile (
+        "mov  ah, 0x1a  \n"
+        "int  0x21      \n"
+        :
+        : "d" (newDTA)
+        : "eax"
+    );
+}
 
-#pragma aux FindFirstFile = \
-        "mov  ah, 4eh"  \
-        "int  21h"      \
-        "sbb  eax, eax" \
-        "not  eax"      \
-        parm [edx];
+static __attribute__((always_inline)) inline int FindFirstFile(const char *fileSpec)
+{
+    int result;
+    asm volatile (
+        "mov  ah, 0x4e  \n\t"
+        "int  0x21      \n\t"
+        "sbb  eax, eax  \n\t"
+        "not  eax       \n\t"
+        : "=a" (result)
+        : "d" (fileSpec)
+        : "cc", "memory"
+    );
+    return result;
+}
 
-#pragma aux FindNextFile = \
-        "mov  ah, 4fh"  \
-        "int  21h"      \
-        "sbb  eax, eax" \
-        "not  eax";
+static inline __attribute__((always_inline)) bool FindNextFile()
+{
+    int result;
+    asm volatile (
+        "mov  ah, 0x4f  \n\t"
+        "int  0x21      \n\t"
+        "sbb  eax, eax  \n\t"
+        "not  eax       \n\t"
+        : "=a" (result)
+        :
+        : "cc", "memory"
+    );
+    return result;
+}
 
-void PrintToStderr(const char *str, int count);
-void SetVideoMode(int mode);
-char GetVideoMode();
+static inline __attribute__((always_inline)) void PrintToStderr(const char *str, int count)
+{
+    asm volatile (
+        "push 2         \n\t"
+        "mov  ah, 0x40  \n\t"
+        "pop  ebx       \n\t"
+        "int  0x21      \n\t"
+        :
+        : "d" (str), "c" (count)
+        : "cc", "eax", "ebx"
+    );
+}
 
-#pragma aux PrintToStderr = \
-        "push 2"        \
-        "pop  ebx"      \
-        "mov  ah, 0x40" \
-        "int  0x21"     \
-        parm [edx] [ecx];
+static __attribute__((always_inline)) inline void SetVideoMode(int mode)
+{
+    int dummy;
+    asm volatile (
+        "mov  ah, 0     \n\t"   // do not disturb flags
+        "int  0x10      \n\t"
+        : "=a" (dummy)
+        : "a" (mode)
+        :
+    );
+}
 
-#pragma aux SetVideoMode = \
-        "xor  ah, ah"   \
-        "int  0x10"     \
-        parm [eax];
+static __attribute__((always_inline)) inline dword GetVideoMode()
+{
+    dword result;
+    asm volatile (
+        "mov  eax, 0x0f00       \n\t"
+        "int  0x10              \n\t"
+        "movzx eax, al          \n\t"
+        : "=a" (result)
+        :
+        : "eax", "ebx"
+    );
+    return result;
+}
 
-#pragma aux GetVideoMode = \
-        "mov  ah, 0x0f" \
-        "int  0x10"     \
-        value [al];
+static inline __attribute__((always_inline)) void GetDosTime(uchar *aHour, uchar *aMinute, uchar *aSecond, uchar *aHundred)
+{
+    uchar hour, minute, second, hundred;
+    asm volatile (
+        "mov  ah, 0x2c                      \n\t"
+        "int  0x21                          \n\t"
+        "mov  al, ch                        \n\t"
+        "mov  %b[second], dh                \n\t"
+        : "=a" (hour), "=c" (minute), [second] "=q" (second), "=d" (hundred)
+        :
+        :
+    );
+    *aHour = hour;
+    *aMinute = minute;
+    *aSecond = second;
+    *aHundred = hundred;
+}
+
+static inline __attribute__((always_inline)) void GetDosDate(ushort *aYear, uchar *aMonth, uchar *aDay)
+{
+    ushort year;
+    uchar month, day;
+    asm volatile (
+        "mov  ah, 0x2a                  \n\t"
+        "int  0x21                      \n\t"   // DOS Get System Date
+        "mov  al, dh                    \n\t"
+        : "=c" (year), "=d" (day), "=a" (month)
+        :
+        :
+    );
+    *aYear = year;
+    *aMonth = month;
+    *aDay = day;
+}
+
+static inline __attribute__((always_inline)) unsigned short GetTickCount()
+{
+    return *(unsigned short *)0x46c;
+}
+
+/* Copy part of Watcom's i86.h, luck is that relevant functions have been left in SWOS ;) */
+
+#pragma pack(push, 1)
+
+#undef __FILLER
+#define __FILLER(a) unsigned short a;
+
+/* dword registers */
+struct DWORDREGS {
+    unsigned int eax;
+    unsigned int ebx;
+    unsigned int ecx;
+    unsigned int edx;
+    unsigned int esi;
+    unsigned int edi;
+    unsigned int cflag;
+};
+
+
+/* word registers */
+struct WORDREGS {
+    unsigned short ax;  __FILLER(_1)
+    unsigned short bx;  __FILLER(_2)
+    unsigned short cx;  __FILLER(_3)
+    unsigned short dx;  __FILLER(_4)
+    unsigned short si;  __FILLER(_5)
+    unsigned short di;  __FILLER(_6)
+    unsigned int cflag;
+};
+
+/* byte registers */
+struct BYTEREGS {
+    unsigned char al, ah;  __FILLER(_1)
+    unsigned char bl, bh;  __FILLER(_2)
+    unsigned char cl, ch;  __FILLER(_3)
+    unsigned char dl, dh;  __FILLER(_4)
+};
+
+/* general purpose registers union - overlays the corresponding dword,
+ * word, and byte registers.
+ */
+
+union REGS {
+    struct DWORDREGS x;
+    struct WORDREGS  w;
+    struct BYTEREGS  h;
+};
+#define _REGS REGS
+
+/* segment registers */
+struct SREGS {
+    unsigned short es, cs, ss, ds;
+    unsigned short fs, gs;
+};
+#define _SREGS SREGS
+
+#define  FP_OFF(__p) ((unsigned)(__p))
+#define _FP_OFF(__p) ((unsigned)(__p))
+
+static inline __attribute__((always_inline)) unsigned short FP_SEG(const volatile void *)
+{
+    unsigned short seg;
+    asm (
+        "mov  %w[seg], ds"
+        : [seg] "=q" (seg)
+        :
+        :
+    );
+    return seg;
+}
+#define _FP_SEG FP_SEG
+
+#pragma pack(pop)

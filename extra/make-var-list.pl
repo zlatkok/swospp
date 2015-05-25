@@ -1,12 +1,14 @@
-# Create variable list for DOSBox debugger. Place it directly to shared folder.
+# Create variable list for DOSBox debugger. Place it directly to SWOS game directory.
 
 $codeSWOS = 0x220000;
 $dataSWOS = 0x2c1000;
 $baseSWOSPP = 0x387000;
 
-$mapSWOS = "c:\\games\\swos\\swos.map";
-$mapSWOSPP = "c:\\swospp\\etc\\swospp_dbg.map";
-$varList = "c:\\temp\\swospp.lst";
+# input
+$mapSWOS = "d:\\games\\swos\\swos.map";
+$mapSWOSPP = "f:\\swospp\\etc\\swospp_dbg.map";
+# output
+$varList = "d:\\games\\swos\\swospp.lst";
 
 open MAP_S, "<$mapSWOS" or die "Can't open SWOS map file for reading.\n";
 open MAP_SPP, "<$mapSWOSPP" or die "Can't open SWOS++ map file for reading.\n";

@@ -318,8 +318,8 @@ extern menuFade
 extern aDataTeam_nnn
 extern aCustoms_edt
 extern teamFileBuffer
-extern player1_clear_flag
-extern player2_clear_flag
+extern player1ClearFlag
+extern player2ClearFlag
 extern saveFileName
 extern hil_filename
 extern exitMenu
@@ -489,13 +489,13 @@ extern _STACKTOP
 %macro AsmWriteToLogFunc 1+
     pushad                      ; we must not interfere with normal code execution
     pushf
-    callCdecl _WriteToLogFunc, %{1}     ; gotta escape param here... or else
+    callCdecl WriteToLogFunc, %{1}      ; gotta escape param here... or else
     popf
     popad
 %endmacro
 
 %ifdef DEBUG
-extern _WriteToLogFunc
+extern WriteToLogFunc
 %macro WriteToLog 1+
     AsmWriteToLogFunc %1
 %endmacro

@@ -12,25 +12,25 @@
 
 bits 32
 
-extern int2str_
-extern SaveOptionsIfNeeded_
+extern int2str
+extern SaveOptionsIfNeeded
 
 section .text
 
 extern replayStatus
 extern rplFrameSkip
-extern HandleMPKeys_
+extern HandleMPKeys
 
 
-; RegisterControlsOptions [called from Watcom]
+; RegisterControlsOptions [called from C++]
 ;
 ; in:
 ;      eax -> options register callback (see options.c for format details)
 ;
 ; Register our options with options manager, so we can save and load later without much effort.
 ;
-global RegisterControlsOptions_
-RegisterControlsOptions_:
+global RegisterControlsOptions
+RegisterControlsOptions:
         pushad              ; no idea what changes will callback make
         callCdecl eax, "controls", 8, "Player 2 keyboard controls", 26, \
             "%1d/pl2Keyboard%1d/codeUp%1d/codeDown%1d/codeLeft%1d/codeRight%1d/codeFire1%1d/codeFire2", \
@@ -53,8 +53,8 @@ HookMainKeysCheck:
         cmp  al, 'D'
         jnz  .try_fast_replay
 
-        extern ToggleDebugOutput_
-        call ToggleDebugOutput_
+        extern ToggleDebugOutput
+        call ToggleDebugOutput
 
 .try_fast_replay:
 %endif
@@ -82,7 +82,7 @@ HookMainKeysCheck:
         jz   .skip_key
 
         pop  eax
-        call HandleMPKeys_
+        call HandleMPKeys
         retn
 
 .skip_key:
@@ -239,7 +239,7 @@ ControlsOnSelectCommon:
 WriteToLog "numLoopsJoy1 = %hd, numLoopsJoy2 = %hd", numLoopsJoy1, numLoopsJoy2
         calla WriteFile
 WriteToLog "numLoopsJoy1 = %hd, numLoopsJoy2 = %hd", numLoopsJoy1, numLoopsJoy2
-        call SaveOptionsIfNeeded_   ; save options if needed :)
+        call SaveOptionsIfNeeded    ; save options if needed :)
 .out:
         xor  eax, eax
         mov  [controlWord], ax  ; reset all control variables because int9
@@ -1058,7 +1058,7 @@ DrawJoypadMenu:
         and  ebx, 0x7f          ; ebx = y
         and  ecx, 0xff          ; ecx = x
         shr  eax, 16            ; eax = read value
-        call int2str_           ; convert to string
+        call int2str            ; convert to string
         mov  [D1], ecx
         mov  [D2], ebx
         mov  word [D3], 2

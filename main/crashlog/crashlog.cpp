@@ -7,31 +7,29 @@
 #include "options.h"
 
 /* exception context */
-static byte exceptionNo;
-static dword rEax;
-static dword rEbx;
-static dword rEcx;
-static dword rEdx;
-static dword rEsi;
-static dword rEdi;
-static dword rEbp;
-static dword rEip;
-static dword rEsp;
-static word rCs;
-static word rSs;
+static byte exceptionNo asm("exceptionNo") __attribute__((used));
+static dword rEax asm("rEax") __attribute__((used));
+static dword rEbx asm("rEbx") __attribute__((used));
+static dword rEcx asm("rEcx") __attribute__((used));
+static dword rEdx asm("rEdx") __attribute__((used));
+static dword rEsi asm("rEsi") __attribute__((used));
+static dword rEdi asm("rEdi") __attribute__((used));
+static dword rEbp asm("rEbp") __attribute__((used));
+static dword rEip asm("rEip") __attribute__((used));
+static dword rEsp asm("rEsp") __attribute__((used));
+static word rCs asm("rCs") __attribute__((used));
+static word rSs asm("rSs") __attribute__((used));
 
-static void UserExceptionHandler();
-static __declspec(naked) void ExceptionHandler();
-#pragma aux InstallExceptionHandler parm [ebx] [edx];
-static bool __declspec(naked) InstallExceptionHandler(int exceptionNo, void (*handler)());
+void ExceptionHandler() asm("ExceptionHandler");
+void UserExceptionHandler() asm ("UserExceptionHandler");
 
-#define DeclareExceptionHandler(aExceptionNo)                           \
-static __declspec(naked) void Exception ## aExceptionNo ## Handler();   \
-static void Exception ## aExceptionNo ## Handler()                      \
-{                                                                       \
-    _asm { mov   exceptionNo, aExceptionNo }                            \
-    _asm { jmp   ExceptionHandler }                                     \
-}
+#define DeclareExceptionHandler(aExceptionNo)               \
+void Exception ## aExceptionNo ## Handler() asm("Exception" #aExceptionNo "Handler");    \
+asm(                                                        \
+    "Exception" #aExceptionNo "Handler:                 \n" \
+    "mov  dword ptr [exceptionNo], " # aExceptionNo "   \n" \
+    "jmp  ExceptionHandler                              \n" \
+);
 
 DeclareExceptionHandler(0);
 DeclareExceptionHandler(6);
@@ -39,51 +37,58 @@ DeclareExceptionHandler(10);
 DeclareExceptionHandler(11);
 DeclareExceptionHandler(12);
 DeclareExceptionHandler(13);
-DeclareExceptionHandler(14);
+extern "C" void Exception14Handler();           // inline this one below
 
 /** ExceptionHandler
 
     Will save registers and point return address for our user-mode handler to use.
     Thanks Ralph Brown's Interrupt List for the offsets!
+    And why oh why does GCC not support naked attribute on x86?!
 */
-static void ExceptionHandler()
-{
-    _asm {
-        mov   rEax, eax
-        mov   rEbx, ebx
-        mov   rEcx, ecx
-        mov   rEdx, edx
-        mov   rEbp, ebp
-        mov   rEsi, esi
-        mov   rEdi, edi
-        mov   eax, [esp + 0x18]
-        mov   rEsp, eax
-        mov   eax, [esp + 0x0c]
-        mov   rEip, eax
-        mov   ax, [esp + 0x10]
-        mov   rCs, ax
-        mov   ax, [esp + 0x1c]
-        mov   rSs, ax
-        mov   ax, cs
-        mov   [esp + 0x10], ax
-        mov   eax, offset UserExceptionHandler
-        mov   [esp + 0x0c], eax
-        mov   eax, rEax     ; keep registers intact
-        retf
-    }
-}
+asm(
+    "Exception14Handler:        \n"             // squeeze in last handler here to eliminate jmp $+2 instruction ;)
+    "mov   dword ptr [exceptionNo], 14  \n"
+
+    "ExceptionHandler:          \n"
+
+    "mov   rEax, eax            \n"
+    "mov   rEbx, ebx            \n"
+    "mov   rEcx, ecx            \n"
+    "mov   rEdx, edx            \n"
+    "mov   rEbp, ebp            \n"
+    "mov   rEsi, esi            \n"
+    "mov   rEdi, edi            \n"
+    "mov   eax, [esp + 24]      \n"
+    "mov   rEsp, eax            \n"
+    "mov   eax, [esp + 12]      \n"
+    "mov   rEip, eax            \n"
+    "mov   ax, [esp + 16]       \n"
+    "mov   rCs, ax              \n"
+    "mov   ax, [esp + 28]       \n"
+    "mov   rSs, ax              \n"
+    "mov   ax, cs               \n"
+    "mov   [esp + 16], ax       \n"
+    "mov   eax, offset UserExceptionHandler\n"
+    "mov   [esp + 12], eax      \n"
+    "mov   eax, rEax            \n" // keep registers intact
+    "retf                       \n"
+);
 
 /* Seems this is the only DPMI service DOS/4GW is supporting for this purpose. */
-bool InstallExceptionHandler(int exceptionNo, void (*handler)())
+static bool InstallExceptionHandler(int exceptionNo, void (*handler)())
 {
-    _asm {
-        mov   ax, 0x203
-        mov   cx, cs
-        int   0x31
-        sbb   eax, eax
-        not   eax
-        retn
-    }
+    bool result;
+    asm volatile (
+        "mov  ax, 0x203     \n"
+        "mov  cx, cs        \n"
+        "int  0x31          \n"
+        "sbb  eax, eax      \n"
+        "not  eax           \n"
+        : "=a" (result)
+        : "b" (exceptionNo), "d" (handler)
+        : "cc", "cx"
+    );
+    return result;
 }
 
 static const char *getExceptionName(int exceptionNo)
@@ -107,7 +112,7 @@ static const char *getExceptionName(int exceptionNo)
         "unknown exception",
         "coprocessor error",
     };
-    if (exceptionNo > sizeofarray(exceptionNames))
+    if (exceptionNo > (int)sizeofarray(exceptionNames))
         return "unknown exception";
     return exceptionNames[exceptionNo];
 }

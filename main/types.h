@@ -6,7 +6,6 @@ typedef unsigned int dword;
 typedef unsigned int uint;
 typedef unsigned char uchar;
 typedef signed char schar;
-typedef unsigned int bool;
 typedef unsigned short ushort;
 
 typedef dword uint32_t;
@@ -20,10 +19,6 @@ typedef unsigned int size_t;
 
 #define true  (1 == 1)
 #define false (1 == 0)
-
-#ifndef nullptr
-#define nullptr ((void*)0)
-#endif
 
 #ifndef NULL
 #define NULL nullptr

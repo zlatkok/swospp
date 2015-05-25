@@ -231,13 +231,13 @@ print SWOS_INC <<EOF;
 %macro AsmWriteToLogFunc 1+
     pushad                      ; we must not interfere with normal code execution
     pushf
-    callCdecl _WriteToLogFunc, %{1}     ; gotta escape param here... or else
+    callCdecl WriteToLogFunc, %{1}      ; gotta escape param here... or else
     popf
     popad
 %endmacro
 
 %ifdef DEBUG
-extern _WriteToLogFunc
+extern WriteToLogFunc
 %macro WriteToLog 1+
     AsmWriteToLogFunc %1
 %endmacro
@@ -274,6 +274,7 @@ print SWOSSYM_H <<EOF;
 */
 
 #pragma once
+extern "C" {
 
 extern dword swosCodeBase;
 EOF
@@ -284,24 +285,18 @@ foreach (@keys) {
     next if !$data; # skip asm-only symbols
     print SWOSSYM_H "/*\n   $data->{'comment'}*/\n" if $data->{'comment'};
     $name = $data->{'prefix'} . $_;
+    $suffix = " asm (\"$name\")";
     if ($data->{'function'}) {
-        print SWOSSYM_H "extern void (*$name\[\])();\n";
+        print SWOSSYM_H "extern void (*$name\[\])()$suffix;\n";
     } elsif ($data->{'array_type'}) {
         $space = substr($data->{'array_type'}, -1) eq '*' ? '' : ' ';
-        print SWOSSYM_H "extern $data->{'array_type'}$space$name\[$data->{'array_size'}\];\n";
+        print SWOSSYM_H "extern $data->{'array_type'}$space$name\[$data->{'array_size'}\]$suffix;\n";
     } elsif ($data->{'type'}) {
         $space = substr($data->{'type'}, -1) eq '*' ? '' : ' ';
-        print SWOSSYM_H "extern $data->{'type'}$space$name;\n";
+        print SWOSSYM_H "extern $data->{'type'}$space$name$suffix;\n";
     }
 }
-
-# print pragmas afterwards, it's more clear that way
-print SWOSSYM_H "\n\n#pragma aux swosCodeBase \"*\";\n";
-foreach (@keys) {
-    if ($symbols{$_}->{'C'}) {
-        print SWOSSYM_H "#pragma aux ", $symbols{$_}->{'prefix'}, $_, " \"*\";\n";
-    }
-}
+print SWOSSYM_H "\n}\n";
 
 # complain about symbols present in filter but not in map file
 if ($numPresent != keys %symbols) {

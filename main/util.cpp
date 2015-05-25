@@ -9,15 +9,17 @@
 #include "dos.h"
 #include "qalloc.h"
 
+#pragma GCC diagnostic ignored "-Wparentheses"
+
 static unsigned rand_seed;
 
 #define IS_DIGIT(c)   (c >= '0' && c <= '9')
 #define IS_SPACE(c)   (c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r' || c == ' ')
-#define IS_PUNCT(c)   (c >= '!' && c <= '/' || c >= ':' && c <= '@' || c >= '[' && c <= '`' || c >= '{' && c <= '~')
-#define IS_XDIGIT(c)  (c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F')
+#define IS_PUNCT(c)   ((c >= '!' && c <= '/') || (c >= ':' && c <= '@') || (c >= '[' && c <= '`') || (c >= '{' && c <= '~'))
+#define IS_XDIGIT(c)  ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))
 #define IS_UPPER(c)   (c >= 'A' && c <= 'Z')
 #define IS_LOWER(c)   (c >= 'a' && c <= 'z')
-#define IS_CONTROL(c) (c >= 0 && c <= 31 || c == 127)
+#define IS_CONTROL(c) ((c >= 0 && c <= 31) || c == 127)
 #define IS_PRINT(c)   (c >= ' ' && c <= '~')
 
 #define A(c)    B(c), B(c + 64), B(c + 128), B(c + 192)
@@ -32,6 +34,10 @@ static unsigned rand_seed;
 const byte IsWhat[256] = {
     A(0)
 };
+
+/* stack probe allocator... we don't need it of course, but no idea how to stop GCC from generating calls to it */
+extern "C" void ___chkstk_ms(size_t) {}
+
 
 /** int2str
 
@@ -71,17 +77,27 @@ char *int2str(int num)
     return p;
 }
 
-const char *strrchr(const char *str, int character)
+/** strrchr
+
+    in:
+          src -> string to search in
+          ch  -  character to look for
+
+    out:
+          pointer to last occurence of ch in src, or nullptr if not present
+*/
+const char *strrchr(const char *str, int ch)
 {
     const char *end;
     assert(str);
     end = str + strlen(str);
-    while (end != str && *end != character)
+    while (end != str && *end != ch)
         end--;
-    if (*end != character)
+    if (*end != ch)
         return nullptr;
     return end;
 }
+
 
 /** strcpy
 
@@ -123,6 +139,7 @@ int stricmp(const char *s1, const char *s2)
     return ch1 - ch2;
 }
 
+
 /*
     Appends a copy of the source string to the destination string.
 */
@@ -155,10 +172,11 @@ char *strupr(char *s)
     return s;
 }
 
+/* Even if compiling with GCC built-in version we still need it for calls from ASM code. */
 void *memcpy(void *in_dst, const void *in_src, size_t n)
 {
-    char *dst = in_dst;
-    const char *src = in_src;
+    char *dst = (char *)in_dst;
+    const char *src = (const char *)in_src;
     assert(!n || (in_src && in_dst && (int)n > 0));
     for (; n; --n)
         *dst++ = *src++;
@@ -167,9 +185,9 @@ void *memcpy(void *in_dst, const void *in_src, size_t n)
 
 int memcmp(const void *p, const void *q, size_t n)
 {
-    const uchar *s1 = p;
-    const uchar *s2 = q;
     assert(!n || (p && q && (int)n > 0));
+    auto s1 = (const uchar *)p;
+    auto s2 = (const uchar *)q;
     for (; n; n--, s1++, s2++) {
         if (*s1 != *s2)
             return *s1 - *s2;
@@ -178,93 +196,146 @@ int memcmp(const void *p, const void *q, size_t n)
 }
 
 /* stubs for connecting to routines in SWOS */
+/* keep them non-inline for access from asm */
+
+int stackavail()
+{
+    int result;
+    asm volatile (
+        "mov  eax, offset swos_libc_stackavail_ \n\t"
+        "call eax                               \n\t"
+        : "=a" (result)
+        :
+        :
+    );
+    return result;
+}
 
 char *strncpy(char *dst, const char *src, size_t n)
 {
-    extern char *swos_libc_strncpy(char *, const char *, size_t);
-    char *(*p)(char *, const char *, size_t) = swos_libc_strncpy;
-    assert((!n || dst && src && (int)n > 0) && p);
-    return p(dst, src, n);
+    assert(!n || (dst && src && (int)n > 0));
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_strncpy_     \n\t"
+        "call %[tmp]                                \n\t"
+        : "+a" (dst), "+d" (src), "+b" (n), [tmp] "=r" (dummy)
+        :
+        : "cc", "memory"
+    );
+    return dst;
 }
 
 void *memset(void *ptr, int value, size_t num)
 {
-    extern void *swos_libc_memset(void *, int, size_t);
-    void *(*p)(void *, int, size_t) = swos_libc_memset;
-    assert((!num || ptr) && p);
-    return p(ptr, value, num);
+    assert(!num || ptr);
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_memset_  \n\t"
+        "call %[tmp]                            \n\t"
+        : "+a" (ptr), "+d" (value), [tmp] "=r" (dummy)
+        : "b" (num)
+        : "cc", "memory"
+    );
+    return ptr;
 }
 
 int strcmp(const char *str1, const char *str2)
 {
-    extern int swos_libc_strcmp(const char *, const char *);
-    int (*p)(const char *, const char *) = swos_libc_strcmp;
-    assert(p && str1 && str2);
-    return p(str1, str2);
+    assert(str1 && str2);
+    int result;
+    int dummy, dummy2;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_strcmp_  \n\t"
+        "call %[tmp]                            \n\t"
+        : "=a" (result), [tmp] "=r" (dummy), "=d" (dummy2)
+        : "a" (str1), "d" (str2)
+        : "cc"
+    );
+    return result;
 }
 
 int strncmp(const char *str1, const char *str2, size_t n)
 {
-    extern int swos_libc_strncmp(const char *, const char *, size_t);
-    int (*p)(const char *, const char *, size_t) = swos_libc_strncmp;
     assert(str1 && str2 && (int)n >= 0);
-    return p(str1, str2, n);
+    int result;
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_strncmp_     \n\t"
+        "call %[tmp]                                \n\t"
+        : "=a" (result), "+d" (str2), "+b" (n), [tmp] "=r" (dummy)
+        : "a" (str1)
+        : "cc"
+    );
+    return result;
 }
 
 int strlen(const char *str)
 {
-    extern int swos_libc_strlen(const char *);
-    int (*p)(const char *) = swos_libc_strlen;
-    assert(str && p);
-    return p(str);
+    assert(str);
+    int result;
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_strlen_      \n\t"
+        "call %[tmp]                                \n\t"
+        : "=a" (result), [tmp] "=r" (dummy)
+        : "a" (str)
+        : "cc"
+    );
+    return result;
 }
 
 void segread(struct SREGS *sregs)
 {
-    extern void swos_libc_segread(struct SREGS *);
-    void (*p)(struct SREGS *) = swos_libc_segread;
-    assert(sregs && p);
-    p(sregs);
+    assert(sregs);
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_segread_     \n\t"
+        "call %[tmp]                                \n\t"
+        : "+a" (sregs), [tmp] "=r" (dummy)
+        :
+        : "memory"
+    );
 }
 
 int int386x(int vec, union REGS *in, union REGS *out, struct SREGS *sregs)
 {
-    extern int swos_libc_int386x(int, union REGS *, union REGS *, struct SREGS *);
-    int (*p)(int, union REGS *, union REGS *, struct SREGS *) = swos_libc_int386x;
-    assert(in && out && sregs && p);
-    return p(vec, in, out, sregs);
+    assert(in && out && sregs);
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_int386x_     \n\t"
+        "call %[tmp]                                \n\t"
+        : "+a" (vec), "+d" (in), "+b" (out), "+c" (sregs), [tmp] "=r" (dummy)
+        :
+        : "cc", "memory"
+    );
+    return vec;
 }
 
 void exit(int status)
 {
-    extern void swos_libc_exit(int);
-    void (*p)(int) = swos_libc_exit;
-    assert(p);
-    p(status);
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_exit_    \n\t"
+        "jmp  %[tmp]                            \n\t"
+        : "+a" (status), [tmp] "=r" (dummy)
+        :
+        :
+    );
+    __builtin_unreachable();
 }
 
 void *memmove(void *dst, const void *src, size_t n)
 {
-    extern void *swos_libc_memmove(void *dst, const void *src, size_t n);
-    void *(*p)(void *, const void *, size_t) = swos_libc_memmove;
-    assert(p && (!n || dst && src));
-    return p(dst, src, n);
-}
-
-time_t time(time_t *timer)
-{
-    extern time_t swos_libc_time(time_t *);
-    time_t (*p)(time_t *) = swos_libc_time;
-    assert(p);
-    return p(timer);
-}
-
-char *ctime(const time_t *timer)
-{
-    extern char *swos_libc_ctime(const time_t *);
-    char *(*p)(const time_t *) = swos_libc_ctime;
-    assert(p);
-    return p(timer);
+    assert(!n || (dst && src));
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_memmove_     \n\t"
+        "call %[tmp]                                \n\t"
+        : "+a" (dst), "+d" (src), "+b" (n), [tmp] "=r" (dummy)
+        :
+        : "cc", "memory"
+    );
+    return dst;
 }
 
 /* djb2 */
@@ -272,7 +343,7 @@ unsigned int simpleHash(const void *data, int size)
 {
     unsigned int hash = 5381;
     const char *p = (const char *)data, *end = p + size;
-    assert(!size || size > 0 && data);
+    assert(!size || (size > 0 && data));
     while (p != end)
         hash = (hash << 5) + hash + *p++;
     return hash;
@@ -408,7 +479,7 @@ static BFile *initBFile(BFile *file, void *buffer, int bufferSize, bool readOnly
     assert(file);
     file->bytesInBuffer = 0;
     file->readPtr = readOnly ? 0 : -1;
-    file->buffer = buffer;
+    file->buffer = (char *)buffer;
     file->bufferSize = bufferSize;
     file->managed = managed;
     if (file->handle == INVALID_HANDLE) {
@@ -418,7 +489,7 @@ static BFile *initBFile(BFile *file, void *buffer, int bufferSize, bool readOnly
     }
     if (!managed)
         file->bufferSize = bufferSize;
-    else if (!(file->buffer = qAlloc(FILE_BUFFER_SIZE))) {
+    else if (!(file->buffer = (char *)qAlloc(FILE_BUFFER_SIZE))) {
         CloseFile(file->handle);
         qFree(file);
         return nullptr;
@@ -426,19 +497,18 @@ static BFile *initBFile(BFile *file, void *buffer, int bufferSize, bool readOnly
     return file;
 }
 
-BFile *OpenBFile(byte accessMode, const char *fileName)
+BFile *OpenBFile(DOS_accessMode accessMode, const char *fileName)
 {
-    BFile *file;
     assert_msg(accessMode != F_READ_WRITE, "BFile can't be open for both read and write.");
-    file = qAlloc(sizeof(BFile));
+    auto file = (BFile *)qAlloc(sizeof(BFile));
     if (!file)
         return nullptr;
     assert(fileName);
-    file->handle = OpenFile(accessMode, fileName);
+    file->handle = (dword)OpenFile(accessMode, fileName);
     return initBFile(file, nullptr, FILE_BUFFER_SIZE, accessMode == F_READ_ONLY, true);
 }
 
-bool OpenBFileUnmanaged(BFile *file, void *buffer, int bufferSize, byte accessMode, const char *fileName)
+bool OpenBFileUnmanaged(BFile *file, void *buffer, int bufferSize, DOS_accessMode accessMode, const char *fileName)
 {
     assert(file);
     assert_msg(accessMode != F_READ_WRITE, "BFile can't be open for both read and write.");
@@ -446,9 +516,9 @@ bool OpenBFileUnmanaged(BFile *file, void *buffer, int bufferSize, byte accessMo
     return initBFile(file, buffer, bufferSize, accessMode == F_READ_ONLY, false) != nullptr;
 }
 
-BFile *CreateBFile(word fileAttribute, const char *fileName)
+BFile *CreateBFile(DOS_fileAttributes fileAttribute, const char *fileName)
 {
-    BFile *file = qAlloc(sizeof(BFile));
+    auto file = (BFile *)qAlloc(sizeof(BFile));
     if (!file)
         return nullptr;
     assert(fileName);
@@ -456,7 +526,7 @@ BFile *CreateBFile(word fileAttribute, const char *fileName)
     return initBFile(file, nullptr, FILE_BUFFER_SIZE, false, true);
 }
 
-bool CreateBFileUnmanaged(BFile *file, void *buffer, int bufferSize, word fileAttribute, const char *fileName)
+bool CreateBFileUnmanaged(BFile *file, void *buffer, int bufferSize, DOS_fileAttributes fileAttribute, const char *fileName)
 {
     assert(file);
     file->handle = CreateFile(fileAttribute, fileName);
@@ -534,7 +604,7 @@ bool PutCharBFile(BFile *file, char c)
 int ReadBFile(BFile *file, void *pData, int size)
 {
     int bytesRead, originalSize = size;
-    char *data = pData;
+    auto data = (char *)pData;
     assert(file && pData && size >= 0);
     assert(file->readPtr >= 0);
     if (!size)

@@ -312,7 +312,7 @@
  0001:00010620       DrawOuterFrame
  0001:00010829       CheckControls
  0001:00010CCA       InputText
- 0001:00010DC3       invalid_char
+ 0001:00010DC3       insert_char
  0001:00010F3D       InsertCharacter
  0001:00010F92       delete
  0001:00010FA9       delete_char
@@ -1959,12 +1959,12 @@
  0002:00003084       a523
  0002:0000308A       aAttack
  0002:00003091       aDefend
- 0002:00003098       aUser_a
- 0002:0000309F       aUser_b
- 0002:000030A6       aUser_c
- 0002:000030AD       aUser_d
- 0002:000030B4       aUser_e
- 0002:000030BB       aUser_f
+ 0002:00003098       aUSER_A
+ 0002:0000309F       aUSER_B
+ 0002:000030A6       aUSER_C
+ 0002:000030AD       aUSER_D
+ 0002:000030B4       aUSER_E
+ 0002:000030BB       aUSER_F
  0002:000030C2       aLparen
  0002:000030C4       aRparen
  0002:000030C6       aAOfferForB
@@ -3340,8 +3340,8 @@
  0002:0004E776       surnameBuf
  0002:0004E78E       menu_word_2
  0002:0004E790       twoPlayers
- 0002:0004E792       player1_clear_flag
- 0002:0004E794       player2_clear_flag
+ 0002:0004E792       player1ClearFlag
+ 0002:0004E794       player2ClearFlag
  0002:0004E79A       size_of_team_file
  0002:0004E79E       team_filename_buffer
  0002:0004E7D0       number_of_teams
@@ -4067,7 +4067,7 @@
  0002:000AFE4E       menu_cursor_frame
  0002:000AFE50       inputing_text_ok
  0002:000AFE56       game_sound_off
- 0002:000AFE58       cpu_ok
+ 0002:000AFE58       skipIntro
  0002:000AFE5A       aSfxEnglishEc
  0002:000AFE6B       a_raw
  0002:000AFE7C       good_pass_timer
@@ -4532,7 +4532,7 @@
  0002:000B9A06       last_ball_location
  0002:000B9A0A       flip_on_off
  0002:000B9A0C       tactics_changed_flag
- 0002:000B9A10       choose_tactics_menu
+ 0002:000B9A10       chooseTacticsMenu
  0002:000B9B26       import_tactics_menu
  0002:000B9D66       editTacticsMenu
  0002:000BA142       flip_str_table

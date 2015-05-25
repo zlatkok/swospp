@@ -10,10 +10,8 @@ typedef unsigned char uchar;
 typedef unsigned int uint;
 
 /* turn on structure packing */
-#if defined __WATCOMC__ || _MSC_VER
+#if defined __WATCOMC__ || _MSC_VER || __GNUC__
 #pragma pack(push, 1)
-#elif defined __GNUC__
-#pragma align 1
 #else
 #error "Please define structure packing directive for your compiler"
 #endif
@@ -85,95 +83,93 @@ enum section_flags {
     SCN_MEM_WRITE              = 0x80000000
 };
 
-typedef struct _PE_header {
+typedef struct PE_Header {
     dword signature;
     word  machine;
-    word  num_sections;
-    dword time_date_stamp;
-    dword sym_table_ptr;
-    dword num_symbols;
-    word  opt_header_size;
+    word  numSections;
+    dword timeDateStamp;
+    dword symTablePtr;
+    dword numSymbols;
+    word  optHeaderSize;
     word  characteristics;
 } PE_header;
 
-typedef struct _Data_directory {
+typedef struct DataDirectory {
     dword vaddr;
     dword size;
-} Data_directory;
+} DataDirectory;
 
-typedef struct _PE_optional_header {
+typedef struct PE_OptionalHeader {
     word  magic;
-    byte  linker_major_ver;
-    byte  linker_minor_ver;
-    dword sizeof_code;
-    dword sizeof_init_data;
-    dword sizeof_uninit_data;
-    dword entry_point;
-    dword code_base;
-    dword data_base;
-    dword image_base;
-    dword section_alignment;
-    dword file_alignment;
-    word  os_major_ver;
-    word  os_minor_ver;
-    word  image_major_ver;
-    word  image_minor_ver;
-    word  subsys_major_ver;
-    word  subsys_minor_ver;
+    byte  linkerMajorVer;
+    byte  linkerMinorVer;
+    dword sizeOfCode;
+    dword sizeOfInitData;
+    dword sizeOfUninitData;
+    dword entryPoint;
+    dword codeBase;
+    dword dataBase;
+    dword imageBase;
+    dword sectionAlignment;
+    dword fileAlignment;
+    word  osMajorVer;
+    word  osMinorVer;
+    word  imageMajorVer;
+    word  imageMinorVer;
+    word  subsysMajorVer;
+    word  subsysMinorVer;
     dword reserved1;
-    dword sizeof_image;
-    dword sizeof_headers;
+    dword sizeOfImage;
+    dword sizeOfHeaders;
     dword checksum;
     word  subsystem;
-    word  dll_characteristics;
-    dword sizeof_stack_reserve;
-    dword sizeof_stack_commit;
-    dword sizeof_heap_reserve;
-    dword sizeof_heap_commit;
-    dword loader_flags;
-    dword number_of_RVA_and_sizes;
-    Data_directory data_dir[16];
-} PE_optional_header;
+    word  dllCharacteristics;
+    dword sizeOfStackReserve;
+    dword sizeOfStackCommit;
+    dword sizeOfHeapReserve;
+    dword sizeOfHeapCommit;
+    dword loaderFlags;
+    dword numOf_RVA_AndSizes;
+    DataDirectory dataDir[16];
+} PE_OptionalHeader;
 
-typedef struct _Section_header {
+typedef struct SectionHeader {
     byte  name[8];
-    dword virtual_size;
+    dword virtualSize;
     dword vaddr;
-    dword sizeof_raw_data;
-    dword ptr_to_raw_data;
-    dword ptr_to_relocations;
-    dword ptr_to_line_numbers;
-    word  num_relocations;
-    word  num_line_numbers;
+    dword sizeOfRawData;
+    dword ptrToRawData;
+    dword ptrToRelocations;
+    dword ptrToLineNumbers;
+    word  numRelocations;
+    word  numLineNumbers;
     dword characteristics;
-} Section_header;
+} SectionHeader;
 
-typedef struct _Export_directory_table {
-    dword export_flags;
-    dword time_date_stamp;
-    word  major_version;
-    word  minor_version;
-    dword name_RVA;
-    dword ordinal_base;
-    dword addr_tbl_entries;
-    dword num_name_pointers;
-    dword export_addr_tbl_rva;
-    dword name_pointer_rva;
-    dword ordinal_table_rva;
-} Export_directory_table;
+typedef struct ExportDirectoryTable {
+    dword exportFlags;
+    dword timeDateStamp;
+    word  majorVersion;
+    word  minorVersion;
+    dword nameRVA;
+    dword ordinalBase;
+    dword addrTableEntries;
+    dword numNamePointers;
+    dword exportAddrTableRVA;
+    dword namePointerRVA;
+    dword ordinalTableRVA;
+} ExportDirectoryTable;
 
-typedef struct Import_directory_table {
-    dword lookup_table_rva;
-    dword time_date_stamp;
-    dword forwarder_chain;
-    dword name_rva;
-    dword iat_rva;
-} Import_directory_table;
+typedef struct ImportDirectoryTable {
+    dword lookupTableRVA;
+    dword timeDateStamp;
+    dword forwarderChain;
+    dword nameRVA;
+    dword iatRVA;
+} ImportDirectoryTable;
 
-#if defined __WATCOMC__ || _MSC_VER
+#if defined __WATCOMC__ || _MSC_VER || __GNUC__
 #pragma pack(pop)
-#elif defined __GNUC__
-/* don't know */
 #else
 #error "Please define structure packing directive for your compiler"
 #endif

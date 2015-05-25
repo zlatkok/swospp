@@ -13,9 +13,6 @@
 #define MAX_CHAT_LINE_LENGTH    25
 #define MAX_TEAM_NAME_LEN       17
 
-#pragma aux scanCodeQueue "*";
-#pragma aux scanCodeQueueLength "*";
-
 extern char playerNick[NICKNAME_LEN + 1];      /* player name for online games */
 extern char gameName[GAME_NAME_LENGTH];        /* name of current game         */
 extern dword currentTeamId;                    /* id of current team           */
@@ -68,52 +65,75 @@ typedef bool (*ModalFunction)(int status, const char *errorText);
 typedef void (*EnterGameLobbyFunction)();
 typedef void (*UpdateLobbyFunction)(const LobbyState *state);
 
-void InitMultiplayer();
-void FinishMultiplayer();
-void InitPlayerNick();
-char *GetPlayerNick();
-char *InitGameName();
-void DisbandGame();
-bool CanGameStart();
-char *SetTeam(char *newTeamName, dword teamIndex);
-void AddChatLine(const char *line);
-void StartGame();
-void GameFinished();
+extern "C" {
+    void InitMultiplayer();
+    void FinishMultiplayer();
+    void InitPlayerNick();
+    char *GetPlayerNick();
+    char *InitGameName();
+    void DisbandGame();
+    void GoBackToLobby();
+    void SetPlayerReadyState(bool isReady);
+    void SetPlayerOrWatcher(bool isWatcher);
+    void SetupTeams(bool (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *));
+    bool CanGameStart();
+    char *SetTeam(char *newTeamName, dword teamIndex);
+    void AddChatLine(const char *line);
+    void StartGame();
+    void GameFinished();
 
-/* Game Lobby menu */
-void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const LobbyState *),
-    void (*errorFunc)(), void (*onGameEndFunc)(), bool inWeAreTheServer);
-void InitializeMPOptions(const MP_Options *options);
-void UpdateMPOptions(const MP_Options *options);
-bool CompareMPOptions(const MP_Options *options);
-MP_Options *GetMPOptions(MP_Options *options);
+    /* Game Lobby menu */
+    void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const LobbyState *),
+        void (*errorFunc)(), void (*onGameEndFunc)(), bool inWeAreTheServer);
+    void InitializeMPOptions(const MP_Options *options);
+    void UpdateMPOptions(const MP_Options *options);
+    bool CompareMPOptions(const MP_Options *options);
+    MP_Options *GetMPOptions(MP_Options *options);
+    void InitializeMPOptionsMenu();
+    void NetworkTimeoutBeforeDraw();
+    void SkipFramesBeforeDraw();
+    void IncreaseNetworkTimeout();
+    void DecreaseNetworkTimeout();
+    void IncreaseSkipFrames();
+    void DecreaseSkipFrames();
+    void mpOptSelectTeamBeforeDraw();
+    void ChooseMPTactics();
+    void ExitMultiplayerOptions();
 
-/* Join game menu GUI interfacing */
-void EnterWaitingToJoinState(SendWaitingToJoinReport updateFunc);
-void RefreshList();
-void LeaveWaitingToJoinState();
-void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
-    void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(),
-    bool (*modalSyncFunc)(), void (*startGameFunc)(),
-    void (*onErrorFunc)(bool), void (*onGameEndFunc)());
+    /* Join game menu GUI interfacing */
+    void EnterWaitingToJoinState(SendWaitingToJoinReport updateFunc);
+    void RefreshList();
+    void LeaveWaitingToJoinState();
+    void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
+        void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(), bool (*modalSyncFunc)(),
+        void (*showTeamMenuFunc)(const char *, const char *), void (*onErrorFunc)(),
+        void (*onGameEndFunc)());
 
-/* Network loop during menus. Return false during blocking operations. */
-bool NetworkOnIdle();
+    /* Network loop during menus. Return false during blocking operations. */
+    bool NetworkOnIdle();
+    void BroadcastControls(byte controls, word longFireFlag);
+    dword GetControlsFromNetwork();
+    int HandleMPKeys(int key);
+    bool SwitchToNextControllingState();
+}
+
 
 #include "dosipx.h"
 
-void GetRandomVariables(char *vars, int *size);
+void GetRandomVariables(byte *vars, int *size);
 void SetRandomVariables(const char *vars, int size);
 
 /* Running multiplayer game */
-void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inNumWatchers,
-    IPX_Address *inWatcherAddresses, Tactics *pl1CustomTactics, Tactics *pl2CustomTactics);
-void FinishMultiplayerGame();
-void OnGameLoopStart();
-void OnGameLoopEnd();
-byte GetGameStatus();
-int GetSkipFrames();
-void SetSkipFrames(int newSkipFrames);
+extern "C" {
+    void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inNumWatchers,
+        IPX_Address *inWatcherAddresses, Tactics *pl1CustomTactics, Tactics *pl2CustomTactics);
+    void FinishMultiplayerGame();
+    void OnGameLoopStart();
+    void OnGameLoopEnd();
+    byte GetGameStatus();
+    int GetSkipFrames();
+    void SetSkipFrames(int newSkipFrames);
+}
 
 /* Options bookkeeping */
 bool ValidateUserMpTactics();

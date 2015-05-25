@@ -11,8 +11,18 @@
 #include "mppacket.h"
 #include "options.h"
 
-extern void ApplyOptions(const MP_Options *options);
-#pragma aux ApplyOptions "*" parm [edi] modify nomemory exact [eax];
+#pragma GCC diagnostic ignored "-Wparentheses"
+
+extern "C" void ApplyOptions(const MP_Options *options);
+static void ApplyOptionsWrapper(const MP_Options *options)
+{
+    asm (
+        "call ApplyOptions  \t\n"
+        :
+        : "edi" (options)
+        : "cc", "eax"
+    );
+}
 
 static char chatLines[MAX_CHAT_LINES][MAX_CHAT_LINE_LENGTH + 1];
 static byte chatLineColors[MAX_CHAT_LINES];
@@ -47,7 +57,7 @@ static void (*onGameEndFunction)();     /* called when game ends naturally */
 /* local info: addresses, names, ids and number of games collected so far */
 typedef struct WaitingGame {
     IPX_Address address;
-    char name[GAME_NAME_LENGTH + 1];
+    char name[GAME_NAME_LENGTH + 6 + 1];
     byte id;
 } WaitingGame;
 
@@ -115,7 +125,10 @@ static word lastPingTime;
 
 typedef struct NetPlayer {
     char name[NICKNAME_LEN + 1];
-    char team[TEAM_SIZE];
+    union {
+        TeamFile team;
+        char teamFiller[TEAM_SIZE];
+    };
     Tactics *userTactics;
     IPX_Address address;
     byte flags;         /* bit 0 - is watcher
@@ -142,12 +155,12 @@ static NetPlayer connectedPlayers[MAX_PLAYERS];
 static int numConnectedPlayers;
 static int ourPlayerIndex;
 
-static bool LoadTeam(dword teamId, char *dest);
+static bool LoadTeam(dword teamId, TeamFile *dest);
 static LobbyState *initLobbyState(LobbyState *state);
 static LobbyState *putOurPlayerOnTop(LobbyState *state);
 static void CleanUpPlayers();
 
-static void EnterSyncingState(bool (*modalSyncFunc)(int), void (*showTeamMenuFunc)(const char *, const char *));
+static void EnterSyncingState(bool (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *));
 static void DisconnectClient(int playerIndex, bool sendDisconnect);
 static void SendListGamesRequest();
 static void SendWaitingGamesReport();
@@ -158,7 +171,7 @@ static void registerMPOptions(RegisterOptionsFunc registerOptions);
 
     registerOptions -> callback to register multiplayer options to be saved/loaded.
 */
-void RegisterNetworkOptions(RegisterOptionsFunc registerOptions)
+extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions)
 {
     registerOptions("multiplayer", 11, "Options for multiplayer games", 29,
         "%*s/playerNick%*s/gameName%4d/team", sizeof(playerNick), playerNick,
@@ -175,7 +188,7 @@ void BroadcastControls(byte controls, word longFireFlag)
     static byte lastControls;
     int i, length;
     char *packet;
-    if (!isControlling(ourPlayerIndex) || !controls && !lastControls)
+    if (!isControlling(ourPlayerIndex) || (!controls && !lastControls))
         return;
     lastControls = controls;
     packet = createControlsPacket(&length, controls, longFireFlag);
@@ -188,7 +201,7 @@ void AddControlsToNetworkQueue(byte controls, word longFireFlag)
 {
     if (isControlling(ourPlayerIndex))
         return;
-    if (numCommands < sizeof(networkControlQueue))
+    if (numCommands < (int)sizeof(networkControlQueue))
         networkControlQueue[numCommands++] = controls | longFireFlag << 16;
     else
         WriteToLog(("Command buffer full. Lost a command."));
@@ -206,12 +219,12 @@ bool SwitchToNextControllingState()
 {
     if (state == ST_PL1_SETUP_TEAM) {
         int i;
-        WriteToLogM((LM_SYNC, "Player 2 now setting up the team."));
+        WriteToLog((LM_SYNC, "Player 2 now setting up the team."));
         state = ST_PL2_SETUP_TEAM;
         numCommands = 0;        /* flush queue, just in case */
         /* player 1 finished, pass on control to player 2 */
         for (i = 0; i < numConnectedPlayers; i++) {
-            if (isPlayer(i))
+            if (isPlayer(i)) {
                 if (isControlling(i)) {
                     WriteToLog(("Player %d not controlling anymore.", i));
                     connectedPlayers[i].flags &= ~PL_IS_CONTROLLING;
@@ -220,6 +233,7 @@ bool SwitchToNextControllingState()
                     WriteToLog(("Player %d now in control.", i));
                     break;
                 }
+            }
         }
         assert(i < numConnectedPlayers);
         /* make current controlling player tactics show in all clients */
@@ -245,7 +259,7 @@ bool SwitchToNextControllingState()
                 watcherAddresses[numWatchers++] = &connectedPlayers[i].address;
             connectedPlayers[i].flags &= ~PL_IS_SYNCED; /* clear this in case it left from previous game */
         }
-        addresses = qAlloc((numWatchers + 2) * sizeof(IPX_Address));
+        addresses = (IPX_Address *)qAlloc((numWatchers + 2) * sizeof(IPX_Address));
         assert(addresses);
         memcpy(addresses, playerAddresses[0], sizeof(IPX_Address));
         memcpy(addresses + 1, playerAddresses[1], sizeof(IPX_Address));
@@ -268,7 +282,7 @@ void GoBackToLobby()
 
 void InitMultiplayer()
 {
-    lobbyState = qAlloc(sizeof(LobbyState));
+    lobbyState = (LobbyState *)qAlloc(sizeof(LobbyState));
     assert(lobbyState);
     connectionError = false;
     mpOptions.size = sizeof(mpOptions);
@@ -283,7 +297,8 @@ void FinishMultiplayer()
     CleanUpPlayers();
 }
 
-/* Generate some funny random nicknames for starters, if nothing saved. */
+/** Generate some funny random nicknames for starters, if nothing saved.
+    Rand seed has to be initialized first. */
 void InitPlayerNick()
 {
     /* take care of max length when adding here */
@@ -338,31 +353,14 @@ char *GetPlayerNick()
     return playerNick;
 }
 
-#pragma disable_message(200);
 char *InitGameName()
 {
     if (!gameName[0]) {
         unsigned short year;
-        unsigned char month, day, hour, minute, second;
-        char *p;
-        /* generate random game name from date + time */
-        _asm {
-            mov  ah, 0x2a
-            int  0x21       ; DOS Get System Date
-            mov  year, cx
-            mov  month, dh
-            mov  day, dl
-            mov  ah, 0x2c
-            int  0x21       ; DOS Get System Time
-            mov  hour, ch
-            mov  minute, cl
-            mov  second, dh
-        };
-        /* Watcom is over-optimizing following call by calling int2str successively,
-           which fails because it's returning static buffer:
-           strcpy(strcpy(strcpy(strcpy(strcpy(strcpy(gameName, "SWPP-"),
-               int2str(year)), "-"), int2str(month)), "-"), int2str(day)); */
-        p = strcpy(strcpy(strcpy(gameName, "SWPP-"), int2str(year)), "-");
+        unsigned char month, day, hour, minute, second, hundred;
+        GetDosDate(&year, &month, &day);
+        GetDosTime(&hour, &minute, &second, &hundred);
+        char *p = strcpy(strcpy(strcpy(gameName, "SWPP-"), int2str(year)), "-");
         p = strcpy(strcpy(p, int2str(month)), "-");
         p = strcpy(strcpy(p, int2str(day)), "-");
         p = strcpy(strcpy(p, int2str(hour)), ":");
@@ -373,7 +371,6 @@ char *InitGameName()
     inLobby = false;
     return gameName;
 }
-#pragma enable_message(200);
 
 static void CleanUpPlayers()
 {
@@ -408,9 +405,6 @@ void DisbandGame()
     inLobby = false;
 }
 
-#pragma aux aDataTeam_nnn "*";
-#pragma aux aCustoms_edt "*";
-
 /** LoadTeam
 
     teamId -  id of team to load
@@ -419,12 +413,12 @@ void DisbandGame()
     Load specified team into memory, do some basic check if id is valid. Return
     true if everything went well, false for error.
 */
-static bool LoadTeam(dword teamId, char *dest)
+static bool LoadTeam(dword teamId, TeamFile *dest)
 {
-    extern char aDataTeam_nnn[], aCustoms_edt[];
+asm("int 1");
     int teamNo = teamId & 0xff, ordinal = teamId >> 8 & 0xff, handle;
     char *fileName = aDataTeam_nnn;
-    if (teamId == -1)
+    if (teamId == (dword)-1)
         return false;
     WriteToLog(("Trying to load team %#x, teamNo = %d, ordinal = %d", teamId, teamNo, ordinal));
     if (ordinal > 93) {
@@ -446,8 +440,8 @@ static bool LoadTeam(dword teamId, char *dest)
     D0 = teamNo;
     calla(LoadTeamFile);
     memcpy(dest, teamFileBuffer + 2 + ordinal * TEAM_SIZE, TEAM_SIZE);
-    dest[4] = 2;                                /* controlled by player */
-    *strncpy(dest + 36, playerNick, 22) = '\0'; /* set coach name to player nickname */
+    dest->teamStatus = 2;                                                                   /* controlled by player */
+    *strncpy(dest->coachName, playerNick, sizeof(dest->coachName) - 1) = '\0';    /* set coach name to player nickname */
     WriteToLog(("Loaded team '%s' OK.", dest + 5));
     return true;
 }
@@ -456,7 +450,7 @@ static bool LoadTeam(dword teamId, char *dest)
 /* This is an important thing to do, otherwise play match menu will be working with teams in wrong
    locations, and will fail to write changes properly. So make it look like as if team was loaded from
    friendly game team selection. */
-static char *AddTeamToSelectedTeams(const char *team)
+static char *AddTeamToSelectedTeams(const TeamFile *team)
 {
     return (char *)memcpy(selectedTeamsBuffer + TEAM_SIZE * numSelectedTeams++, team, TEAM_SIZE) - TEAM_SIZE;
 }
@@ -471,16 +465,15 @@ static int FindPlayer(const IPX_Address *node)
     return i;
 }
 
-static void InitPlayer(NetPlayer *player, const char *name, const char *teamName,
-    const IPX_Address *address, byte joinId)
+static void InitPlayer(NetPlayer *player, const char *name, const char *teamName, const IPX_Address *address, word joinId)
 {
     player->name[0] = '\0';
-    player->team[0] = '\0';
+    player->team.teamFileNo = 0;
     if (name)
         *strncpy(player->name, name, NICKNAME_LEN) = '\0';
     if (teamName)
-        *strncpy(player->team + 5, teamName, TEAM_SIZE) = '\0';
-    *(dword *)player->team = -1;
+        *strncpy(player->team.teamName, teamName, sizeof(decltype(player->team)::teamName) - 1) = '\0';
+    player->team.teamFileNo = player->team.teamOrdinal = player->team.globalTeamNumber = -1;
     player->userTactics = nullptr;
     if (address)
         copyAddress(&player->address, address);
@@ -633,7 +626,7 @@ void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const Lobb
         InitPlayer(&connectedPlayers[0], playerNick, nullptr, nullptr, 0);
         GetOurAddress(&connectedPlayers[0].address);
         /* if we have the team number, load it */
-        if (currentTeamId != -1 && !LoadTeam(currentTeamId, connectedPlayers[0].team)) {
+        if (currentTeamId != (dword)-1 && !LoadTeam(currentTeamId, &connectedPlayers[0].team)) {
             WriteToLog(("Failed to load team %#x.", currentTeamId));
             currentTeamId = -1;
         }
@@ -669,7 +662,7 @@ MP_Options *getMPOptions()
 /* Update this whenever MP_Options get changed! */
 void registerMPOptions(RegisterOptionsFunc registerOptions)
 {
-    static_assert(sizeof(MP_Options) == 12);
+    static_assert(sizeof(MP_Options) == 12, "Multi player options changed.");
     registerOptions("game", 4, "Default settings for multiplayer match", 38,
         "%n%c" "%2d/version" "%2d/gameLength" "%2d/pitchType" "%1d/numSubs" "%1d/maxSubs"
         "%1d/skipFrames" "%1d/networkTimeout", getMPOptions);
@@ -713,7 +706,7 @@ static void SetFlags(int bit, bool set)
     char *packet;
     int i, length;
     byte oldFlags = connectedPlayers[ourPlayerIndex].flags;
-    connectedPlayers[ourPlayerIndex].flags = oldFlags & ~(1 << bit) | (set != 0) << bit;
+    connectedPlayers[ourPlayerIndex].flags = (oldFlags & ~(1 << bit)) | ((set != 0) << bit);
     if (oldFlags != connectedPlayers[ourPlayerIndex].flags) {
         packet = createPlayerFlagsPacket(&length, connectedPlayers[ourPlayerIndex].flags, ourPlayerIndex);
         if (weAreTheServer)
@@ -738,7 +731,7 @@ char *SetTeam(char *newTeam, dword teamIndex)
 {
     char *packet;
     int i, length;
-    memcpy(connectedPlayers[ourPlayerIndex].team, newTeam, TEAM_SIZE);
+    memcpy(&connectedPlayers[ourPlayerIndex].team, newTeam, TEAM_SIZE);
     currentTeamId = teamIndex;
     if (!inLobby)
         return newTeam + 5;
@@ -779,7 +772,7 @@ bool CanGameStart()
         return false;
     for (i = 0; i < numConnectedPlayers; i++) {
         if (isPlayer(i)) {
-            if (isReady(i) && connectedPlayers[i].team[5] != 0)
+            if (isReady(i) && connectedPlayers[i].team.teamName[0] != '\0')
                 numReadyPlayers++;  /* must be player, ready and have a team */
             else
                 numNonReadyPlayers++;
@@ -788,9 +781,10 @@ bool CanGameStart()
     return numReadyPlayers == 2 && numNonReadyPlayers == 0;
 }
 
-void SetupTeams(bool (*modalSyncFunc)(), void (*showTeamMenuFunc)())
+void SetupTeams(bool (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *))
 {
-    char *packet, randomVariables[32];
+    char *packet;
+    byte randomVariables[32];
     int i, length, randVarsSize = sizeof(randomVariables);
     const IPX_Address *addresses[MAX_PLAYERS - 1];
     WriteToLog(("Synchronizing... modalSyncFunc = %#x, showTeamMenuFunc = %#x",
@@ -798,7 +792,7 @@ void SetupTeams(bool (*modalSyncFunc)(), void (*showTeamMenuFunc)())
     for (i = 1; i < numConnectedPlayers; i++)
         addresses[i - 1] = &connectedPlayers[i].address;
     GetRandomVariables(randomVariables, &randVarsSize);
-    assert(randVarsSize <= sizeof(randomVariables));
+    assert(randVarsSize <= (int)sizeof(randomVariables));
     WriteToLog(("Sending random variables: [%#.*s]", randVarsSize, randomVariables));
     packet = createSyncPacket(&length, addresses, numConnectedPlayers - 1, randomVariables, randVarsSize);
     for (i = 1; i < numConnectedPlayers; i++)
@@ -830,8 +824,6 @@ static void CheckIncomingServerLobbyTraffic()
     switch (getRequestType(packet, length)) {
     case PT_GET_GAME_INFO:  /* someone's querying about open games */
         WriteToLog(("Received game info request"));
-        calla(Rand);
-        gameId = D0;
         response = createGameInfoPacket(&respLength, numConnectedPlayers, gameName, gameId);
         WriteToLog(("Responding to enumerate games request."));
         SendSimplePacket(&node, response, respLength);
@@ -912,7 +904,7 @@ static void CheckIncomingServerLobbyTraffic()
             break;
         }
         /* set our internal state */
-        *strncpy(connectedPlayers[playerIndex].team + 5, teamName, MAX_TEAM_NAME_LEN) = '\0';
+        *strncpy(connectedPlayers[playerIndex].team.teamName, teamName, MAX_TEAM_NAME_LEN) = '\0';
         /* reuse that packet to notify other clients */
         setPlayerIndex(packet, playerIndex);
         for (i = 1; i < numConnectedPlayers; i++)
@@ -1039,11 +1031,11 @@ static bool CheckIncomingClientLobbyTraffic()
         }
         break;
     case PT_PLAYER_TEAM:
-        if (!unpackPlayerTeamChangePacket(packet, length, &playerIndex, &playerTeamName)) {
+        if (!unpackPlayerTeamChangePacket(packet, length, &playerIndex, playerTeamName)) {
             WriteToLog(("Malformed player team change packet rejected."));
         } else {
             assert(playerIndex >= 0 && playerIndex < numConnectedPlayers);
-            *strncpy(connectedPlayers[playerIndex].team + 5, playerTeamName, MAX_TEAM_NAME_LEN) = '\0';
+            *strncpy(connectedPlayers[playerIndex].team.teamName, playerTeamName, MAX_TEAM_NAME_LEN) = '\0';
         }
         break;
     case PT_PING:
@@ -1061,7 +1053,7 @@ static bool CheckIncomingClientLobbyTraffic()
             addresses[i - 1] = &connectedPlayers[i].address;
         /* re-use chat line buffer to hold random variables content */
         i = sizeof(chatLine);
-        if (!unpackSyncPacket(packet, length, addresses, numConnectedPlayers - 1, chatLine, &i)) {
+        if (!unpackSyncPacket(packet, length, addresses, numConnectedPlayers - 1, (byte *)chatLine, &i)) {
             WriteToLog(("Invalid sync packet rejected."));
         } else {
             WriteToLog(("Received random variables: [%#.*s]", i, chatLine));
@@ -1074,7 +1066,7 @@ static bool CheckIncomingClientLobbyTraffic()
             /* players send their teams and tactics */
             if (isPlayer(ourPlayerIndex)) {
                 char *packet = createTeamAndTacticsPacket(&length,
-                    connectedPlayers[ourPlayerIndex].team, GetUserMpTactics());
+                    &connectedPlayers[ourPlayerIndex].team, GetUserMpTactics());
                 for (i = 0; i < numConnectedPlayers; i++)
                     if (i != ourPlayerIndex) {
                         //mozda neki resend fleg ako ne uspe?
@@ -1134,7 +1126,8 @@ static void MenuTransitionAfterTheGame()
 */
 static bool SyncOnIdle()
 {
-    char *packet, *team1 = nullptr, *team2 = nullptr;
+    char *packet;
+    TeamFile *team1 = nullptr, *team2 = nullptr;
     int i, controllingPlayer, packetLen;
     IPX_Address node;
     UnAckPacket *timedOutPacket;
@@ -1151,10 +1144,10 @@ static bool SyncOnIdle()
                 WriteToLog(("Received PT_TEAM_AND_TACTICS from a watcher."));
             else {
                 qFree(connectedPlayers[i].userTactics);
-                connectedPlayers[i].userTactics = qAlloc(sizeof(Tactics) * 6);
+                connectedPlayers[i].userTactics = (Tactics *)qAlloc(sizeof(Tactics) * 6);
                 //if !(alloc) FAIL
                 if (!unpackTeamAndTacticsPacket(packet, packetLen,
-                    connectedPlayers[i].team, connectedPlayers[i].userTactics))
+                    &connectedPlayers[i].team, connectedPlayers[i].userTactics))
                     WriteToLog(("Malformed PT_TEAM_AND_TACTICS packet received."));
             }
             break;
@@ -1180,14 +1173,16 @@ static bool SyncOnIdle()
                 WriteToLog(("Sync completed successfully."));
                 state = ST_PL1_SETUP_TEAM;
                 qFree(packet);
-                for (i = 0; i < numConnectedPlayers; i++)
-                    if (isPlayer(i))
+                for (i = 0; i < numConnectedPlayers; i++) {
+                    if (isPlayer(i)) {
                         if (!team1)
-                            team1 = connectedPlayers[i].team;
+                            team1 = &connectedPlayers[i].team;
                         else if (!team2)
-                            team2 = connectedPlayers[i].team;
+                            team2 = &connectedPlayers[i].team;
+                    }
+                }
                 assert(showTeamsMenuFunction && team1 && team2);
-                selTeamsPtr = selectedTeamsBuffer;  /* just in case */
+                selTeamsPtr = (char *)selectedTeamsBuffer;  /* just in case */
                 showTeamsMenuFunction(AddTeamToSelectedTeams(team1), AddTeamToSelectedTeams(team2));
                 MenuTransitionAfterTheGame();
                 IPX_OnIdle();
@@ -1255,14 +1250,15 @@ static bool SyncOnIdle()
             WriteToLog(("Sync completed successfully. Notifying clients."));
             syncPacket = PT_SYNC_OK;
             if (isPlayer(0))
-                team1 = connectedPlayers[0].team;
+                team1 = &connectedPlayers[0].team;
             for (i = 1; i < numConnectedPlayers; i++) {
                 SendImportantPacket(&connectedPlayers[i].address, (char *)&syncPacket, sizeof(word));
-                if (isPlayer(i))
+                if (isPlayer(i)) {
                     if (!team1)
-                        team1 = connectedPlayers[i].team;
+                        team1 = &connectedPlayers[i].team;
                     else if (!team2)
-                        team2 = connectedPlayers[i].team;
+                        team2 = &connectedPlayers[i].team;
+                }
             }
             state = ST_PL1_SETUP_TEAM;
             assert(showTeamsMenuFunction && team1 && team2);
@@ -1327,7 +1323,7 @@ static LobbyState *initLobbyState(LobbyState *state)
     for (i = 0; i < MAX_PLAYERS; i++) {
         state->playerNames[i] = connectedPlayers[i].name;
         state->playerFlags[i] = connectedPlayers[i].flags;
-        state->playerTeamsNames[i] = connectedPlayers[i].team + 5;
+        state->playerTeamsNames[i] = connectedPlayers[i].team.teamName;
     }
     currentOutputLine = (currentChatLine + 1) % MAX_CHAT_LINES;
     for (i = 0; i < MAX_CHAT_LINES; i++) {
@@ -1429,13 +1425,12 @@ void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
     onGameEndFunction = onGameEndFunc;
     ConnectTo(&waitingGames[index].address);    /* assume connected until proven otherwise */
     copyAddress(&connectedPlayers[0].address, &waitingGames[index].address);
-    if (!LoadTeam(currentTeamId, connectedPlayers[0].team)) {    /* try to load the player's team */
-        connectedPlayers[0].team[5] = '\0';
+    if (!LoadTeam(currentTeamId, &connectedPlayers[0].team)) {  /* try to load the player's team */
+        connectedPlayers[0].team.teamName[0] = '\0';
         currentTeamId = -1;
     }
-    calla(Rand);
-    packet = createJoinGamePacket(&length, joinId = D0, waitingGames[index].id,
-        playerNick, connectedPlayers[0].team + 5);
+    packet = createJoinGamePacket(&length, joinId = GetTickCount(), waitingGames[index].id,
+        playerNick, connectedPlayers[0].team.teamName);
     lastRequestTick = currentTick;      /* record to track timeout in connect */
     lastPingTime = 0;
     connectionError = false;
@@ -1491,7 +1486,7 @@ static void UpdateRefreshing()
 static void CheckForWaitingGameReply()
 {
     word type;
-    char *packet, respondingGameName[GAME_NAME_LENGTH + 10], *p;
+    char *packet, respondingGameName[GAME_NAME_LENGTH + 1], *p;
     int length;
     IPX_Address node;
     int i;
@@ -1504,8 +1499,11 @@ static void CheckForWaitingGameReply()
             /* danger Will Robinson, stack reserves are burning out */
             WriteToLog(("Stack available: %d", stackavail()));
             if (unpackGameInfoPacket(packet, length, &networkVersion, &networkSubversion,
-                &numPlayers, &maxPlayers, respondingGameName, GAME_NAME_LENGTH + 1, &gameId)) {
+                &numPlayers, &maxPlayers, respondingGameName, GAME_NAME_LENGTH, &gameId)) {
                 WriteToLog(("Game response received: %s, id = %d", respondingGameName, gameId));
+                assert(numPlayers > 0 && numPlayers < 10 && maxPlayers > 0 && maxPlayers < 10);
+                numPlayers = max(numPlayers, 9);
+                maxPlayers = max(maxPlayers, 9);
                 if (networkVersion > NETWORK_VERSION) {
                     WriteToLog(("Ignoring game with too new server (%d.%d)", networkVersion, networkSubversion));
                     qFree(packet);
@@ -1513,16 +1511,17 @@ static void CheckForWaitingGameReply()
                 }
                 /* check if we already have this game */
                 for (i = 0; i < numWaitingGames; i++)
-                    if (!memcmp(&waitingGames[i].address, &node, sizeof(IPX_Address)))
+                    if (addressMatch(&waitingGames[i].address, &node))
                         break;
                 if (i < MAX_GAMES_WAITING) {
                     /* add a new game/update old */
                     waitingGames[i].id = gameId;
+                    /* this is why we need additional space in waiting game name */
                     p = strcpy(strcpy(strcpy(strcpy(waitingGames[i].name, respondingGameName),
                         " ("), int2str(numPlayers)), "/");
                     strcpy(strcpy(p, int2str(maxPlayers)), ")");
                     if (i >= numWaitingGames) {
-                        memcpy(&waitingGames[i].address, &node, sizeof(node));
+                        copyAddress(&waitingGames[i].address, &node);
                         numWaitingGames++;
                     }
                 }
@@ -1569,7 +1568,7 @@ static bool JoiningGameOnIdle(LobbyState *lobbyState)
         case PT_JOIN_GAME_ACCEPTED:
             for (i = 0; i < MAX_PLAYERS; i++)
                 addresses[i] = &connectedPlayers[i].address;
-            *strncpy(ourTeamName, connectedPlayers[0].team + 5, MAX_TEAM_NAME_LEN) = '\0';
+            *strncpy(ourTeamName, connectedPlayers[0].team.teamName, MAX_TEAM_NAME_LEN) = '\0';
             if (unpackJoinedGameOkPacket(packet, packetSize, initLobbyState(lobbyState), addresses)) {
                 NetPlayer *n = connectedPlayers + lobbyState->numPlayers;
                 assert(lobbyState->numPlayers < MAX_PLAYERS);
@@ -1579,16 +1578,16 @@ static bool JoiningGameOnIdle(LobbyState *lobbyState)
                 numConnectedPlayers = ++lobbyState->numPlayers;
                 ourPlayerIndex = numConnectedPlayers - 1;
                 n->flags = 0;
-                memcpy(n->team, connectedPlayers[0].team, TEAM_SIZE);
+                memcpy(&n->team, &connectedPlayers[0].team, TEAM_SIZE);
                 strcpy(n->name, playerNick);
-                strcpy(n->team + 5, ourTeamName);
+                strcpy(n->team.teamName, ourTeamName);
                 /* save client options so they don't get overwritten by server options */
                 if (!savedClientOptions)
-                    savedClientOptions = qAlloc(sizeof(mpOptions));
+                    savedClientOptions = (MP_Options *)qAlloc(sizeof(mpOptions));
                 if (savedClientOptions)
                     memcpy(savedClientOptions, &mpOptions, sizeof(mpOptions));
                 memcpy(&mpOptions, &lobbyState->options, sizeof(mpOptions));
-                ApplyOptions(&mpOptions);
+                ApplyOptionsWrapper(&mpOptions);
                 n->userTactics = nullptr;
                 modalFunction(1, nullptr);
                 WriteToLog(("We joined!!!"));
@@ -1623,7 +1622,7 @@ static bool JoiningGameOnIdle(LobbyState *lobbyState)
         static word lastResendTick;
         if (currentTick - lastResendTick > 25) {
             packet = createJoinGamePacket(&packetSize, joinId, waitingGames[joiningGame].id,
-                playerNick, connectedPlayers[ourPlayerIndex].team + 5);
+                playerNick, connectedPlayers[ourPlayerIndex].team.teamName);
             SendSimplePacket(&waitingGames[joiningGame].address, packet, packetSize);
             lastResendTick = currentTick;
         }
@@ -1640,7 +1639,7 @@ static bool JoiningGameOnIdle(LobbyState *lobbyState)
 
 ***/
 
-static void EnterSyncingState(bool (*modalSyncFunc)(int), void (*showTeamMenuFunc)(const char *, const char *))
+static void EnterSyncingState(bool (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *))
 {
     WriteToLog(("Going into syncing state..."));
     state = ST_SYNC;
@@ -1650,13 +1649,13 @@ static void EnterSyncingState(bool (*modalSyncFunc)(int), void (*showTeamMenuFun
     syncDone = false;
     if (isPlayer(ourPlayerIndex)) {
         if (!connectedPlayers[ourPlayerIndex].userTactics)
-            connectedPlayers[ourPlayerIndex].userTactics = qAlloc(TACTIC_SIZE * 6);
+            connectedPlayers[ourPlayerIndex].userTactics = (Tactics *)qAlloc(TACTIC_SIZE * 6);
         assert(connectedPlayers[ourPlayerIndex].userTactics);
         memcpy(connectedPlayers[ourPlayerIndex].userTactics, GetUserMpTactics(), sizeof(Tactics) * 6);
     }
     if (weAreTheServer && isPlayer(0)) {
         int i, length;
-        char *packet = createTeamAndTacticsPacket(&length, connectedPlayers[0].team, GetUserMpTactics());
+        char *packet = createTeamAndTacticsPacket(&length, &connectedPlayers[0].team, GetUserMpTactics());
         for (i = 1; i < numConnectedPlayers; i++) {
             //mozda neki resend fleg ako ne uspe?
             SendImportantPacket(&connectedPlayers[i].address, packet, length);

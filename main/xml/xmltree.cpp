@@ -8,20 +8,20 @@
 
 /* don't try loading too big files :P */
 static char xmlHeap[20 * 1024];
-static int xmlHeapPtr;
+static unsigned int xmlHeapIndex;
 
 static XmlNodeType getAttributeType(const char *value, int length);
 
 static void *xmlAlloc(int size)
 {
-    char *p = &xmlHeap[xmlHeapPtr];
-    assert(size >= 0 && xmlHeapPtr + size <= sizeof(xmlHeap));
-    if (xmlHeapPtr + size > sizeof(xmlHeap))
+    char *p = &xmlHeap[xmlHeapIndex];
+    assert(size >= 0 && xmlHeapIndex + size <= sizeof(xmlHeap));
+    if (xmlHeapIndex + size > sizeof(xmlHeap))
         return nullptr;
 #ifdef DEBUG
-    memset(xmlHeap + xmlHeapPtr, 0xbb, size);
+    memset(xmlHeap + xmlHeapIndex, 0xbb, size);
 #endif
-    xmlHeapPtr += size;
+    xmlHeapIndex += size;
     return p;
 }
 
@@ -30,15 +30,16 @@ static void xmlFree(void *ptr)
     if (!ptr)
         return;
     assert((char *)ptr >= xmlHeap && (char *)ptr < xmlHeap + sizeof(xmlHeap));
-    xmlHeapPtr = (char *)ptr - xmlHeap;
+    xmlHeapIndex = (char *)ptr - xmlHeap;
+    assert(xmlHeapIndex < sizeof(xmlHeap));
 #ifdef DEBUG
-    memset(xmlHeap + xmlHeapPtr, 0xaa, sizeof(xmlHeap) - xmlHeapPtr);
+    memset(xmlHeap + xmlHeapIndex, 0xaa, sizeof(xmlHeap) - xmlHeapIndex);
 #endif
 }
 
 static char *xmlStrdup(const char *str, int size)
 {
-    char *duplicate = xmlAlloc(size + 1);
+    char *duplicate = (char *)xmlAlloc(size + 1);
     assert(str && size >= 0);
     if (duplicate) {
         memcpy(duplicate, str, size);
@@ -64,10 +65,10 @@ XmlNode *NewEmptyXmlNode(const char *name, int nameLen)
 
 XmlNode *NewXmlNode(const char *name, int nameLen, XmlNodeType type, int length, bool alloc)
 {
-    XmlNode *x;
-    assert((!name || !*name) && !nameLen || name && nameLen);
+    assert(((!name || !*name) && !nameLen) || (name && nameLen));
     assert(!name || strlen(name) == nameLen);
-    x = xmlAlloc(sizeof(XmlNode) + (name && *name ? nameLen + 1 : 0));
+
+    XmlNode *x = (XmlNode *)xmlAlloc(sizeof(XmlNode) + (name && *name ? nameLen + 1 : 0));
     if (name) {
         x->name = (char *)x + sizeof(XmlNode);
         memcpy(x->name, name, nameLen);
@@ -77,9 +78,9 @@ XmlNode *NewXmlNode(const char *name, int nameLen, XmlNodeType type, int length,
     x->nameLength = nameLen;
     x->type = type;
     x->length = length;
-    x->savedValue.ptr = xmlAlloc(length);
+    x->savedValue.ptr = (char *)xmlAlloc(length);
     x->savedLength = length;
-    x->value.ptr = alloc ? xmlAlloc(length) : nullptr;
+    x->value.ptr = alloc ? (char *)xmlAlloc(length) : nullptr;
     assert(x->savedValue.ptr && (!alloc || x->value.ptr));
     x->children = x->nextChild = nullptr;
     x->attributes = nullptr;
@@ -104,12 +105,11 @@ void SetFunc(XmlNode *node, void *(*func)())
 
 void RefreshFuncData(const XmlNode *node)
 {
-    XmlNode *child;
     int ofs = 0;
     char *data;
     assert(node && node->type == XML_FUNC && node->value.func && node->children);
-    data = node->value.func();
-    for (child = node->children; child; child = child->nextChild) {
+    data = (char *)node->value.func();
+    for (XmlNode *child = node->children; child; child = child->nextChild) {
         child->value.ptr = data + ofs;
         ofs += child->length;
     }
@@ -119,7 +119,7 @@ static void snapshotNode(XmlNode *node)
 {
     assert(node);
     if (!node->savedValue.ptr && node->length)
-        node->savedValue.ptr = xmlAlloc(node->length);
+        node->savedValue.ptr = (char *)xmlAlloc(node->length);
     switch (node->type) {
     case XML_CHAR:
     case XML_SHORT:
@@ -220,7 +220,7 @@ static void convertNumberToString(char *dst, int dstSize, char *from, int fromSi
 static int convertStringToNumber(const char *src, int srcLen)
 {
     char convBuf[33];
-    int copyLen = min(srcLen, sizeof(convBuf) - 1);
+    int copyLen = min(srcLen, (int)sizeof(convBuf) - 1);
     memcpy(convBuf, src, copyLen);
     convBuf[copyLen] = '\0';
     return strtol(convBuf, nullptr, 0, nullptr);
@@ -236,9 +236,9 @@ static int convertStringToNumber(const char *src, int srcLen)
 static void mergeNodes(XmlNode *dstNode, const XmlNode *srcNode)
 {
     assert(dstNode && srcNode);
-    if (dstNode->type == srcNode->type ||
-        dstNode->type == XML_STRING && srcNode->type == XML_ARRAY ||
-        dstNode->type == XML_ARRAY && srcNode->type == XML_STRING) {
+    if ((dstNode->type == srcNode->type) ||
+        ((dstNode->type == XML_STRING) && (srcNode->type == XML_ARRAY)) ||
+        ((dstNode->type == XML_ARRAY) && (srcNode->type == XML_STRING))) {
         if (dstNode->length > 0) {
             assert(dstNode->value.ptr && srcNode->value.ptr);
             assert(dstNode->type == XML_STRING || dstNode->type == XML_ARRAY || dstNode->length == srcNode->length);
@@ -334,7 +334,7 @@ void XmlMergeTrees(XmlNode *destTree, const XmlNode *srcTree)
     }
 }
 
-static XmlAttribute *findAttribute(const XmlNode *node, const char *attrName, size_t nameLen, uint32_t hash)
+static XmlAttribute *findAttribute(const XmlNode *node, const char *attrName, uint32_t hash)
 {
     XmlAttribute *attr;
     assert(node && attrName);
@@ -360,7 +360,7 @@ bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const cha
     XmlAttribute *attr;
     assert(node && name && value);
     hash = simpleHash(name, nameLen);
-    if (findAttribute(node, name, nameLen, hash)) {
+    if (findAttribute(node, name, hash)) {
         WriteToLog(("Attribute '%s' already specified for node '%s'.", name, node->name));
         return false;
     }
@@ -371,7 +371,7 @@ bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const cha
             return false;
         node->type = type;
     }
-    attr = xmlAlloc(sizeof(XmlAttribute));
+    attr = (XmlAttribute *)xmlAlloc(sizeof(XmlAttribute));
     if (attr) {
         attr->name = xmlStrdup(name, nameLen);
         if (!attr->name)
@@ -395,7 +395,7 @@ bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const cha
 static XmlNodeType getAttributeType(const char *value, int length)
 {
     uint32_t hash;
-    static_assert(XML_TYPE_MAX == 7);
+    static_assert(XML_TYPE_MAX == 7, "Xml types changed.");
     struct AllowedType {
         const char *name;
         uint32_t hash;
@@ -408,11 +408,10 @@ static XmlNodeType getAttributeType(const char *value, int length)
         { "array",  0x0f1abe24, XML_ARRAY  },
         { "empty",  0x0f605c34, XML_EMPTY  },
     };
-    int i;
     assert(simpleHash("char", 4) == 0x7c952063);    /* in case algo gets changed :P */
     assert(value);
     hash = simpleHash(value, length);
-    for (i = 0; i < sizeofarray(allowedTypes); i++)
+    for (size_t i = 0; i < sizeofarray(allowedTypes); i++)
         if (allowedTypes[i].hash == hash && !strcmp(value, allowedTypes[i].name))
             return allowedTypes[i].type;
     return XML_TYPE_MAX;
@@ -444,7 +443,7 @@ bool AddXmlContent(XmlNode *node, XmlNodeType type, void *content, int size)
 {
     assert(node && content && size > 0);
     node->type = type;
-    if (!(node->value.ptr = xmlAlloc(size)))
+    if (!(node->value.ptr = (char *)xmlAlloc(size)))
         return false;
     memcpy(node->value.ptr, content, size);
     node->length = size;
@@ -453,7 +452,6 @@ bool AddXmlContent(XmlNode *node, XmlNodeType type, void *content, int size)
 
 const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_t attrNameLen, size_t *valLen)
 {
-    XmlAttribute *attr;
     uint32_t hash;
     assert(node);
     if (valLen)
@@ -461,7 +459,7 @@ const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_
     if (!node->attributes)
         return nullptr;
     hash = simpleHash(attrName, attrNameLen);
-    for (attr = node->attributes; attr; attr = attr->next) {
+    for (XmlAttribute *attr = node->attributes; attr; attr = attr->next) {
         if (attr->nameHash == hash && !strcmp(attr->name, attrName)) {
             if (valLen)
                 *valLen = attr->valueLength;
@@ -473,7 +471,7 @@ const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_
 
 void GetXmlNodeAttributes(const XmlNode *node, XmlAttributeInfo *attrInfo)
 {
-    int i = 0;
+    size_t i = 0;
     XmlAttribute *elem;
     assert(node);
     for (elem = node->attributes; elem; elem = elem->next, i++) {

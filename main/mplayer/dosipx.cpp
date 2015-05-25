@@ -1,6 +1,6 @@
-#include <i86.h>
 #include "dosipx.h"
 #include "util.h"
+#include "dos.h"
 #include "qalloc.h"
 
 /* maximum number of clients we will accept as a server */
@@ -75,12 +75,12 @@ static void FreeLowMemory(void *ptr);
 
 static dword *GetClientCurrentReceivingId(const IPX_Address *address);
 static dword GetClientNextSendingId(const IPX_Address *address);
-static dword *GetClientCurrentReceivingGroupId(const IPX_Address *address);
 static dword GetClientNextSendingGroupId(const IPX_Address *address);
 
 bool addressMatch(const IPX_Address *a, const IPX_Address *b)
 {
     const dword *aa = (dword *)a, *bb = (dword *)b;
+    assert(a && b);
     return aa[0] == bb[0] && aa[1] == bb[1] && aa[2] == bb[2];
 }
 
@@ -88,6 +88,7 @@ void copyAddress(IPX_Address *dest, const IPX_Address *source)
 {
     dword *dst = (dword *)dest;
     const dword *src = (const dword *)source;
+    assert(dest && source);
     dst[0] = src[0];
     dst[1] = src[1];
     dst[2] = src[2];
@@ -100,15 +101,6 @@ void GetOurAddress(IPX_Address *dest)
 
 #define MOD_ADLER 65521
 
-/* Bah, can't use preprocessor constant in inline assembly. */
-int IsGreaterThanOrEqualToModAdler(int);
-#pragma aux IsGreaterThanOrEqualToModAdler =   \
-    "cmp ecx, 65521"    \
-    "sbb eax, eax"      \
-    "not eax"           \
-    parm [ecx]          \
-    value [eax];
-
 static dword Adler32(const byte *data, int len)
 {
     dword a = 1, b = 0;
@@ -118,12 +110,10 @@ static dword Adler32(const byte *data, int len)
     }
     while (len-- > 0) {
         a += *data++;
-        /* How dissapointing, Watcom is generating jumps for this:
-           a -= -(a >= MOD_ADLER) & MOD_ADLER
-           So Watcom, watch and learn. (from VC :P) */
-        a -= -IsGreaterThanOrEqualToModAdler(a) & MOD_ADLER;
+        /* no need for asm hackey anymore, GCC handles code like this just fine */
+        a -= -(a >= MOD_ADLER) & MOD_ADLER;
         b += a;
-        b -= -IsGreaterThanOrEqualToModAdler(b) & MOD_ADLER;
+        b -= -(b >= MOD_ADLER) & MOD_ADLER;
     }
     return b << 16 | a;
 }
@@ -271,7 +261,7 @@ static char *AddPacketFragment(int *bufSize, char *data, int length,
             /* this is the last fragment, we can recreate original packet */
             char *bufPtr, *curPtr;
             *bufSize = p->totalSize + length;
-            if (!(bufPtr = qAlloc(*bufSize))) {
+            if (!(bufPtr = (char *)qAlloc(*bufSize))) {
                 WriteToLog(("Insufficient memory to assemble packet (needs %d bytes).", *bufSize));
                 *bufSize = -1;
                 return nullptr;
@@ -286,7 +276,7 @@ static char *AddPacketFragment(int *bufSize, char *data, int length,
             return bufPtr;
         } else {
             /* store this fragment to the end of the list */
-            Fragment *q = qAlloc(sizeof(Fragment) + length);
+            auto q = (Fragment *)qAlloc(sizeof(Fragment) + length);
             if (!q) {
                 WriteToLog(("Out of memory while trying to store packet fragment!"));
                 *bufSize = -1;
@@ -341,7 +331,7 @@ static void CancelFragmentedPacket(const IPX_Address *source, dword fragId)
     | our local ipx address          |
     +--------------------------------+
 */
-char *InitializeNetwork()
+const char *InitializeNetwork()
 {
     int i, lowMemorySize;
     if (!IPX_IsInstalled())
@@ -349,7 +339,7 @@ char *InitializeNetwork()
     if (lowMemory)      /* if this isn't nullptr we're initialized already */
         return nullptr;
     /* -1 cause DOSBox actually rejects packets of max size */
-    if ((maxPacketSize = IPX_GetMaximumPacketSize() - 1) < sizeof(IPX_Header) + 128)
+    if ((maxPacketSize = IPX_GetMaximumPacketSize() - 1) < (int)sizeof(IPX_Header) + 128)
         return "Insufficient IPX packet size.";
     WriteToLog(("IPX maximum packet size is %d.", maxPacketSize));
     /* allocate 1 more byte for receiving buffer just in case (DOSBox receive() allows full size) */
@@ -375,7 +365,7 @@ char *InitializeNetwork()
     }
     /* and finally, space for our IPX address */
     ourAddress = IPX_GetInterNetworkAddress((char *)sendPacket + sizeof(ECB) + maxPacketSize + 1);
-    *(word *)&ourAddress->socket = socketId;
+    ourAddress->socket = socketId;
     HexDumpToLog((char *)ourAddress, sizeof(IPX_Address), "our IPX address");
     /* set up receiving ECBs */
     for (i = 0; i < MAX_RECV_PACKETS; i++) {
@@ -389,12 +379,12 @@ char *InitializeNetwork()
     }
     /* set up broadcast node */
     copyAddress(&broadcastAddress, ourAddress);
-    memset(broadcastAddress.node, -1, member_size(IPX_Address, node));
+    memset(broadcastAddress.node, -1, sizeof(broadcastAddress.node));
     /* finish setting up sending ECB */
     sendPacket->ecb.socketNumber = socketId;
     sendPacket->verifyStamp = 'SWPP';
     copyAddress(&sendPacket->ipx.source, ourAddress);
-    clientAckIds = qAlloc(MAX_CONNECTIONS * sizeof(ClientAckId));
+    clientAckIds = (ClientAckId *)qAlloc(MAX_CONNECTIONS * sizeof(ClientAckId));
     numClients = 0;
     /* phew... all ok */
     return nullptr;
@@ -462,7 +452,7 @@ void SendAck(const IPX_Address *dest, dword id)
 
 void SendSimplePacket(const IPX_Address *dest, const char *data, int length)
 {
-    if (length + sizeof(SWOSPP_Packet) - sizeof(ECB) > maxPacketSize) {
+    if ((int)(length + sizeof(SWOSPP_Packet) - sizeof(ECB)) > maxPacketSize) {
         WriteToLog(("Trying to send too large simple packet. Size = %d, max size = %d.",
             length, maxPacketSize - sizeof(SWOSPP_Packet) + sizeof(ECB)));
         return;
@@ -477,7 +467,7 @@ bool SendImportantPacket(const IPX_Address *dest, const char *destBuf, int destS
         WriteToLog(("Trying to send important packet to a non-connected client [%#.12s]", dest));
         return false;
     }
-    if (destSize <= maxPacketSize - sizeof(SWOSPP_Packet) + sizeof(ECB) - sizeof(dword)) {
+    if (destSize <= (int)(maxPacketSize - sizeof(SWOSPP_Packet) + sizeof(ECB) - sizeof(dword))) {
         /* not fragmented */
         char *data;
         if (!(data = AddUnacknowledgedPacket(dest, GetClientNextSendingId(dest),
@@ -535,7 +525,7 @@ static void SendPacket(const IPX_Address *dest, const char *data, int length)
         WriteToLog(("SendPacket(): ecb in use flag != 0, impossible!!!"));
         IPX_OnIdle();
     }
-    memcpy(sendPacket->ecb.immediateAddress, dest->node, member_size(IPX_Address, node));
+    memcpy(sendPacket->ecb.immediateAddress, dest->node, sizeof(dest->node));
     copyAddress(&sendPacket->ipx.destination, dest);
     sendPacket->ecb.fragmentCount = 1;
     sendPacket->ecb.fragDesc[0].size = length + sizeof(SWOSPP_Packet) - sizeof(ECB);
@@ -543,7 +533,7 @@ static void SendPacket(const IPX_Address *dest, const char *data, int length)
     /* copy the data */
     memcpy(sendPacket->data, data, length);
     sendPacket->verifyStamp = 'SWPP';
-    sendPacket->adler32Checksum = Adler32(data, length);
+    sendPacket->adler32Checksum = Adler32((const byte *)data, length);
     //HexDumpToLog((char *)sendPacket, sizeof(SWOSPP_Packet) + length, "next packet to send");
     IPX_Send((ECB *)sendPacket);
     if (sendPacket->ecb.completionCode)
@@ -575,7 +565,7 @@ static char *ReceiveNextPacket(int *destSize, IPX_Address *node, int currentPack
 */
 char *ReceivePacket(int *destSize, IPX_Address *node)
 {
-    dword id, *currentId;
+    dword id = 0, *currentId;
     int i, size;
     char *srcPtr, *destBuf = nullptr;
     /* ignoring malformed packets etc. */
@@ -602,9 +592,9 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
         return ReceiveNextPacket(destSize, node, i);
     }
     /* this is probably overkill */
-    if (packets[i]->adler32Checksum != Adler32(packets[i]->data, size)) {
+    if (packets[i]->adler32Checksum != Adler32((const byte *)packets[i]->data, size)) {
         WriteToLog(("Rejecting packet with invalid Adler32 checksum (%d, expecting %d).",
-            packets[i]->adler32Checksum, Adler32(packets[i]->data, size)));
+            packets[i]->adler32Checksum, Adler32((const byte *)packets[i]->data, size)));
         HexDumpToLog(packets[i]->data, size, "packet with failed checksum");
         return ReceiveNextPacket(destSize, node, i);
     }
@@ -692,7 +682,7 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
         return ReceiveNextPacket(destSize, node, i);
     }
     if (!destBuf)
-        destBuf = qAlloc(size);
+        destBuf = (char *)qAlloc(size);
     if (!destBuf) {
         *destSize = -1; /* signal memory exhaustion */
         return nullptr;
@@ -755,7 +745,7 @@ void ResendTimedOutPacket(UnAckPacket *packet)
     //WriteToLog(("Resending packet to [%#.12s] with id %d of size %d",
     //    &packet->address, *(dword *)packet->data, packet->size));
     sendPacket->type = packet->type;
-    SendPacket(&packet->address, packet->data, packet->size);
+    SendPacket(&packet->address, (const char *)packet->data, packet->size);
 }
 
 /* Add important packet that's about to be sent to the list of unacknowledged packets. */
@@ -763,19 +753,19 @@ char *AddUnacknowledgedPacket(const IPX_Address *address, dword id, byte type, c
 {
     UnAckPacket *p;
     assert(offset >= 0);
-    assert(size + sizeof(dword) + offset <= maxPacketSize);
+    assert(size + (int)sizeof(dword) + offset <= maxPacketSize);
     //WriteToLog(("Adding unacknowledged packet to queue, for [%#.12s], id is %d", address, id));
-    if (!(p = qAlloc(sizeof(UnAckPacket) + size + sizeof(dword) + offset)))
+    if (!(p = (UnAckPacket *)qAlloc(sizeof(UnAckPacket) + size + sizeof(dword) + offset)))
         return nullptr;
     p->size = size + sizeof(dword) + offset;
     copyAddress(&p->address, address);
     p->next = unAckList;
     unAckList = p;
-    *(dword *)p->data = id;
-    memcpy(p->data + sizeof(dword) + offset, data, size);
+    *p->data = id;
+    memcpy((char *)p->data + sizeof(dword) + offset, data, size);
     p->time = currentTick;
     p->type = type;
-    return p->data;
+    return (char *)p->data;
 }
 
 /* If dest/id in list, remove the packet */
@@ -784,7 +774,7 @@ static void AcknowledgePacket(dword id, const IPX_Address *dest)
     UnAckPacket *p, **prev = &unAckList;
     //WriteToLog(("Packet with id %d for [%#.12s] confirmed.", id, dest));
     for (p = unAckList; p; p = p->next) {
-        if (*(dword *)(p->data) == id && addressMatch(&p->address, dest))
+        if (*p->data == id && addressMatch(&p->address, dest))
             break;
         prev = &p->next;
     }
@@ -874,22 +864,13 @@ void FreeLowMemory(void *ptr)
         WriteToLog(("Error while freeing low memory block %#0x", ptr));
 }
 
-/* works in DOSBox, but crashes in win98 */
-bool ASM_IPX_IsInstalled();
-#pragma aux ASM_IPX_IsInstalled =   \
-    "mov   ax, 7a00h"       \
-    "int   2fh"             \
-    "movzx eax, al"         \
-    modify [di bx cx]       \
-    value [eax];
-
 bool IPX_IsInstalled()
 {
     memset(&rm, 0, sizeof(rm));
     rm.eax = 0x7a00;
     RM_Interrupt(0x2f, &rm);
     WriteToLog(("IPX FAR entry point should be %#x:%#x", rm.es, rm.edi));
-    return rm.eax & 0xff == 0xff;
+    return (rm.eax & 0xff) == 0xff;
 }
 
 /* Note: DOSBox currently doesn't support multiple networks, so we'll just get

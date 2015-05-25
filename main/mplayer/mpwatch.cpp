@@ -96,8 +96,8 @@ static __inline int getGoalTypesSize(int numGoals)
 static WatcherPacket *watcherPackets;   /* depending if we're watching or not, memory for 1 or more packets */
 static int lastWatcherFrame;
 static word lastWatcherTick;            /* last tick we received a watcher packet */
-static int benchSpritesIndex;
-static dword benchSpritesStack[BENCH_MAX_SPRITES];  /* basic sprites when drawing bench */
+static int benchSpritesIndex asm("benchSpritesIndex") __attribute__((used));
+static dword benchSpritesStack[BENCH_MAX_SPRITES] asm("benchSpritesStack") __attribute__((used));   /* basic sprites when drawing bench */
 
 static struct HookFlags {
     byte showingSubsMenu:1;
@@ -110,12 +110,13 @@ static int packBenchData(BenchInfo *benchInfo);
 static void storeWatcherPacket(const WatcherPacket *packet);
 static void applyWatcherPacket(const WatcherPacket *packet);
 static int getIndex(const TeamGame *team, int shirtNumber);
-static dword packSprite(dword spriteIndex, int x, int y, bool saveSprite);
+static dword packSprite(dword spriteIndex, int x, int y, bool saveSprite) asm("packSprite") __attribute__((used));
 static byte *packScorers(const SWOS_ScorerInfo *scorers, byte *destScorers, byte *numScorers, int teamNumber);
 static WatcherPacket *getWatcherPacketsData(int *emptySpotIndex, int *numPackets, int frameNo);
 static bool verifyPacket(const WatcherPacket *wp, int length);
 static void packAdData(WatcherPacket *wp);
-static void __declspec(naked) DrawSpriteHook();
+/* referenced from asm */
+void __attribute__((used)) DrawSpriteHook() asm("DrawSpriteHook");
 static void DrawSubstitutesMenuHook();
 static void DrawFormationMenuHook();
 static void EnqueueSubstituteSampleHook();
@@ -134,12 +135,12 @@ void InitWatchers(bool weAreWatching)
     lastWatcherFrame = 0;
     benchSpritesIndex = -1;
     if (weAreWatching) {
-        watcherPackets = qAlloc(WATCHER_PACKETS_BUFFERED * sizeof(WatcherPacket));
+        watcherPackets = (WatcherPacket *)qAlloc(WATCHER_PACKETS_BUFFERED * sizeof(WatcherPacket));
         memset(watcherPackets + sizeof(WatcherPacket), -1, (WATCHER_PACKETS_BUFFERED - 1) * sizeof(WatcherPacket));
         subsMenuX = 100;    /* just a constant in a need of initialization */
         formationMenuX = 100;
     } else {
-        watcherPackets = qAlloc(sizeof(WatcherPacket) + BENCH_MAX_SPRITES * sizeof(dword));
+        watcherPackets = (WatcherPacket *)qAlloc(sizeof(WatcherPacket) + BENCH_MAX_SPRITES * sizeof(dword));
         PatchCall(DrawBenchAndSubsMenu,     0x170, DrawSpriteHook);
         PatchCall(DrawBenchPlayersAndCoach, 0x15d, DrawSpriteHook);
         PatchCall(DrawBenchPlayersAndCoach, 0x393, DrawSpriteHook);
@@ -149,7 +150,7 @@ void InitWatchers(bool weAreWatching)
         PatchCall(DrawBenchAndSubsMenu,     0x1f4, DrawFormationMenuHook);
         PatchCall(SubstitutePlayerIfFiring, 0x3e9, EnqueueSubstituteSampleHook);
     }
-    WriteToLogM((LM_WATCHER, "Watcher support initialized... watcherPackets = %#x", watcherPackets));
+    WriteToLog((LM_WATCHER, "Watcher support initialized... watcherPackets = %#x", watcherPackets));
 }
 
 void CleanupWatchers()
@@ -181,17 +182,17 @@ bool HandleWatcherPacket(const char *packet, int length, int currentTick, bool *
         /* if we just received a packet for watcher, store it into buffer */
         WatcherPacket *wp = (WatcherPacket *)packet;
         /* end game packet has top priority */
-        if (length >= offsetof(WatcherPacket, sprites) &&  wp->flags & END_GAME_FLAG) {
+        if (length >= (int)offsetof(WatcherPacket, sprites) &&  wp->flags & END_GAME_FLAG) {
             *abort = true;
             return true;
         }
-        HexDumpToLogM(LM_WATCHER, packet, length, "watcher packet");
+        HexDumpToLog(LM_WATCHER, packet, length, "watcher packet");
         if (!verifyPacket(wp, length)) {
             WriteToLog(("Watcher packet verification failed."));
             return false;
         }
         lastWatcherTick = currentTick;
-        WriteToLogM((LM_WATCHER, "Received watcher packet for frame %d, x = %d, y = %d, numSprites = %d",
+        WriteToLog((LM_WATCHER, "Received watcher packet for frame %d, x = %d, y = %d, numSprites = %d",
             wp->frameNo, wp->cameraX >> 16, wp->cameraY >> 16, wp->numSprites));
         /* don't bother checking, just overwrite packet even if we already have it */
         storeWatcherPacket(wp);
@@ -227,11 +228,11 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
     if (!watcherPackets)
         return nullptr;
     lastWatcherTick = currentTick; /* reset timer to avoid timeout at start */
-    WriteToLogM((LM_WATCHER, "Creating watcher packet for frame %d...", currentFrameNo));
+    WriteToLog((LM_WATCHER, "Creating watcher packet for frame %d...", currentFrameNo));
     watcherPackets->type = PT_GAME_SPRITES;
     watcherPackets->frameNo = currentFrameNo;
-    watcherPackets->cameraX = *(dword *)&cameraXFraction;
-    watcherPackets->cameraY = *(dword *)&cameraYFraction;
+    memcpy(&watcherPackets->cameraX, &cameraXFraction, sizeof(dword));
+    memcpy(&watcherPackets->cameraY, &cameraYFraction, sizeof(dword));
     watcherPackets->gameTime = gameTime;
     for (i = 0; i < numSpritesToRender; i++) {
         /* we'll pack everything into 32-bit int - a perfect fit :P */
@@ -242,14 +243,14 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
             /* must send transformed coordinates, and don't forget to preserve sign */
             int x = ((int)s->x >> 16) - cameraX;
             int y = ((int)s->y >> 16) - cameraY - ((int)s->z >> 16);
-            assert(s->pictureIndex < 1334 || s->pictureIndex >= 4187 && s->pictureIndex <= 4442);
+            assert(s->pictureIndex < 1334 || (s->pictureIndex >= 4187 && s->pictureIndex <= 4442));
             /* don't subtract center coordinates for custom draw player numbers */
             if (s->pictureIndex < SPR_MAX) {
                 x -= sg->centerX;
                 y -= sg->centerY;
             }
             /* skip out of screen sprites, but don't do that check for high player numbers */
-            if (s->pictureIndex >= SPR_MAX || x < 336 && y < 200 && x >= -sg->width && y >= -sg->nlines) {
+            if (s->pictureIndex >= SPR_MAX || (x < 336 && y < 200 && x >= -sg->width && y >= -sg->nlines)) {
                 *destSprites++ = packSprite(s->pictureIndex, x, y, s->saveSprite);
                 numSprites++;
             }
@@ -269,7 +270,7 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
             }
         }
         variablePartSize = packBenchData((BenchInfo *)destSprites);
-    } else if (showingStats || eventTimer && statsTimeout > 0) {
+    } else if (showingStats || (eventTimer && statsTimeout > 0)) {
         /* we will use space for scorers to send statistics */
         watcherPackets->flags |= showingStats ? SHOWING_STATS_FLAG : AUTO_SHOWING_STATS_FLAG;
         memcpy(watcherPackets->sprites + numSprites, team1StatsData, 2 * sizeof(TeamStatsData));
@@ -278,14 +279,14 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
     } else {
         byte numScorers;
         scorersStart = (byte *)&watcherPackets->sprites[numSprites];
-        WriteToLogM((LM_WATCHER, "Packing team1 scorers..."));
+        WriteToLog((LM_WATCHER, "Packing team1 scorers..."));
         scorerInfo = packScorers(team1Scorers, scorersStart, &numScorers, 1);
         watcherPackets->numScorers = numScorers & 0x0f;
         assert(numScorers <= MAX_SCORERS);
-        WriteToLogM((LM_WATCHER, "Packing team2 scorers..."));
+        WriteToLog((LM_WATCHER, "Packing team2 scorers..."));
         scorerInfo = packScorers(team2Scorers, scorerInfo, &numScorers, 2);
         watcherPackets->numScorers |= numScorers << 4;
-        assert(numScorers >> 4 <= MAX_SCORERS);
+        assert(numScorers >> 4 <= (int)MAX_SCORERS);
         variablePartSize = scorerInfo - scorersStart;
     }
     packAdData(watcherPackets);
@@ -295,11 +296,11 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
     watcherPackets->numSprites = numSprites;
     watcherPackets->sig[0] = 'z'; watcherPackets->sig[1] = 'k';
     *watcherPacketSize = offsetof(WatcherPacket, sprites) + numSprites * sizeof(dword) + variablePartSize;
-    WriteToLogM((LM_WATCHER, "Num. sprites = %d, num scorers = %d, bench stack index = %d, "
+    WriteToLog((LM_WATCHER, "Num. sprites = %d, num scorers = %d, bench stack index = %d, "
         "showingSubsMenu = %d, showingFormationMenu = %d", numSprites,
         (watcherPackets->numScorers & 0x0f) + (watcherPackets->numScorers >> 4), benchSpritesIndex,
         hookFlags.showingSubsMenu, hookFlags.showingFormationMenu));
-    //HexDumpToLogM(LM_WATCHER, watcherPackets, *watcherPacketSize, "watcher packet to send");
+    //HexDumpToLog(LM_WATCHER, watcherPackets, *watcherPacketSize, "watcher packet to send");
     return (char *)watcherPackets;
 }
 
@@ -308,11 +309,11 @@ void ApplyWatcherPacket()
 {
     int emptyPacketIndex, numPackets;
     WatcherPacket *packet = getWatcherPacketsData(&emptyPacketIndex, &numPackets, -1);
-    WriteToLogM((LM_WATCHER, "Applying oldest watcher packet (num. packets = %d)...", numPackets));
+    WriteToLog((LM_WATCHER, "Applying oldest watcher packet (num. packets = %d)...", numPackets));
     applyWatcherPacket(packet);
     packet->rendered = true;
     if (numPackets > 1) {
-        WriteToLogM((LM_WATCHER, "Removing watcher packet %d", packet->frameNo));
+        WriteToLog((LM_WATCHER, "Removing watcher packet %d", packet->frameNo));
         packet->type = -1;  /* effectively removes it from the queue */
         lastWatcherFrame = packet->frameNo + 1;
     }
@@ -339,40 +340,38 @@ const char *GetEndGameWatcherPacket(int *length)
     outside menus. Pack them and store into stack. Stack index will be used as a part of test if
     we are in bench mode. Sprites be sent as ordinary sprites in a watcher packet. On entry:
 
-    D0 - sprite index
-    D1 - x
-    D2 - y
-    ebp   - save sprite flag (-1 = save, not -1 = don't save)
+    D0  - sprite index
+    D1  - x
+    D2  - y
+    ebp - save sprite flag (-1 = save, not -1 = don't save)
 
     Written in assembly just to be safe with ebp.
 */
-static void DrawSpriteHook()
-{
-    _asm {
-        mov  edi, benchSpritesIndex // range check, as we might be called with watchers not running
-        cmp  edi, BENCH_MAX_SPRITES
-        jge  return
-        mov  ecx, ebp       // save sprite flag
-        mov  edx, D1
-        mov  ebx, D2
-        sub  dx, cameraX    // don't forget to take in account camera and sprite centering
-        sub  bx, cameraY
-        mov  eax, D0
-        and  eax, 0xffff    // SWOS is sending low word only
-        mov  esi, spritesIndex[eax * 4]
-        sub  dx, [esi + 16] // centerX
-        sub  bx, [esi + 18] // centerY
-        movsx ebx, bx
-        movsx edx, dx
-        call packSprite     // will not change ebp or edi
-        inc  edi            // edi = benchSpritesIndex
-        mov  [benchSpritesStack + edi * 4], eax
-        mov  benchSpritesIndex, edi         // benchSpritesStack[++benchSpritesIndex] = packed sprite
-return:
-        push offset SWOS_DrawSpriteInGame   // resume normal execution, params already set
-        retn
-    }
-}
+asm (
+"DrawSpriteHook:     \n\t"
+    "mov  edi, benchSpritesIndex        \n\t"   // range check, as we might be called with watchers not running
+    "cmp  edi, " STRINGIFY(BENCH_MAX_SPRITES)   "\n\t"
+    "jge  return                        \n\t"
+    "mov  ecx, ebp                      \n\t"   // save sprite flag
+    "mov  edx, D1                       \n\t"
+    "mov  ebx, D2                       \n\t"
+    "sub  dx, cameraX                   \n\t"   // don't forget to take in account camera and sprite centering
+    "sub  bx, cameraY                   \n\t"
+    "mov  eax, D0                       \n\t"
+    "and  eax, 0xffff                   \n\t"   // SWOS is sending low word only
+    "mov  esi, spritesIndex[eax * 4]    \n\t"
+    "sub  dx, [esi + 16]                \n\t"   // centerX
+    "sub  bx, [esi + 18]                \n\t"   // centerY
+    "movsx ebx, bx                      \n\t"
+    "movsx edx, dx                      \n\t"
+    "call packSprite                    \n\t"   // will not change ebp or edi
+    "inc  edi                           \n\t"   // edi = benchSpritesIndex
+    "mov  [benchSpritesStack + edi * 4], eax    \n\t"
+    "mov  benchSpritesIndex, edi        \n\t"   // benchSpritesStack[++benchSpritesIndex] = packed sprite
+"return:    \n\t"
+    "push offset SWOS_DrawSpriteInGame  \n\t"   // resume normal execution, params already set
+    "ret    \n\t"
+);
 
 static void DrawSubstitutesMenuHook()
 {
@@ -395,7 +394,7 @@ static void EnqueueSubstituteSampleHook()
 
 static dword packSprite(dword spriteIndex, int x, int y, bool saveSprite)
 {
-    dword packedSprite = x & 0x3ff | (y & 0x3ff) << 10;
+    dword packedSprite = (x & 0x3ff) | (y & 0x3ff) << 10;
     /* we don't have enough bits to transfer big shirt numbers as they are, so take special attention */
     if (spriteIndex >= 3000 + 1187)
         spriteIndex -= 3000 + 1187 - SPR_MAX;
@@ -413,7 +412,7 @@ static dword packSprite(dword spriteIndex, int x, int y, bool saveSprite)
 */
 static bool verifyPacket(const WatcherPacket *wp, int length)
 {
-    if (length < offsetof(WatcherPacket, sprites))
+    if (length < (int)offsetof(WatcherPacket, sprites))
         return false;
     if ((length -= offsetof(WatcherPacket, sprites) + wp->numSprites * sizeof(dword)) < 0)
         return false;
@@ -462,24 +461,22 @@ static byte **adDataPointers[] = { advert1Pointers, advert2Pointers, advert3Poin
 
 static void packAdData(WatcherPacket *wp)
 {
-    int i;
     assert(sizeofarray(adSpriteIndices) == sizeofarray(adDataPointers));
-    for (i = 0; i < sizeofarray(adSpriteIndices); i++) {
-        wp->adOffsets[i] = GetSprite(adSpriteIndices[i])->sprData - adDataPointers[i][0];
-        WriteToLogM((LM_WATCHER, "Ad %d offset = %d", i, wp->adOffsets[i]));
+    for (size_t i = 0; i < sizeofarray(adSpriteIndices); i++) {
+        wp->adOffsets[i] = GetSprite(adSpriteIndices[i])->sprData - (char *)adDataPointers[i][0];
+        WriteToLog((LM_WATCHER, "Ad %d offset = %d", i, wp->adOffsets[i]));
         assert((short)wp->adOffsets[i] >= 0);
     }
 }
 
 static void applyAdData(const WatcherPacket *wp)
 {
-    int i, j;
     assert(sizeofarray(adSpriteIndices) == sizeofarray(adDataPointers));
-    for (i = 0; i < sizeofarray(adSpriteIndices); i++) {
-        WriteToLogM((LM_WATCHER, "ad %d offset = %d", i, wp->adOffsets[i]));
-        for (j = 0; j < sizeofarray(advert1Pointers); j++) {
+    for (size_t i = 0; i < sizeofarray(adSpriteIndices); i++) {
+        WriteToLog((LM_WATCHER, "ad %d offset = %d", i, wp->adOffsets[i]));
+        for (size_t j = 0; j < sizeofarray(advert1Pointers); j++) {
             SpriteGraphics *spr = GetSprite(adSpriteIndices[i] + j);
-            spr->sprData = adDataPointers[i][j] + wp->adOffsets[i];
+            spr->sprData = (char *)adDataPointers[i][j] + wp->adOffsets[i];
             /* important - fix advert sprites height */
             spr->nlines = 6;
         }
@@ -498,7 +495,7 @@ static void applyAdData(const WatcherPacket *wp)
 static int packBenchData(BenchInfo *benchInfo)
 {
     static const TeamGeneralInfo *teams[2] = { leftTeamData, rightTeamData };
-    int i, j, packetLength = sizeof(BenchInfo);
+    int packetLength = sizeof(BenchInfo);
 
     if (benchSpritesIndex < 0 && !hookFlags.showingSubsMenu && !hookFlags.showingFormationMenu)
         return 0;
@@ -506,18 +503,18 @@ static int packBenchData(BenchInfo *benchInfo)
     benchInfo->showingSubsMenu = hookFlags.showingSubsMenu;
     benchInfo->showingFormationMenu = hookFlags.showingFormationMenu;
     /* swap team to display in 2nd half */
-    benchInfo->benchTeam = benchTeam != leftTeamData ^ halfNumber - 1;
+    benchInfo->benchTeam = (benchTeam != leftTeamData) ^ (halfNumber - 1);
 
     if (hookFlags.showingSubsMenu) {
         SubsMenuData *subs = (SubsMenuData *)&benchInfo[1];
         /* fill relevant info about teams */
-        for (i = 0; i < sizeofarray(teams); i++) {
+        for (size_t i = 0; i < sizeofarray(teams); i++) {
             const PlayerGame *pl = (PlayerGame *)((char *)teams[i]->inGameTeamPtr + offsetof(TeamGame, players));
             /* swap sent teams on halftime since watcher won't be swapping them */
-            BenchMenuPlayer *bPl = subs->players[i ^ halfNumber - 1];
+            BenchMenuPlayer *bPl = subs->players[i ^ (halfNumber - 1)];
             assert(halfNumber == 1 || halfNumber == 2);
             assert(teams[i]->inGameTeamPtr);
-            for (j = 0; j < 11; j++, pl++) {
+            for (int j = 0; j < 11; j++, pl++) {
                 bPl[j].shirtNumber = pl->shirtNumber;
                 bPl[j].face = pl->face;
                 bPl[j].position = pl->position;
@@ -533,7 +530,7 @@ static int packBenchData(BenchInfo *benchInfo)
             }
         }
         subs->subsState = subsState;
-        WriteToLogM((LM_SUBS_MENU, "plToBeSubstitutedPos = %d, plToEnterGameIndex = %d, plToBeSubstitutedOrd = %d",
+        WriteToLog((LM_SUBS_MENU, "plToBeSubstitutedPos = %d, plToEnterGameIndex = %d, plToBeSubstitutedOrd = %d",
         plToBeSubstitutedPos, plToEnterGameIndex, plToBeSubstitutedOrd));
         subs->plToBeSubstitutedPos = plToBeSubstitutedPos;
         assert(plToBeSubstitutedPos <= 11);
@@ -568,30 +565,29 @@ static int packBenchData(BenchInfo *benchInfo)
 */
 static byte *packScorers(const SWOS_ScorerInfo *scorers, byte *destScorers, byte *numScorers, int teamNumber)
 {
-    int i, j, numGoals;
     byte *goalTypesPtr;
     dword goalTypes, goalTypesSize;
     *numScorers = 0;
-    for (i = 0; i < MAX_SCORERS; i++) {
+    for (size_t i = 0; i < MAX_SCORERS; i++) {
         if (scorers[i].shirtNum) {
             /* own goal scorers will have 100 added */
             bool ownGoalScorer = scorers[i].shirtNum >= 100;
-            uint index = getIndex(teamNumber == 1 ^ ownGoalScorer ? leftTeamPtr : rightTeamPtr,
+            uint index = getIndex(teamNumber == (1 ^ ownGoalScorer) ? leftTeamPtr : rightTeamPtr,
                 scorers[i].shirtNum - (-ownGoalScorer & 100));
-            WriteToLogM((LM_WATCHER, "Scorer : %d, index %d", scorers[i].shirtNum, index));
+            WriteToLog((LM_WATCHER, "Scorer : %d, index %d", scorers[i].shirtNum, index));
             assert(scorers[i].numGoals <= 10);
             /* save combined shirt number and number of goals scored */
-            numGoals = *destScorers = scorers[i].numGoals & 0x0f;
+            int numGoals = *destScorers = scorers[i].numGoals & 0x0f;
             *destScorers++ |= index << 4;
             /* reserve space for goal types, and fill it in later */
             goalTypesPtr = destScorers;
             destScorers += goalTypesSize = getGoalTypesSize(numGoals);
             goalTypes = 0;
-            for (j = 0; j < numGoals; j++) {
-                goalTypes = goalTypes << 2 | scorers[i].goals[j].type & 3;
+            for (int j = 0; j < numGoals; j++) {
+                goalTypes = (goalTypes << 2) | (scorers[i].goals[j].type & 3);
                 *(dword *)destScorers = scorers[i].goals[j].time;
                 destScorers += 4;
-                WriteToLogM((LM_WATCHER, "   %d: type = %d time = %#x", j, goalTypes & 3, scorers[i].goals[j].time));
+                WriteToLog((LM_WATCHER, "   %d: type = %d time = %#x", j, goalTypes & 3, scorers[i].goals[j].time));
                 assert(scorers[i].goals[j].type <= 2);
             }
             /* fill in goal types now that we have all the info */
@@ -658,7 +654,7 @@ static void setupTeamForSubs(TeamGeneralInfo *team, const BenchMenuPlayer *bench
     int i, j;
     PlayerGame *playersGame = team->inGameTeamPtr->players;
     assert(team->inGameTeamPtr);
-    HexDumpToLogM(LM_WATCHER, benchPlayers, 16 * sizeof(BenchMenuPlayer), "bench menu players");
+    HexDumpToLog(LM_WATCHER, benchPlayers, 16 * sizeof(BenchMenuPlayer), "bench menu players");
     /* restore player team - as much as is needed to display menu correctly */
     team->inGameTeamPtr->markedPlayer = -1;
     /* fill info for players currently on the field */
@@ -667,7 +663,7 @@ static void setupTeamForSubs(TeamGeneralInfo *team, const BenchMenuPlayer *bench
         const BenchMenuPlayer *plBench = &benchPlayers[i];
         if (plBench->shirtNumber != pl->shirtNumber) {
             /* players seem to have changed positions, swap names*/
-            char tmpName[member_size(PlayerGame, shortName)];
+            char tmpName[sizeof(pl->shortName)];
             const int nameLength = sizeof(tmpName);
             /* search through all 16 players in case there were substitutions */
             for (j = i; j < 16; j++)
@@ -683,7 +679,7 @@ static void setupTeamForSubs(TeamGeneralInfo *team, const BenchMenuPlayer *bench
             playersGame[j].shirtNumber = pl->shirtNumber;
         }
         /* copy received data to corresponding player */
-        WriteToLogM((LM_SUBS_MENU, "Player %d (%s), shirtNumber = %d, face = %d, position = %d, isMarked = %d, "
+        WriteToLog((LM_SUBS_MENU, "Player %d (%s), shirtNumber = %d, face = %d, position = %d, isMarked = %d, "
             "isInjured = %d, injury = %#x, cards = %d", i, pl->shortName, plBench->shirtNumber, plBench->face,
             plBench->position, plBench->isMarked, plBench->isInjured, plBench->injury, plBench->cards));
         pl->face = plBench->face;
@@ -709,7 +705,7 @@ static void drawSubstitutesMenu(const SubsMenuData *subsData)
     plToEnterGameIndex = subsData->plToEnterGameIndex;
     plToBeSubstitutedOrd = subsData->plToBeSubstitutedOrd;
     selectedPlayerInSubs = subsData->selectedPlayerInSubs;
-    WriteToLogM((LM_SUBS_MENU, "plToBeSubstitutedPos = %d, plToEnterGameIndex = %d, plToBeSubstitutedOrd = %d",
+    WriteToLog((LM_SUBS_MENU, "plToBeSubstitutedPos = %d, plToEnterGameIndex = %d, plToBeSubstitutedOrd = %d",
         plToBeSubstitutedPos, plToEnterGameIndex, plToBeSubstitutedOrd));
     frameCount = subsData->frameCount;
     if (subsData->enqueueSample)
@@ -720,7 +716,7 @@ static void drawSubstitutesMenu(const SubsMenuData *subsData)
 
 static void applyBenchData(const BenchInfo *benchInfo)
 {
-    HexDumpToLogM(LM_WATCHER, benchInfo, sizeof(BenchInfo), "bench info");
+    HexDumpToLog(LM_WATCHER, benchInfo, sizeof(BenchInfo), "bench info");
     benchTeam = benchInfo->benchTeam ? rightTeamData : leftTeamData;
     currentSubsTeam = benchTeam->teamNumber == 2 ? rightTeamPtr : leftTeamPtr;
     if (benchInfo->showingSubsMenu)
@@ -757,9 +753,8 @@ static const char *getSurname(const TeamGame *team, int index)
 */
 static int getIndex(const TeamGame *team, int shirtNumber)
 {
-    int i;
     PlayerGame *pl = (PlayerGame *)((char *)team + offsetof(TeamGame, players));
-    for (i = 0; i < 16; i++, pl++)
+    for (int i = 0; i < 16; i++, pl++)
         if (pl->shirtNumber == shirtNumber)
             return i;
     /* This has to succeed or it would mean SWOS added scorers incorrectly. */
@@ -770,11 +765,11 @@ static int getIndex(const TeamGame *team, int shirtNumber)
 /* Render recieved scorer list into scorer sprites (per team function). */
 static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Sprite *scorerSprites)
 {
-    int i, j, x, goalTypesSize;
+    int i, x, goalTypesSize;
     dword *goalTimes, goalTypes;
-    assert(numScorers >= 0 && numScorers <= MAX_SCORERS);
+    assert(numScorers >= 0 && numScorers <= (int)MAX_SCORERS);
     assert(teamNumber == 1 || teamNumber == 2);
-    WriteToLogM((LM_WATCHER, "Applying scorer list for team %d", teamNumber));
+    WriteToLog((LM_WATCHER, "Applying scorer list for team %d", teamNumber));
     for (i = 0; i < numScorers; i++) {
         TeamGame *scorerTeam;
         uint index = *scorers >> 4;
@@ -790,12 +785,12 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
             goalTypes = *(dword *)scorers;
         }
         /* if it's own goal look up other team, otherwise this one */
-        scorerTeam = teamNumber - 1 ^ (goalTypes >> 2 * (numGoals - 1) & 3) != 2 ? leftTeamPtr : rightTeamPtr;
-        WriteToLogM((LM_WATCHER, "Scorer %d, index = %d, name = '%s', goals scored = %d",
+        scorerTeam = (teamNumber - 1) ^ ((goalTypes >> 2 * (numGoals - 1) & 3) != 2) ? leftTeamPtr : rightTeamPtr;
+        WriteToLog((LM_WATCHER, "Scorer %d, index = %d, name = '%s', goals scored = %d",
             i, index, getSurname(scorerTeam, index), numGoals));
-        assert(numGoals <= 10 && (int)scorerSprites->pictureIndex != -1);
-        if ((int)scorerSprites->pictureIndex == -1) {
-            WriteToLogM((LM_WATCHER, "Found scorer sprite with -1 picture index! index %d", i));
+        assert(numGoals <= 10 && scorerSprites->pictureIndex != (word)-1);
+        if (scorerSprites->pictureIndex == (word)-1) {
+            WriteToLog((LM_WATCHER, "Found scorer sprite with -1 picture index! index %d", i));
             continue;
         }
         D0 = scorerSprites->pictureIndex;
@@ -803,7 +798,7 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
         x = Text2Sprite(0, 0, scorerSprites->pictureIndex, getSurname(scorerTeam, index), smallCharsTable) + 5;
         assert(x > 0);
         goalTimes = (dword *)(scorers + goalTypesSize);
-        for (j = 0; j < numGoals; j++) {
+        for (uint j = 0; j < numGoals; j++) {
             static char ** const goalScoredPrefixTables[2] = { firstGoalScoredTable, alreadyScoredTable };
             char *goalTimeStr = goalScoredPrefixTables[j != numGoals - 1][goalTypes >> 2 * (numGoals - j - 1) & 3];
             *(dword *)goalTimeStr = *goalTimes++;
@@ -811,7 +806,7 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
                 goalTimeStr++;
             if (*goalTimeStr == '0')
                 goalTimeStr++;
-            WriteToLogM((LM_WATCHER, "  Goal %d, type = %d, str = '%s', sprite = %d", j,
+            WriteToLog((LM_WATCHER, "  Goal %d, type = %d, str = '%s', sprite = %d", j,
                 goalTypes >> 2 * (numGoals - j - 1) & 3, goalTimeStr, scorerSprites->pictureIndex));
             /* update current offset */
             if ((x = Text2Sprite(x, 0, scorerSprites->pictureIndex, goalTimeStr, smallCharsTable)) < 0) {
@@ -824,8 +819,8 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
         scorerSprites++;
     }
     /* goals shouldn't dissapear, but make those sprites invisible just in case */
-    for (; i < MAX_SCORERS; i++, scorerSprites++)
-        scorerSprites->visible = (int)scorerSprites->pictureIndex != -1;
+    for (; i < (int)MAX_SCORERS; i++, scorerSprites++)
+        scorerSprites->visible = scorerSprites->pictureIndex != (word)-1;
     return scorers;
 }
 
@@ -847,14 +842,14 @@ static void applyWatcherPacket(const WatcherPacket *packet)
 {
     int i;
     byte *scorers;
-    WriteToLogM((LM_WATCHER, "Applying watcher packet for frame %d", packet->frameNo));
-    WriteToLogM((LM_WATCHER, "Camera x = %d, y = %d", cameraX, cameraY));
-    *(dword *)&cameraXFraction = packet->cameraX;
-    *(dword *)&cameraYFraction = packet->cameraY;
+    WriteToLog((LM_WATCHER, "Applying watcher packet for frame %d", packet->frameNo));
+    WriteToLog((LM_WATCHER, "Camera x = %d, y = %d", cameraX, cameraY));
+    memcpy(&cameraXFraction, &packet->cameraX, sizeof(dword));
+    memcpy(&cameraYFraction, &packet->cameraY, sizeof(dword));
     calla(ScrollToCurrent);
     animPatternsState = packet->flags & 0x0f;
     stoppageTimer = packet->stoppageTimer;
-    WriteToLogM((LM_WATCHER, "showingStats = %d, animPatternsState = %d", (packet->flags >> 4) & 1, animPatternsState));
+    WriteToLog((LM_WATCHER, "showingStats = %d, animPatternsState = %d", (packet->flags >> 4) & 1, animPatternsState));
     /* fix up time */
     setTimeSprite(packet->gameTime);
     assert(packet->numSprites <= MAX_SPRITES);
@@ -875,13 +870,13 @@ static void applyWatcherPacket(const WatcherPacket *packet)
         /* remember to reapply sign of x and y coordinates */
         D1 = signExtend10Bits(packet->sprites[i] & 0x3ff);
         D2 = signExtend10Bits((packet->sprites[i] >> 10) & 0x3ff);
-        D3 = (packet->sprites[i] >> 20) & 0x7ff;
+        D0 = (packet->sprites[i] >> 20) & 0x7ff;
         /* handle player numbers greater than 16, they will start from SPR_MAX */
         if (D0 >= SPR_MAX && D0 < SPR_MAX + 256) {
             PrintSmallNumber(D0 - SPR_MAX, D1, D2, true);
             continue;
         }
-        if (D1 >= SPR_MAX)   /* just in case... */
+        if (D0 >= SPR_MAX)   /* just in case... */
             continue;
         /* incy wincy hack so we don't need to send separate bit - draw bench sprites with deltaColor 16 */
         if (isBenchSprite(D0))
@@ -949,7 +944,7 @@ static void storeWatcherPacket(const WatcherPacket *packet)
         return;
     /* if we have that frame overwrite anyway */
     oldestPacket = getWatcherPacketsData(&emptyPacketIndex, &numPackets, packet->frameNo);
-    WriteToLogM((LM_WATCHER, "Storing watcher packet for frame %d", packet->frameNo));
+    WriteToLog((LM_WATCHER, "Storing watcher packet for frame %d", packet->frameNo));
     /* for packets with auto stats flag one client might start it earlier so to avoid flickering
        try not prioritize packets with flag set */
     if (oldestPacket->frameNo == packet->frameNo &&

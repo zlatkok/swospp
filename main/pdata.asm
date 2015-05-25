@@ -7,7 +7,7 @@
 bits 32
 
 ; additional externs
-extern int2str_
+extern int2str
 extern LoadSWPPMenu
 extern WriteYULetters
 extern FixGetTextSize
@@ -15,10 +15,9 @@ extern OpenReplayFile
 extern CloseReplayFile
 extern MyHilPtrIncrement
 extern MyHilPtrAdd
-extern PrintSmallNumber_
+extern PrintSmallNumber
 extern PushMenu, PopMenu
 %ifdef DEBUG
-%define EndLogFile EndLogFile_
 extern EndLogFile
 %endif
 
@@ -35,8 +34,8 @@ swospp_str:  db "SWOS++", 0
 ; patch-specific code
 section .text
 
-extern replayStatus, SaveOptionsIfNeeded_, EndProgram, SwitchToPrevVideoMode
-extern ShutDownNetwork_, qAllocFinish_, FinishMultiplayer_, FinishMultiplayerGame_
+extern replayStatus, SaveOptionsIfNeeded, EndProgram, SwitchToPrevVideoMode
+extern ShutDownNetwork, qAllocFinish, FinishMultiplayer
 
 ; Hook ALT-F1 fast exit, as well as normal exit from menu.
 HookTermination:
@@ -154,17 +153,17 @@ DrawPlayerNumber:
         cmp  ax, 255                ; clamp it to byte, that field in file is a byte
         ja   .skip_sprite
 
-        xor  ecx, ecx
+        push byte 0
         mov  dx, word [esi + 32]    ; do not subtract center x/y, as PrintSmallNumber will do centering of its own
         sub  dx, [cameraX]          ; x - camera x
         movsx edx, dx
-        mov  bx, word [esi + 36]
-        sub  bx, [cameraY]          ; y - camera y
-        sub  bx, word [esi + 40]    ; subtract z
-        movsx ebx, bx
+        mov  cx, word [esi + 36]
+        sub  cx, [cameraY]          ; y - camera y
+        sub  cx, word [esi + 40]    ; subtract z
+        movsx ecx, cx
         movzx eax, ax               ; number to draw
         inc  ecx
-        call PrintSmallNumber_
+        call PrintSmallNumber
 
 .skip_sprite:
         or   al, -1                 ; force sign flag so loop skips to next sprite
@@ -190,7 +189,7 @@ SubsDrawPlayerNumber:
         cmp  eax, byte 16
         jbe  .return
 
-        call  int2str_          ; if it's our number, convert it the usual way
+        call  int2str           ; if it's our number, convert it the usual way
         mov  [A0], eax          ; A0 -> string for printing
 .return:
         mov  word [D3], 2
@@ -212,12 +211,12 @@ EditTacticsDrawPlayerNumber:
         jb   .out
 
 .custom_draw:
+        push byte 0
         movzx eax, word [D0]        ; ok so we gotta deal with high player number
         sub  ax, 161                ; number to draw = start of little numbers - 1
         movsx edx, word [D1]
-        movsx ebx, word [D2]
-        xor  ecx, ecx
-        jmp PrintSmallNumber_
+        movsx ecx, word [D2]
+        jmp PrintSmallNumber
 
 .out:
         jmpa DrawSpriteCentered
@@ -259,9 +258,9 @@ HookSaveCoordinatesForHighlights:
         retn
 
 
-extern NetworkOnIdle_
+extern NetworkOnIdle
 HookShowMenu:
-        call NetworkOnIdle_
+        call NetworkOnIdle
         test eax, eax
         jz   .skip_menu_proc
         calla MenuProc
@@ -274,7 +273,7 @@ HookShowMenu:
 HookInputText:
         push dword [A0]
         push dword [A6]
-        call NetworkOnIdle_
+        call NetworkOnIdle
         pop  dword [A6]
         pop  dword [A0]
         test eax, eax
@@ -298,7 +297,7 @@ HookInputText:
 ; Patch CheckControls to add support for temporary disabling input in menus,
 ; and also to have an in-menu input received from the other player.
 ;
-extern GetKeyFromNetwork_, BroadcastControls_, GetControlsFromNetwork_, pl2Keyboard
+extern BroadcastControls, GetControlsFromNetwork, pl2Keyboard
 declareGlobal disabledInputCycles, 1
 declareGlobal lastFireState, 1
 CheckInputDisabledTimer:
@@ -322,7 +321,7 @@ CheckInputDisabledTimer:
         retn
 
 .redirect_input:
-        call GetControlsFromNetwork_
+        call GetControlsFromNetwork
         cmp  eax, -1
         jz   .get_real_key
 
@@ -400,7 +399,7 @@ CheckInputDisabledTimer:
         jz   .no_key
 
         movzx edx, word [longFireFlag]
-        call BroadcastControls_
+        call BroadcastControls
         retn
 
 .go_on:
@@ -649,7 +648,7 @@ PatchStart:
 
     ; fix upper half of edx getting dirty in ClearBackground
     StartRecord ClearBackground + 0x3e
-        mov  edx, 384
+        mov  edx, 384   ; overwrites next instruction size prefix and all fits perfectly
     EndRecord
 
     ; record all open menus to the stack, so we can return to arbitrary one
@@ -680,9 +679,12 @@ PatchStart:
     EndRecord
 
     ; fix InputText to limit text properly when we start with buffer already filled more than limit
-    StartRecord InputText + 0x25d
-        db 0x83
-    EndRecord
+    PatchByte InputText + 0x25d, 0x83
+
+%ifdef DEBUG
+    ; don't waste time on opening animations in debug version
+    PatchByte Initialization + 0x19, 1
+%endif
 
 
 ; --------------------------------------

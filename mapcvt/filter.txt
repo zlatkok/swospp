@@ -205,8 +205,8 @@ final_controls_status
 key_count
 short_fire
 GetKey, function
-aDataTeam_nnn
-aCustoms_edt
+aDataTeam_nnn, array char
+aCustoms_edt, array char
 aReplay
 FilterKeys
 Int9KeyboardHandler
@@ -224,8 +224,8 @@ USER_F, array Tactics
 
 InitAndPlayGame
 Joy1SetStatus, function
-player1_clear_flag
-player2_clear_flag
+player1ClearFlag
+player2ClearFlag
 controlsHeldTimer
 longFireFlag, word
 playMatchMenu
@@ -374,7 +374,6 @@ aUSER_E, array char
 aUSER_F, array char
 _STACKTOP
 _STACKLOW
-
 
 
 ### Watcom C library

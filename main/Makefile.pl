@@ -20,18 +20,26 @@ my $BASE_FNAME  = 'swospp';
 # list of ignored files, if without extension will ignore all files regardles of their extension
 my %IGNORE_SRCS = map { $_ => 1 } qw//;
 
-my $CC          = 'wcc386';
+my $CC          = 'g++';
 my $AS          = 'nasm';
-my $DIS         = 'wdis';
+my $DIS         = '';       # no need for wdis anymore, gcc can generate listings directly
 my $LINK        = 'alink';
 
-my $CFLAGS      = '-bt=nt -oi -oa -oh -s -ox -wx -fr=nul -fp6 -fo=$@ -wcd=128 -wcd=138 -wcd=400 -mf -zl $<';
+my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 -Wa,-adhlns=$(LST_DIR)/$*.lst -fno-ident ' .
+                  '-mno-red-zone -mrtd -march=i386 -m32 -nostdlib -ffreestanding -fno-leading-underscore -fno-stack-protector ' .
+                  '-mpush-args -mno-accumulate-outgoing-args -mno-stack-arg-probe -fno-exceptions -fno-unwind-tables ' .
+                  '-fno-asynchronous-unwind-tables -momit-leaf-frame-pointer -mpreferred-stack-boundary=2 ' .
+                  '-fomit-frame-pointer -fverbose-asm -Wstack-usage=43008 -Wno-multichar -o$@ $<';
 my $AFLAGS      = '-s -w+macro-params -w+orphan-labels -fwin32 -O3 -o$@ -l$(LST_DIR)/$*.lst $<';
+
+my $DBG_CFLAGS  = ' -DDEBUG=1 -g';
+my $DBG_AFLAGS  = ' -DDEBUG';
 
 # keep everything in one code and one data section, bss goes into data
 my $LFLAGS =  <<'EOF';
     /merge:_BSS=.data /merge:CONST2=.data /merge:CONST=.data
     /merge:.strdata=.data /merge:_DATA=.data /merge:_TEXT=.text
+    /merge:.text.unlikely=.text
     /section-flags:.data=0xe07000c0 /section-align:4096 /entry:start
     /m+ /export:PatchSize /export:PatchStart /output-format:PE
     /verbosity:1 /file-align:16
@@ -44,7 +52,7 @@ my $LST_DIR = '../etc';
 my $BMP_DIR = '../bitmap';
 
 # directories to copy final binary to
-my @DEST_DIRS = qw/c:\\temp c:\\games\\swos/;
+my @DEST_DIRS = qw/c:\\temp d:\\games\\swos/;
 
 ################## end of user modifiable part ##################
 use Data::Dumper;
@@ -72,6 +80,7 @@ my %PARAMS;
 my $TARGET;
 my $CLEAN = 0;
 my $DEBUG = 0;
+my $REBUILD = 0;
 my @additionalIncludes;
 my %srcFiles;
 my %includes;
@@ -85,17 +94,17 @@ if ($CLEAN) {
     exit(0) if ($PARAMS{'target'} eq 'clean');
     $PARAMS{'target'} = 'all';  # assuming it was 'rebuild' at this point
 }
-# set debug preprocessor definition
+# set debug flags
 if ($TARGET eq 'dbg') {
-    $CFLAGS .= ' -dDEBUG';
-    $AFLAGS .= ' -DDEBUG';
+    $CFLAGS .= $DBG_CFLAGS;
+    $AFLAGS .= $DBG_AFLAGS;
 }
 ensureDirectories();
 generateBitmaps();
 
 my $TARGET_FULL = ('RELEASE', 'DEBUG')[$TARGET eq 'dbg'];
 $OBJ_DIR = catfile($OBJ_DIR, $TARGET);
-my %SRC_EXTENSIONS = map { $_ => 1 } qw/.c .asm/;
+my %SRC_EXTENSIONS = map { $_ => 1 } qw/.c .cpp .asm/;
 my %INCLUDES_EXTENSIONS = map { $_ => 1 } qw/inc h/;
 
 # go into file loop
@@ -130,6 +139,11 @@ find( { wanted => sub
 }, no_chdir => 1 }, '.');
 logl(Dumper(%includes));
 
+# make script will be secret implicit dependency of each file
+my $scriptTimestamp = getTimestamp($0);
+# if we have to rebuild make it as if script changed
+$scriptTimestamp = time() if ($REBUILD);
+
 # gather dependencies
 logl("Resolving dependencies and updating timestamps...");
 map {
@@ -137,7 +151,8 @@ map {
     getDependencies($srcPath, $srcFiles{$_}{'dir'}, $srcFiles{$srcPath}{'file'});
     updateTimestamp($srcPath);
     # we have dependencies for this file, as well as joint timestamp, so push it to the list if it needs to be built
-    $srcFiles{$srcPath}{'build'} = $srcFiles{$srcPath}{'timestamp'} > $srcFiles{$srcPath}{'objTimestamp'};
+    # also force rebuild if make script changed
+    $srcFiles{$srcPath}{'build'} = $srcFiles{$srcPath}{'timestamp'} > $srcFiles{$srcPath}{'objTimestamp'} || $scriptTimestamp > $srcFiles{$srcPath}{'objTimestamp'};
 } keys %srcFiles;
 
 # generate build list after all the files have been processed since some might turn out
@@ -153,16 +168,17 @@ logl("Files to be built:");
 logl(Dumper(\@buildList));
 
 buildFile(\@buildList);
-createLnkFile();
-linkFiles();
-createBin();
+createLnkFile($scriptTimestamp);
+linkFiles($scriptTimestamp);
+createBin($scriptTimestamp);
 showWarningReport();
 
 # todo: check for dbg to rel builds, and vice versa and copy corresponding bin
 
 if ($PARAMS{'target'} eq 'all') {
     $PARAMS{'target'} = 'rel';  # all should've done the job of dbg
-    exec($0, recreateCommandLine()) or die "Recursive call failed.\n";
+    logl('Recursive call: ', 'perl ', $0, ' ', recreateCommandLine());
+    exec('perl', $0 . ' ' . recreateCommandLine()) or die "Recursive call failed.\n";
 }
 # todo: iterate through dep files and delete those that have no corresponding source file
 
@@ -221,7 +237,7 @@ sub getIncludeRegex
     use constant C_INCLUDE_REGEX => '#\s*(include)';
     use constant ASM_INCLUDE_REGEX => '(incbin|%\s*include)';
     my %directives = (
-        'c' => \C_INCLUDE_REGEX, 'h' => \C_INCLUDE_REGEX,
+        'c' => \C_INCLUDE_REGEX, 'cpp' => \C_INCLUDE_REGEX, 'h' => \C_INCLUDE_REGEX,
         'asm' => \ASM_INCLUDE_REGEX, 'inc' => \ASM_INCLUDE_REGEX
     );
     my $directives = $directives{$ext} or die "Unknown extension encountered: \".$ext\".\n";
@@ -264,12 +280,12 @@ sub getDependencies
         # don't forget about sub-dependencies!
         map { scanIncludeDependencies($_, $dependencies, $file) } @depContents;
         $dependencies = [uniq(@{$dependencies})];
-        markAsScanned($path, $file, length($parent) > 0, $dependencies);
+        markAsScanned($path, $file, defined($parent) && length($parent) > 0, $dependencies);
         return $dependencies;
     }
     # do a crude scan for includes; it doesn't account for say conditionally included files,
     # make sure to expand it if it's ever needed; we're also assuming user will be nice and
-    # wouldn't use <> for user includes
+    # wouldn't use <> for non-system includes
     open($IN, '<', "$path") or die "Failed to open file: $path\n";
     $path =~ /\.([^.]+)$/;
 
@@ -288,7 +304,7 @@ sub getDependencies
     print $OUT "$_\n" for @{$dependencies};
     close($OUT);
     # we're done, just mark it as scanned
-    markAsScanned($path, $file, length($parent) > 0, $dependencies);
+    markAsScanned($path, $file, defined($parent) && length($parent) > 0, $dependencies);
 }
 
 sub newSrcFile
@@ -334,28 +350,34 @@ sub parseCommandLine
     foreach my $arg (@ARGV) {
         switch ($arg) {
         case 'clean'    { assignTarget('clean', 'clean'); $CLEAN = 1; }
-        case 'rebuild'  { assignTarget('dbg', 'rebuild'); $CLEAN = 1; }
+        case 'rebuild_dbg' { assignTarget('dbg', 'rebuild_dbg'); $REBUILD = 1; }
+        case 'rebuild_rel' { assignTarget('rel', 'rebuild_rel'); $REBUILD = 1; }
         case 'all'      { assignTarget('dbg', 'all'); }
         case 'dbg'      { assignTarget('dbg', 'dbg'); }
         case 'rel'      { assignTarget('rel', 'rel'); }
         case 'dist'     { die("Target 'dist' not supported yet.\n"); }
         case '-d'       { $DEBUG = 1; }
-        case '-h'  {
+        case /-h|--help/  {
             print "$scriptInfo\n",
                   "Targets:\n",
-                  "clean - remove all files from previous build\n",
-                  "all   - build both debug and release version\n",
-                  "dbg   - build debug version\n",
-                  "rel   - build release version\n",
-                  "dist  - build version for distribution\n",
+                  "clean   - remove all files from previous build\n",
+                  "rebuild_dbg - rebuild debug version\n",
+                  "rebuild_rel - rebuild release version\n",
+                  "all     - build both debug and release version\n",
+                  "dbg     - build debug version\n",
+                  "rel     - build release version\n",
+                  "dist    - build version for distribution\n",
                   "Switches:\n",
-                  "-d    - do not build, just print commands and debug info\n",
-                  "-p    - print commands before execution\n",
-                  "-v    - show version and quit";
+                  "-d      - do not build, just print commands and debug info\n",
+                  "-p      - print commands before execution\n",
+                  "-e      - redirect stderr to stdout\n",
+                  "-v      - show version and quit\n",
+                  "-h      - show help and exit";
             exit(0);
         }
         case '-v'       { print "$scriptInfo\n"; exit(0); }
         case '-p'       { $PARAMS{'verbose'} = 1; }
+        case '-e'       { open(STDERR, ">&STDOUT"); }
         default         { die "Unrecognized command: $arg\n"; }
         }
     }
@@ -465,24 +487,28 @@ sub logl
 sub buildFile
 {
     my ($buildList) = @_;
-    my $cIncludeDirs = join(' ', map { "-i=$_" } @additionalIncludes);
-    my $asmIncludeDirs = join(' ', map { "-i$_" } @additionalIncludes);
+    my $cIncludeDirs = join(' ', map { "-I$_" } @additionalIncludes);
+    my $asmIncludeDirs = join(' ', map { "-I$_" } @additionalIncludes);
     my $C_CMD_LINE = $CC . ' ' . $cIncludeDirs . ' ' . $CFLAGS;
     my $ASM_CMD_LINE = $AS . ' ' . $asmIncludeDirs . ' ' . $AFLAGS;
-    my %buildCommands = ('.c' => $C_CMD_LINE, '.asm' => $ASM_CMD_LINE);
+    my %buildCommands = ('.c' => $C_CMD_LINE, '.cpp' => $C_CMD_LINE, '.asm' => $ASM_CMD_LINE);
     my $targetTag = "[$TARGET_FULL] ";
-    # sort bulid list, oldest first, and asm files before c
+
+    # sort bulid list, oldest first, and asm files before cpp
     @buildList = sort {
         if ($srcFiles{$a}{'ext'} eq $srcFiles{$b}{'ext'}) {
             return $srcFiles{$a}{'timestamp'} <=> $srcFiles{$b}{'timestamp'};
         } else {
             return $srcFiles{$a}{'ext'} eq '.asm' ? -1 : 1
-        }} @buildList;
+        }
+    } @buildList;
+
     foreach my $src (@{$buildList}) {
         exists $buildCommands{$srcFiles{$src}{'ext'}}
             or die "Invalid extension for source files '$srcFiles{$src}{'ext'}' found.\n";
         mkpath($srcFiles{$src}{'dir'});
-        print $targetTag, ('Assembling ', 'Compiling ')[$srcFiles{$src}{'ext'} eq '.c'],
+        my $ext = $srcFiles{$src}{'ext'};
+        print $targetTag, ('Assembling ', 'Compiling ')[$ext eq '.c' || $ext eq '.cpp'],
             $srcFiles{$src}{'file'}, "...\n";
         # expand commands
         my $cmd = $buildCommands{$srcFiles{$src}{'ext'}};
@@ -492,8 +518,8 @@ sub buildFile
             '$*' => $srcFiles{$src}{'base'},
             '$(LST_DIR)' => $LST_DIR,
         });
-        filterCommandOutput($cmd, ['Watcom', 'Sybase', 'openwatcom'], $srcFiles{$src}{'file'});
-        if ($srcFiles{$src}{'ext'} eq '.c') {
+        runCommand($cmd);
+        if ($DIS ne '' && ($ext eq '.c' || $ext eq '.cpp')) {
             # dissasemble; note that this will make listings of files with same names
             # in different subdirectories overwrite each other
             filterCommandOutput($DIS . ' ' . $srcFiles{$src}{'obj'} . " /s=$srcFiles{$src}{'path'}",
@@ -506,15 +532,15 @@ sub buildFile
 
 sub createLnkFile
 {
+    my ($scriptTimestamp) = @_;
     my $lnkFile = catdir($OBJ_DIR, $LNK_FILE);
     my $lnkTimestamp = getTimestamp($lnkFile);
-    my $scriptTimestamp = getTimestamp($0);
     my $latestDepTimestamp = max(map({ $srcFiles{$_}{'objTimestamp'} } keys %srcFiles), $scriptTimestamp);
     logl("createLnkFile: script ts = $scriptTimestamp, dep ts = $latestDepTimestamp, lnk ts = $lnkTimestamp");
     if ($latestDepTimestamp > $lnkTimestamp) {
         $LFLAGS =~ tr/\r\n//d;
         my $lnkContents = $LFLAGS . ' ' . join(' ', map( { $srcFiles{$_}{'obj'} } keys %srcFiles)) .
-            ' -o:' . catdir($OBJ_DIR, $EXE_FILE);
+            ' /output-name:' . catdir($OBJ_DIR, $EXE_FILE);
         logl("LNK FILE CONTENTS:\n$lnkContents");
         return 1 if ($DEBUG);
         open my $LNK, '>', $lnkFile or die "Failed to create $lnkFile\n";
@@ -525,8 +551,10 @@ sub createLnkFile
 
 sub linkFiles
 {
+    my ($scriptTimestamp) = @_;
     my $lnkFile = catdir($OBJ_DIR, $LNK_FILE);
-    return if (getTimestamp(catdir($OBJ_DIR, $EXE_FILE)) > getTimestamp($lnkFile));
+    my $exeFileTimestamp = getTimestamp(catdir($OBJ_DIR, $EXE_FILE));
+    return if ($exeFileTimestamp > getTimestamp($lnkFile) && $exeFileTimestamp > $scriptTimestamp);
     print "Linking...\n";
     runCommand($LINK, '@' . $lnkFile);
     my $srcMap = catdir($OBJ_DIR, $BASE_FNAME . '.map');
@@ -541,16 +569,20 @@ sub linkFiles
 
 sub createBin
 {
+    my ($scriptTimestamp) = @_;
     my $exeFile = catdir($OBJ_DIR, $EXE_FILE);
     my $binFile = catdir($OBJ_DIR, $FILENAME);
-    return if (getTimestamp($binFile) > getTimestamp($exeFile));
+    my $binFileTimestamp = getTimestamp($binFile);
+    my $pe2bin = catdir($BIN_DIR, 'pe2bin.exe');
+    my $pe2binTimestamp = getTimestamp($pe2bin);
+    return if ($binFileTimestamp > getTimestamp($exeFile) && $binFileTimestamp > $scriptTimestamp && $binFileTimestamp > $pe2binTimestamp);
     if (!$DEBUG) {
         open(my $F, '>', catdir($BIN_DIR, "$TARGET_FULL")) or die "Failed to create $TARGET marker file.\n";
         print $F "$TARGET_FULL VERSION\n";
         close $F;
         unlink(catdir($BIN_DIR, ('DEBUG', 'RELEASE')[$TARGET eq 'dbg']));
     }
-    runCommand(catdir($BIN_DIR, 'pe2bin.exe'), $exeFile);
+    runCommand($pe2bin, $exeFile);
     my $result = catdir($BIN_DIR, $FILENAME);
     logl("COPY: $binFile -> $result");
     $DEBUG or copy($binFile, $result) or die "Failed to copy $FILENAME from $OBJ_DIR to $BIN_DIR.\n";
@@ -592,7 +624,7 @@ sub recreateCommandLine
 
 sub showWarningReport
 {
-    # warnings get lost amongst tons of output scolling lightning fast
+    # warnings get lost amongst tons of output scrolling lightning fast
     if (%warnings) {
         my $totalWarnings = sum(values %warnings);
         my $numFilesPrinted = 0;

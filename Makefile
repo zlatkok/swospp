@@ -4,7 +4,7 @@
 SHELL = sh.exe
 
 # needed in sub-makefiles
-export SWOS_DIR = c:\games\swos
+export SWOS_DIR = d:\games\swos
 
 # variables used only here
 STORE_DIR = c:\\backup\\swos\\swospp

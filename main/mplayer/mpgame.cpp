@@ -31,10 +31,12 @@ typedef struct ResendFrame {
 static ResendFrame resendFrames[3];     /* must keep at least 3 last frames */
 static int resendIndex;
 
+static bool __attribute__((used)) receiveFrame() asm("receiveFrame");
+static void __attribute__((used)) sendNextFrame() asm("sendNextFrame");
+
 static void setAllResendFramesState(byte state)
 {
-    int i;
-    for (i = 0; i < sizeofarray(resendFrames); i++)
+    for (size_t i = 0; i < sizeofarray(resendFrames); i++)
         resendFrames[i].state = state;
 }
 
@@ -60,7 +62,7 @@ static __inline ResendFrame *getPreviousResendFrame(int *index)
 
 static signed char skipFrames;
 
-static int playerNo;                /* 1, 2 or 0 for watcher */
+static int playerNo asm("playerNo") __attribute__((used));  /* 1, 2 or 0 for watcher */
 static IPX_Address *playerAddresses;
 static IPX_Address *otherPlayerAddress;
 static int numWatchers;
@@ -74,15 +76,13 @@ static word lastSendTime;
 static byte sentThisFrame;  /* prevent sending more than 1 packet per frame */
 
 static byte stateQueued;    /* bitfield of states to apply at next allowed frame */
-static byte mainLoopRan;
+static byte mainLoopRan asm("mainLoopRan") __attribute__((used));
 
 static word savedNumLoopsJoy2;
 
 static byte pl2KeyboardWasActive;   /* be careful not to clash with pl2 on keyboard */
 extern byte pl2Keyboard;
-extern void SetSecondPlayerOnKeyboard(unsigned char);
-#pragma aux pl2Keyboard "*";
-#pragma aux SetSecondPlayerOnKeyboard "*";
+extern "C" void SetSecondPlayerOnKeyboard(unsigned char);
 
 /* state bit masks */
 #define STATE_SHOWING_STATS   1     /* obsolete */
@@ -163,8 +163,8 @@ static FrameHash *getHashAtPos(int spot)
 static void dumpSavedStates()
 {
     /* index is already set to the oldest element - one beyond last added */
-    int i, cur = frameHashIndex;
-    for (i = 0; i < sizeofarray(frameHashes); i++) {
+    int cur = frameHashIndex;
+    for (size_t i = 0; i < sizeofarray(frameHashes); i++) {
         WriteToLog(("*** Dumping saved teams for frame %d", frameHashes[cur].frameNo));
         HexDumpToLog(&frameHashes[cur].team1Data, sizeof(frameHashes[cur].team1Data), "left team");
         HexDumpToLog(&frameHashes[cur].team2Data, sizeof(frameHashes[cur].team2Data), "right team");
@@ -181,7 +181,7 @@ static void verifyReceivedPacket(const char *packet, int frameIndex, int frameNo
     /* state might be altered in case of game-ending packets */
     if (framesToRender[frameIndex].type == PT_GAME_CONTROLS &&
         !(framesToRender[frameIndex].state & STATE_ABORT_MASK) &&
-        memcmp(&framesToRender[frameIndex], packet, offsetof(Frame, state) + member_size(Frame, state))) {
+        memcmp(&framesToRender[frameIndex], packet, offsetof(Frame, state) + sizeof(Frame::state))) {
         WriteToLog(("Different frames received for frameNo %d!", frameNo));
         HexDumpToLog(packet, sizeof(Frame), "newly received packet");
         HexDumpToLog(&framesToRender[frameIndex], sizeof(Frame), "previous packet");
@@ -190,7 +190,7 @@ static void verifyReceivedPacket(const char *packet, int frameIndex, int frameNo
         Frame *f = (Frame *)packet;
         int hashFrameDiff = f->hashFrame - currentFrameNo;
         FrameHash *fh = getHashAtPos(hashFrameDiff);
-        if (fh && (hashFrameDiff < 1 || hashFrameDiff == 1 && currentFrameNo != teamSwitchCounter)) {
+        if (fh && (hashFrameDiff < 1 || (hashFrameDiff == 1 && currentFrameNo != teamSwitchCounter))) {
             dword h1 = fh->team1Hash;
             dword h2 = fh->team2Hash;
             /* if this one is referencing next frame, which we might be in, get current hashes */
@@ -222,13 +222,11 @@ static void verifyReceivedPacket(const char *packet, int frameIndex, int frameNo
 
 /* necessary hooks for all this mumbo jumbo to work */
 static void HookMainLoop();
-#pragma aux HookMainLoop modify [];
-static void __declspec(naked) HookFlip();
+void HookFlip() asm("HookFlip");
 
 static void ShowStatsLoop();
 static void PausedLoop();
 
-static byte unqueueState();
 static bool isBench1Allowed();
 static bool isBench2Allowed();
 
@@ -251,7 +249,7 @@ static void sendFrame(int frameNo, word controls, byte state)
 {
     Frame frame;
     int i;
-    WriteToLogM((LM_GAME_LOOP, "Sending frame %d, controls = %#x, state = %#x", frameNo, controls, state));
+    WriteToLog((LM_GAME_LOOP, "Sending frame %d, controls = %#x, state = %#x", frameNo, controls, state));
     initFrame(&frame, controls, frameNo, state);
     SendSimplePacket(otherPlayerAddress, (char *)&frame, sizeof(frame));
     /* inform watchers of aborting also */
@@ -271,9 +269,9 @@ static void applyControls(word controls, int playerNo)
 
 static void applyFrame(const Frame *frame)
 {
-    bool playerTurn = teamSwitchCounter & 1 ^ playerNo == 2;    /* determine which player gets these controls */
+    bool playerTurn = (teamSwitchCounter & 1) ^ (playerNo == 2);    /* determine which player gets these controls */
 
-    WriteToLogM((LM_GAME_LOOP, "Applying frame %d, state = %#x, controls = %#x (player %d)",
+    WriteToLog((LM_GAME_LOOP, "Applying frame %d, state = %#x, controls = %#x (player %d)",
         frame->frameNo, frame->state, frame->controls, playerTurn + 1));
     assert(playerNo != 0);
 
@@ -308,14 +306,14 @@ static void applyFrame(const Frame *frame)
 
 /* Try to read next frame and store it into framesToRender array, to be ready when the time for rendering comes.
    Return true if packet processed, false if queue empty. */
-static bool receiveFrame()
+static bool __attribute__((used)) receiveFrame()
 {
     char *packet;
     int length;
     IPX_Address node;
     bool abort;
 
-    if (packet = ReceivePacket(&length, &node)) {
+    if ((packet = ReceivePacket(&length, &node))) {
         /* check packet source */
         if (!addressMatch(&node, &playerAddresses[0]) && !addressMatch(&node, &playerAddresses[1])) {
             WriteToLog(("Received a packet from invalid player!"));
@@ -329,10 +327,9 @@ static bool receiveFrame()
 
             /* send ack if it's the last frame - don't care if it's out of range */
             if (frame->state & STATE_ABORT_MASK) {
-                int i;
                 /* reject invalid packets - saying that we aborted when we didn't */
-                if (playerNo == 1 && frame->state & STATE_ABORT1 ||
-                    playerNo == 2 && frame->state & STATE_ABORT2) {
+                if ((playerNo == 1 && frame->state & STATE_ABORT1) ||
+                    (playerNo == 2 && frame->state & STATE_ABORT2)) {
                     WriteToLog(("Fake abort? playerNo = %d, state = %#x", playerNo, frame->state));
                     qFree(packet);
                     return true;
@@ -342,7 +339,7 @@ static bool receiveFrame()
                     sendFrame(frameNo, 0, STATE_GAME_ENDED);
                 }
                 /* abort the game asap, therefore mark all frames in queue with abort bit */
-                for (i = 0; i < sizeofarray(framesToRender); i++)
+                for (size_t i = 0; i < sizeofarray(framesToRender); i++)
                     framesToRender[i].state |= frame->state & STATE_ABORT_MASK;
                 /* frame's already address checked against other player */
                 if (playerNo == 2 && frame->state & STATE_ABORT1) {
@@ -361,19 +358,18 @@ static bool receiveFrame()
             }
 
             assert_msg(playerNo != 0, "Watcher received player packet!");
-            if (frameIndex >= 0 && frameIndex + 2 * skipFrames < sizeofarray(framesToRender)) {
-                int i;
+            if (frameIndex >= 0 && frameIndex + 2 * skipFrames < (int)sizeofarray(framesToRender)) {
                 verifyReceivedPacket(packet, frameIndex, frameNo);
                 framesToRender[frameIndex] = *(Frame *)packet;
                 /* based on skip frames, we might copy this frame further on */
-                for (i = 1; i <= skipFrames && frameIndex + 2 * i < sizeofarray(framesToRender); i++) {
+                for (int i = 1; i <= skipFrames && frameIndex + 2 * i < (int)sizeofarray(framesToRender); i++) {
                     int clonedFrameIndex = frameIndex + 2 * i;
                     framesToRender[clonedFrameIndex] = *(Frame *)packet;
                     /* might not be necessary to update frame number, but makes it easier to follow debug log */
                     framesToRender[clonedFrameIndex].frameNo += 2 * i;
                     framesToRender[clonedFrameIndex].state = 0; /* clear state or it will keep getting flipped */
                 }
-                assert_msg(frameIndex + 2 * skipFrames < sizeofarray(framesToRender), "framesToRender too small!");
+                assert_msg(frameIndex + 2 * skipFrames < (int)sizeofarray(framesToRender), "framesToRender too small!");
             } else {
                 WriteToLog(("Rejecting out of range frame: %d.", frameNo));
                 if (frameIndex > 25)
@@ -409,7 +405,7 @@ static bool sendingThisFrame()
 
     Check if we're sending next frame and gather all input and send it to the other player if so.
 */
-static void sendNextFrame()
+static void __attribute__((used)) sendNextFrame()
 {
     assert(playerNo != 0);
     if (!sentThisFrame && sendingThisFrame()) {
@@ -461,7 +457,7 @@ bool isBench2Allowed()
 */
 static int getControlScanPlayerNumber()
 {
-    return teams[teamSwitchCounter & 1 ^ teamPlayingUp == 2]->playerNumber;
+    return teams[(teamSwitchCounter & 1) ^ (teamPlayingUp == 2)]->playerNumber;
 }
 
 /* Called when the game ended, on exit from main loop. Send the last frame and cleanup. */
@@ -514,7 +510,7 @@ static void GameEnded()
     if (sendLastFrame && !ack)
         gameStatus = GS_GAME_DISCONNECTED;
     GameFinished();
-    WriteToLogM((LM_GAME_LOOP, "Game has ended, result code is %d.", gameStatus));
+    WriteToLog((LM_GAME_LOOP, "Game has ended, result code is %d.", gameStatus));
     replaySelected = false; /* no replay, we're done */
     calla(AIL_stop_play);
 }
@@ -592,29 +588,27 @@ void HookMainLoop()
     calln(ReadTimerDelta);  /* SWOS doesn't use registers anyway, call the version that doesn't save them */
 }
 
+extern void CheckForFastReplay() asm("CheckForFastReplay");
 /* Patch waiting for retrace start, as we might spend some time there, and insert network check. */
-void HookFlip()
-{
-    extern void CheckForFastReplay();
-    #pragma aux CheckForFastReplay "*";
-    _asm {
-        call CheckForFastReplay /* we overwrote this */
-        mov  al, mainLoopRan    /* prevent Flip() from getting called before OnGameLoopStart() in first frame */
-        test al, al
-        jz   return
+asm(
+"HookFlip:                      \n\t"
+    "call CheckForFastReplay    \n\t"   /* we overwrote this */
+    "mov  al, mainLoopRan       \n\t"   /* prevent Flip() from getting called before OnGameLoopStart() in first frame */
+    "test al, al                \n\t"
+    "jz   return                \n\t"
 
-        mov  eax, playerNo      /* watchers don't need this */
-        test eax, eax
-        jz   receive_frame
+    "mov  eax, playerNo         \n\t"   /* watchers don't need this */
+    "test eax, eax              \n\t"
+    "jz   receive_frame         \n\t"
 
-        call sendNextFrame
-receive_frame:
-        call receiveFrame
-        ;call IPX_OnIdle
-return:
-        retn
-    }
-}
+    "call sendNextFrame         \n\t"
+    "receive_frame:             \n\t"
+    "call receiveFrame          \n\t"
+    ";call IPX_OnIdle           \n\t"
+
+    "return:                    \n\t"
+    "ret                        \n\t"
+);
 
 /** HookUpdateStatistics
 
@@ -630,7 +624,7 @@ static void HookUpdateStatistics()
             int i;
             if (!(watcherPacket = CreateWatcherPacket(&watcherPacketSize, currentFrameNo)))
                 return;
-            WriteToLogM((LM_WATCHER, "Sending packets to watchers..."));
+            WriteToLog((LM_WATCHER, "Sending packets to watchers..."));
             for (i = 0; i < numWatchers; i++)
                 SendSimplePacket(&watcherAddresses[i], watcherPacket, watcherPacketSize);
         }
@@ -820,7 +814,7 @@ void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inN
     PatchCall(GameLoop, 0x50b, HookUpdateStatistics);
     /* turn off 2nd player on keyboard if active, and save us _A LOT_ of trouble
        (for instance - it sets joy2Status directly from keyboard handler) */
-    if (pl2KeyboardWasActive = pl2Keyboard)
+    if ((pl2KeyboardWasActive = pl2Keyboard))
         SetSecondPlayerOnKeyboard(false);
     DisableInput();     /* start with disabled input, only enable when needed */
     ResetSprites();     /* SWOS doesn't initialize sprites properly... it just wasn't manifesting before this */
@@ -863,7 +857,10 @@ void FinishMultiplayerGame()
     PatchByte(TeamsControlsCheck, 0xe, 0x74);
     PatchDword(GameLoop, 0x663, 0x00000994);
     PatchDword(GameLoop, 0x5b0, 0x000851f6);
-    PatchDword(Flip, 0, 0xc93d8366);
+    //PatchDword(Flip, 0, 0xc93d8366);
+    /* had to use memcpy to avoid GCC warning about breaking strict-aliasing rules */
+    dword d = 0xc93d8366;
+    memcpy(Flip, &d, sizeof(dword));
     PatchDword(Flip, 0x03, &EGA_graphics);
     PatchByte(Flip, 0x07, 0xff);
     PatchWord(ReadGamePort, 0x7, 0x7401);
@@ -906,12 +903,12 @@ void OnGameLoopStart()
         CreateWatcherPacket(&packetSize, currentFrameNo);
     }
 
-    WriteToLogM((LM_GAME_LOOP, "=================================================="));
-    WriteToLogM((LM_GAME_LOOP, "OnGameLoopStart(), currentFrameNo = %d, currentTick = %d, teamPlayingUp = %d, "
+    WriteToLog((LM_GAME_LOOP, "=================================================="));
+    WriteToLog((LM_GAME_LOOP, "OnGameLoopStart(), currentFrameNo = %d, currentTick = %d, teamPlayingUp = %d, "
         "paused = %d, showingStats = %d, teamSwitchCounter = %d, stoppageTimer = %d", currentFrameNo, currentTick,
         teamPlayingUp, paused, showingStats, teamSwitchCounter, stoppageTimer));
-    HexDumpToLogM(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
-    HexDumpToLogM(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
+    HexDumpToLog(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
+    HexDumpToLog(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
 
     /* watchers don't need to wait or send anything, just try to empty out the packet queue here,
        but also check if we got disconnected from the game */
@@ -936,12 +933,12 @@ void OnGameLoopStart()
     sendNextFrame();
 
     if (framesToRender[0].type != PT_GAME_CONTROLS)
-        WriteToLogM((LM_GAME_LOOP, "Waiting for packet %d", currentFrameNo));
+        WriteToLog((LM_GAME_LOOP, "Waiting for packet %d", currentFrameNo));
 
     /* wait till we have next frame to render, or until time is up */
     while (startTime + networkTimeout > currentTick) {
         if (framesToRender[0].type == PT_GAME_CONTROLS) {
-            WriteToLogM((LM_GAME_LOOP, "Found next frame to render (%d)... controls = %#x, state = %#x",
+            WriteToLog((LM_GAME_LOOP, "Found next frame to render (%d)... controls = %#x, state = %#x",
                 framesToRender[0].frameNo, framesToRender[0].controls, framesToRender[0].state));
             /* do not apply same frame twice */
             if (currentFrameNo != lastAppliedFrame) {
@@ -949,7 +946,7 @@ void OnGameLoopStart()
                 lastAppliedFrame = currentFrameNo;
             }
             if (currentTick - startTime)
-                WriteToLogM((LM_GAME_LOOP, "Wasted %d tick(s)", currentTick - startTime));
+                WriteToLog((LM_GAME_LOOP, "Wasted %d tick(s)", currentTick - startTime));
             return;
         }
 
@@ -967,7 +964,7 @@ void OnGameLoopStart()
             /* seems we didn't find what we were looking for, resend last packet
                as it may have been lost - but try not to flood, send certain number
                of packets as fast as possible, then slow down */
-            assert(currentResendIndex >= 0 && currentResendIndex < sizeofarray(resendFrames));
+            assert(currentResendIndex >= 0 && currentResendIndex < (int)sizeofarray(resendFrames));
             if (burstPacketsSent < MAX_BURST_PACKETS) {
                 ResendFrame *rs = getPreviousResendFrame(&currentResendIndex);
                 if (rs->frameNo >= 0) {
@@ -995,16 +992,16 @@ void OnGameLoopStart()
 
 void OnGameLoopEnd()
 {
-    WriteToLogM((LM_GAME_LOOP, "OnGameLoopEnd()"));
+    WriteToLog((LM_GAME_LOOP, "OnGameLoopEnd()"));
     burstPacketsSent = 0;
     currentFrameNo++;
     stoppageTimer += !paused;   /* do not increment while paused */
     /* shift frames to render, get rid of the one we just rendered */
     memmove(framesToRender, framesToRender + 1, sizeof(framesToRender) - sizeof(framesToRender[0]));
     framesToRender[sizeofarray(framesToRender) - 1].type = PT_GAME_CONTROLS + 1;
-    WriteToLogM((LM_GAME_LOOP_STATE, "Game loop end, currentFrame = %d", currentFrameNo));
-    HexDumpToLogM(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
-    HexDumpToLogM(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
+    WriteToLog((LM_GAME_LOOP_STATE, "Game loop end, currentFrame = %d", currentFrameNo));
+    HexDumpToLog(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
+    HexDumpToLog(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
 }
 
 byte GetGameStatus()
@@ -1017,7 +1014,7 @@ void ShowStatsLoop()
 {
     while (showingStats) {
         int teamControls;
-        WriteToLogM((LM_GAME_LOOP, "ShowStatsLoop(), showingStats = %d, teamSwitchCounter = %d",
+        WriteToLog((LM_GAME_LOOP, "ShowStatsLoop(), showingStats = %d, teamSwitchCounter = %d",
             showingStats, teamSwitchCounter));
         OnGameLoopStart();
         calla(GetKey);
@@ -1033,7 +1030,7 @@ void ShowStatsLoop()
         else if (teamControls == 2)
             calla(Player2StatusProc);
         HookUpdateStatistics();  /* to avoid watchers timing out */
-        WriteToLogM((LM_GAME_LOOP, "showingStats = %d", showingStats));
+        WriteToLog((LM_GAME_LOOP, "showingStats = %d", showingStats));
         OnGameLoopEnd();
     }
 }
@@ -1047,7 +1044,7 @@ void ShowStatsLoop()
 void PausedLoop()
 {
     int teamControls;
-    WriteToLogM((LM_GAME_LOOP, "PausedLoop(), paused = %d", paused));
+    WriteToLog((LM_GAME_LOOP, "PausedLoop(), paused = %d", paused));
     OnGameLoopStart();
     if (!paused)
         return;
@@ -1073,7 +1070,7 @@ void PausedLoop()
     Collect values of random variables to given buffer. seed2 vars and random_seed are
     overkill - they don't seem to be used during the game loop, but it can't hurt.
 */
-void GetRandomVariables(char *vars, int *size)
+void GetRandomVariables(byte *vars, int *size)
 {
     assert(*size >= 8);
     *size = 8;
@@ -1084,7 +1081,10 @@ void GetRandomVariables(char *vars, int *size)
 
 void SetRandomVariables(const char *vars, int size)
 {
-    memcpy(&seed, vars, 3);
-    memcpy(&seed2, vars + 3, 3);
-    random_seed = *(word *)(vars + 6);
+    assert(size >= 8);
+    if (size >= 8) {
+        memcpy(&seed, vars, 3);
+        memcpy(&seed2, vars + 3, 3);
+        random_seed = *(word *)(vars + 6);
+    }
 }

@@ -1,13 +1,17 @@
 #pragma once
 
+#include "dos.h"
+
+extern "C" {
+
 /* assert support */
 #ifdef DEBUG
-void AssertFailed(const char *, int);
-void AssertFailedMsg(const char *, int, const char *);
-/* it's actually better if we leave out the aborts attribute, since call stack will be available then
+void AssertFailed(const char *, int) __attribute__((noreturn));
+/* it's actually better if we leave out the noreturn attribute, since call stack will be available then
    (with aborts compiler generates direct jmp and leaves us without access to caller context) */
-#pragma aux AssertFailed /*aborts*/;
-#pragma aux AssertFailedMsg /*aborts*/;
+// turning it on again for tests with GCC
+void AssertFailedMsg(const char *, int, const char *) __attribute__((noreturn));
+
 #define assert(x) ((void)((x) ? (void)0 : AssertFailed(__FILE__, __LINE__)))
 #define assert_msg(x, msg) ((void)((x) ? (void)0 : AssertFailedMsg(__FILE__, __LINE__, msg)))
 #else
@@ -16,11 +20,10 @@ void AssertFailedMsg(const char *, int, const char *);
 #endif
 
 #undef sizeofarray
-#undef member_size
-#undef offsetof
 #define sizeofarray(x) (sizeof(x) / sizeof((x)[0]))
-#define member_size(type, member) (sizeof(((type *)0)->member))
+#ifndef offsetof
 #define offsetof(st, m) ((unsigned int)(&((st *)0)->m))
+#endif
 
 #undef STRINGIFY
 #undef QUOTE
@@ -35,7 +38,9 @@ void AssertFailedMsg(const char *, int, const char *);
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
-#define static_assert(cond) typedef char static_assertion_##__FILE__##__LINE__[(cond) ? 1 : -1]
+#ifndef EZERO
+#define EZERO 0
+#endif
 
 enum CharTypeFlags {
     C_DIGIT    = 1,
@@ -49,7 +54,6 @@ enum CharTypeFlags {
 };
 
 /* from ctype.h */
-
 extern const unsigned char IsWhat[256];
 
 #define isalnum(c)  ((IsWhat[(c) & 0xff] & (C_LOWER | C_UPPER | C_DIGIT)) != 0)
@@ -85,34 +89,63 @@ extern const unsigned char IsWhat[256];
 
 /* functions included in SWOS - have to be called through a pointer */
 
-void exit(int status);
-#pragma aux exit aborts;
-
-typedef unsigned long time_t;
-time_t time(time_t *timer);
-char *ctime(const time_t *timer);
+void exit(int status) __attribute__((noreturn));
+int stackavail();
 
 const char *strrchr(const char *str, int character);
 int strcmp(const char *str1, const char *str2);
 int strncmp(const char *str1, const char *str2, size_t n);
 int strlen(const char *str);
-typedef int (*strlen_f)(char *str);
 char *strncpy(char *dst, const char *src, size_t n);
-typedef char *(*strncpy_f)(char *dst, const char *src, size_t n);
 void *memset(void *ptr, int value, size_t num);
 void *memmove(void *dst, const void *src, size_t n);
-int swos_libc_stackavail();
-int stackavail();
-#pragma aux stackavail =                    \
-    "mov  eax, offset swos_libc_stackavail" \
-    "call eax"                              \
-    value [eax];
+void segread(struct SREGS *sregs);
+int int386x(int vec, union REGS *in, union REGS *out, struct SREGS *sregs);
+
+/* recreate small part of time.h, just enough so we can get timestamps nicely printed */
+#ifndef _TIME_T_DEFINED
+#define _TIME_T_DEFINED
+typedef unsigned long time_t;   /* unfortunately, GCC seems to define it if any system header is included */
+#endif
+
+static inline __attribute__((always_inline)) time_t time(time_t *seconds)
+{
+    time_t result;
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_time_    \t\n"
+        "call %[tmp]                            \t\n"
+        : "=a" (result), [tmp] "=r" (dummy)
+        : "a" (seconds)
+        : "cc", "memory"
+    );
+    return result;
+}
+
+static inline __attribute__((always_inline)) char *ctime (const time_t *timer)
+{
+    char *result;
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset swos_libc_ctime_   \t\n"
+        "call %[tmp]                            \t\n"
+        : "=a" (result), [tmp] "=r" (dummy)
+        : "a" (timer)
+        : "cc", "memory"
+    );
+    return result;
+}
 
 /* these are missing from SWOS, we'll have to implement them */
 char *strcpy(char *dst, const char *src);
 char *strcat(char *dst, const char *src);
 int stricmp(const char *s1, const char *s2);
+#ifdef __GNUC__
+/* use GCC kickass built in memcpy instead of our crappy one */
+#define memcpy(dst, src, n) __builtin_memcpy(dst, src, n)
+#else
 void *memcpy(void *dst, const void *src, size_t n);
+#endif
 int memcmp(const void *p, const void *q, size_t n);
 char *int2str(int num);
 char *strupr(char *s);
@@ -137,10 +170,10 @@ typedef struct BFile {
 
 #define FILE_BUFFER_SIZE    (4 * 1024)
 
-BFile *OpenBFile(byte accessMode, const char *fileName);
-bool OpenBFileUnmanaged(BFile *file, void *buffer, int bufferSize, byte accessMode, const char *fileName);
-BFile *CreateBFile(word fileAttribute, const char *fileName);
-bool CreateBFileUnmanaged(BFile *file, void *buffer, int bufferSize, word fileAttribute, const char *fileName);
+BFile *OpenBFile(DOS_accessMode accessMode, const char *fileName);
+bool OpenBFileUnmanaged(BFile *file, void *buffer, int bufferSize, DOS_accessMode accessMode, const char *fileName);
+BFile *CreateBFile(DOS_fileAttributes fileAttribute, const char *fileName);
+bool CreateBFileUnmanaged(BFile *file, void *buffer, int bufferSize, DOS_fileAttributes fileAttribute, const char *fileName);
 int FlushBFile(BFile *file);
 int WriteBFile(BFile *file, const void *pData, int size);
 bool PutCharBFile(BFile *file, char c);
@@ -151,3 +184,5 @@ bool UngetCharBFile(BFile *file, int c);
 int SeekBFile(BFile *file, uchar mode, int ofsHi, int ofsLo);
 void CloseBFile(BFile *file);
 void CloseBFileUnmanaged(BFile *file);
+
+}

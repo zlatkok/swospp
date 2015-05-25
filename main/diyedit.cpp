@@ -2,10 +2,8 @@
 #include "dos.h"
 #include "util.h"
 
-extern dword edit_DIY_Menu;
-extern dword teamListMenu;
-#pragma aux edit_DIY_Menu "*";
-#pragma aux teamListMenu "*";
+extern dword edit_DIY_Menu asm("edit_DIY_Menu");
+extern dword teamListMenu asm("teamListMenu");
 
 #define MAX_DIY_FILES 45   /* keep in byte */
 
@@ -93,7 +91,7 @@ void GetDIYFilenames()
     readFiles = i;
 }
 
-void EditDIYFile()
+extern "C" void EditDIYFile()
 {
     int sortFlag, i, last;
 
@@ -141,7 +139,7 @@ void EditDIYFile()
     calla(ShowMenu);
 }
 
-void DIYUpdateList()
+extern "C" void DIYUpdateList()
 {
     int i, y;
     MenuEntry *m;
@@ -193,7 +191,7 @@ void DIYUpdateList()
     }
 }
 
-void DIYFileSelected()
+extern "C" void DIYFileSelected()
 {
     MenuEntry *m = (MenuEntry *)A5;
     int i, sortFlag, ord = m->ordinal - 4;
@@ -203,7 +201,7 @@ void DIYFileSelected()
     A0 = (dword)fname;
     calla(LoadDIYFile);
 
-    if (D1 < 5189 + 2 + 684 * numSelectedTeams || gameType != 1) {
+    if ((int)D1 < 5189 + 2 + 684 * numSelectedTeams || gameType != 1) {
         char buf[128];
         A1 = (dword)buf;
         A2 = (dword)fname;
@@ -235,7 +233,7 @@ void DIYFileSelected()
     calla(ShowMenu);
 }
 
-void DIYEditScrollUp()
+extern "C" void DIYEditScrollUp()
 {
     if (lineOffset > 0) {
         lineOffset--;
@@ -244,7 +242,7 @@ void DIYEditScrollUp()
     }
 }
 
-void DIYEditScrollDown()
+extern "C" void DIYEditScrollDown()
 {
     if (lineOffset + 15 < readFiles) {
         lineOffset++;
@@ -253,7 +251,7 @@ void DIYEditScrollDown()
     }
 }
 
-void DIYTeamsListInit()
+extern "C" void DIYTeamsListInit()
 {
     int columns, columnSize, width, height, entryHeight, entryWidth;
     int n, mod, x, y, yOrig, startY, endY, i, j, space, legendHeight;
@@ -329,7 +327,7 @@ void DIYTeamsListInit()
             m->u1.entryColor += controls == 3;
             /* we'll use upEntryDis to keep original controls, and downEntryDis to keep current controls */
             m->upEntryDis = m->downEntryDis = controls;
-            m->u2.string = teams + 684 * sortedTeams[teamIndex++];
+            m->u2.string = (char *)teams + 684 * sortedTeams[teamIndex++];
             if (j >= columnSize) {
                 mod--;
                 if ((signed char)mExit->upEntry == -1)
@@ -350,7 +348,7 @@ void DIYTeamsListInit()
         mExit->upEntry = columnSize - 1;
 }
 
-void DIYTeamsOnSelect()
+extern "C" void DIYTeamsOnSelect()
 {
     MenuEntry *m = (MenuEntry *)A5;
     byte *control = &selectedTeamsBuffer[684 * sortedTeams[m->ordinal] + 4];
@@ -362,7 +360,7 @@ void DIYTeamsOnSelect()
     m->downEntryDis = *control;
 }
 
-void DIYTeamsExit()
+extern "C" void DIYTeamsExit()
 {
     int i;
     MenuEntry *m;

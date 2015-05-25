@@ -74,7 +74,7 @@ static void report(const char *text)
 
 static const char *symToStr(XmlSymbol sym)
 {
-    static_assert(XML_SYM_MAX == 7);
+    static_assert(XML_SYM_MAX == 7, "Xml symbols changed.");
     switch (sym) {
     case XML_SYM_TAG_OPEN:
         return "<";
@@ -109,7 +109,7 @@ static void *xmlAlloc(int size)
 
 static char *xmlStrdup(char *data, int len)
 {
-    char *copy = xmlAlloc(len + 1);
+    char *copy = (char *)xmlAlloc(len + 1);
     assert(len > 0);
     if (copy) {
         memcpy(copy, data, len);
@@ -126,7 +126,7 @@ static void xmlFree(void *ptr)
 
 static bool pushNode(XmlNode *node)
 {
-    XmlNodeListElem *elem = xmlAlloc(sizeof(XmlNodeListElem));
+    XmlNodeListElem *elem = (XmlNodeListElem *)xmlAlloc(sizeof(XmlNodeListElem));
     assert(xmlHeap);
     if (!elem)
         return false;
@@ -247,7 +247,7 @@ static char getXmlEscape(BFile *file)
 static int getStringEscape(BFile *file)
 {
     int readChars[3];
-    int count = 1;
+    size_t count = 1;
 
     assert(file);
     readChars[0] = GetCharBFile(file);
@@ -301,7 +301,7 @@ static int getStringEscape(BFile *file)
         return val & 0xff;
     }
     /* no match, return all read characters to stream */
-    assert(count >= 0 && count < sizeofarray(readChars));
+    assert((int)count >= 0 && count < sizeofarray(readChars));
     while (count--)
         UngetCharBFile(file, readChars[count]);
     return -1;
@@ -514,7 +514,7 @@ static bool fixXmlNodeContent(XmlNode *node)
     if (node->type != XML_STRING && node->type != XML_ARRAY)
         return true;
     if (node->type == XML_STRING && !node->value.ptr) {
-        node->value.ptr = xmlAlloc(1);
+        node->value.ptr = (char *)xmlAlloc(1);
         node->value.ptr[0] = '\0';
         node->length = 1;
         return true;
@@ -522,7 +522,7 @@ static bool fixXmlNodeContent(XmlNode *node)
     assert(node->value.ptr);
     totalSize = ((XmlContentListElem *)node->value.ptr)->totalSize;
     assert(totalSize > 0);
-    contents = xmlAlloc(totalSize + (node->type == XML_STRING));
+    contents = (char *)xmlAlloc(totalSize + (node->type == XML_STRING));
 	assert(contents);
 	if (!contents)
         return false;
@@ -583,11 +583,12 @@ static bool addXmlPartialContent(XmlNode *node, char *content, int size)
             else if (type == XML_INT)
                 length = 4;
             return AddXmlContent(node, type, &value, length);
+        default:
+            return AddXmlContent(node, type, content, size);
         }
-        return AddXmlContent(node, type, content, size);
     } else {
         XmlContentListElem *lastElem = (XmlContentListElem *)node->value.ptr;
-        XmlContentListElem *elem = xmlAlloc(sizeof(XmlContentListElem));
+        XmlContentListElem *elem = (XmlContentListElem *)xmlAlloc(sizeof(XmlContentListElem));
         if (!elem)
             return false;
         elem->content = xmlStrdup(content, size);
@@ -595,7 +596,7 @@ static bool addXmlPartialContent(XmlNode *node, char *content, int size)
         if (lastElem)
             elem->totalSize += lastElem->totalSize;
         elem->next = lastElem;
-        node->value.ptr = (void *)elem;
+        node->value.ptr = (char *)elem;
     }
     return true;
 }
@@ -847,7 +848,7 @@ static bool writeStringToFile(BFile *file, const char *string, size_t stringLen,
             }
             return true;
         } else
-            return WriteBFile(file, string, stringLen) == stringLen;
+            return WriteBFile(file, string, stringLen) == (int)stringLen;
     }
 }
 
@@ -886,7 +887,6 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
     bool isNumericNode;
     static XmlAttributeInfo attributes[64];
     size_t numAttributes;
-    int i;
 
     if (!root)
         return true;
@@ -913,7 +913,7 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
         /* write other attributes, if present */
         assert(numAttributes <= sizeofarray(attributes));
         GetXmlNodeAttributes(root, attributes);
-        for (i = 0; i < numAttributes; i++) {
+        for (size_t i = 0; i < numAttributes; i++) {
             OUT_CHAR(' ');
             OUT_STR(attributes[i].name, attributes[i].nameLength);
             OUT_CHAR('=');
@@ -978,7 +978,7 @@ bool SaveXmlFile(XmlNode *root, const char *fileName, bool checkIfNeeded)
     }
 
     /* mark it as unmodified if we saved it successfully */
-    if (result = writeTreeToFile(file, root, 0))
+    if ((result = writeTreeToFile(file, root, 0)))
         XmlTreeSnapshot(root);
 
     if (result)

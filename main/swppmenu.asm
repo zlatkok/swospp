@@ -30,20 +30,12 @@
     %endrep
 %endmacro
 
-extern DrawBitmap_
+extern DrawBitmap
 extern AnimateBalls
 extern InitCounter
 extern ShowReplaysMenu
 extern ShowControlsMenu
 
-%define EditDIYFile EditDIYFile_
-%define DIYFileSelected DIYFileSelected_
-%define DIYUpdateList DIYUpdateList_
-%define DIYEditScrollUp DIYEditScrollUp_
-%define DIYEditScrollDown DIYEditScrollDown_
-%define DIYTeamsListInit DIYTeamsListInit_
-%define DIYTeamsOnSelect DIYTeamsOnSelect_
-%define DIYTeamsExit DIYTeamsExit_
 extern EditDIYFile
 extern DIYFileSelected
 extern DIYUpdateList
@@ -79,16 +71,17 @@ ShowMultiplayerMenu:
 
 DrawLogo:
         mov  eax, WIDTH
-        mov  edi, HEIGHT
+        mov  edx, HEIGHT
         movzx ecx, byte [logoData]      ; logo width
         movzx ebx, byte [logoData + 1]  ; logo height
         sub  eax, ecx
         shr  eax, 1
-        sub  edi, ebx
-        shr  edi, 1
-        sub  edi, byte 4
-        mov  esi, logoData + 2
-        call DrawBitmap_
+        sub  edx, ebx
+        shr  edx, 1
+        sub  edx, byte 4
+        push logoData + 2
+        push ebx
+        call DrawBitmap
         retn
 
 
@@ -523,11 +516,12 @@ DrawModalDialog:
         push esi
         movzx ecx, word [esi + 6]
         movzx ebx, word [esi + 8]
-        mov  esi, edi
         mov  eax, DLG_X + DLG_WIDTH / 2 + 20
-        mov  edi, DLG_Y + DLG_HEIGHT - 6 - 4
-        sub  edi, ebx
-        call DrawBitmap_
+        mov  edx, DLG_Y + DLG_HEIGHT - 6 - 4
+        sub  edx, ebx
+        push edi
+        push ebx
+        call DrawBitmap
         pop  esi
 
         xor  eax, eax

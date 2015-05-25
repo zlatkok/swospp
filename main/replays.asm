@@ -10,8 +10,8 @@ bits 32
 global CheckForFastReplay
 CheckForFastReplay:
 %ifdef DEBUG
-        extern DumpVariables_
-        call DumpVariables_     ; write out debug variables
+        extern DumpVariables
+        call DumpVariables      ; write out debug variables
 %endif
         test byte [replayStatus], 1
         jz   .out

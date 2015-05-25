@@ -45,6 +45,19 @@ typedef struct SpriteGraphics {
     short ordinal;       /* ordinal number in sprite.dat                     */
 } SpriteGraphics;
 
+union FixedPoint {
+    struct {
+        word wholePart;
+        word fraction;
+    };
+    dword data;
+    FixedPoint& operator=(dword num) {
+        data = num;
+        return *this;
+    }
+    operator int() const { return (int)data; }
+};
+
 /* sprite structure used during the game */
 typedef struct Sprite {
     word teamNumber;     /* 1 or 2 for player controls, 0 for CPU            */
@@ -61,9 +74,9 @@ typedef struct Sprite {
     word frameDelay;
     word cycleFramesTimer;
     word delayedFrameTimer;
-    dword x;            /* fixed point, 16.16, signed, whole part high word  */
-    dword y;
-    dword z;
+    FixedPoint x;       /* fixed point, 16.16, signed, whole part high word  */
+    FixedPoint y;
+    FixedPoint z;
     word direction;
     word speed;
     dword deltaX;
@@ -416,19 +429,30 @@ enum TacticsEnum {
     TACTICS_IMPORTED = 1000
 };
 
+#ifdef __GNUC__
+#ifndef __cdecl
+#define __cdecl __attribute__((cdecl))
+#endif
+#endif
+
 int __cdecl sprintf(char *buf, const char *ftm, ...);
+#ifdef DEBUG
+/* we wanna overload these */
+void __cdecl WriteToLogFunc(dword messageClass, const char *fmt, ...);
+void HexDumpToLog(const void *addr, int length, const char *title);
+void HexDumpToLog(dword messageClass, const void *addr, int length, const char *title);
+#endif
+
+extern "C" {
 
 #ifdef DEBUG
-void FlushLogFile();
-void EndLogFile();
+void FlushLogFile() asm ("FlushLogFile");
+void EndLogFile() asm ("EndLogFile");
 void __cdecl WriteToLogFunc(const char *fmt, ...);
-void __cdecl WriteToLogFuncM(dword messageClass, const char *fmt, ...);
 void __cdecl WriteToLogFuncNoStamp(const char *str, ...);
 #define WriteToLog(a) WriteToLogFunc a
 #define WriteToLogM(a) WriteToLogFuncM a
 #define WriteToLogNoStamp(a) WriteToLogFuncNoStamp a
-void HexDumpToLog(const void *addr, int length, const char *title);
-void HexDumpToLogM(dword messageClass, const void *addr, int length, const char *title);
 #else
 #define EndLogFile()                ((void)0)
 #define FlushLogFile()              ((void)0)
@@ -447,59 +471,79 @@ void HexDumpToLogM(dword messageClass, const void *addr, int length, const char 
 #define GetSprite(index) (spritesIndex[index])
 
 /* this function is specific, as it takes one argument in x86 ebp register;
-   only sucks that Watcom wouldn't allow ebp as parameter... */
-void DrawSprite16Pixels(int saveSprite);
-#pragma aux DrawSprite16Pixels =                \
-    "mov  ebp, eax"                             \
-    "mov  eax, offset SWOS_DrawSprite16Pixels"  \
-    "call eax"                                  \
-    parm [eax]                                  \
-    modify [eax ebx ecx edx esi edi ebp];
+   only sucks that Watcom and GCC wouldn't allow ebp as parameter... */
+static inline __attribute__((always_inline)) void DrawSprite16Pixels(int saveSprite)
+{
+    asm volatile (
+        "push ebp                   \n\t"
+        "mov  ebp, %[saveSprite]    \n\t"
+        "call %[addr]               \n\t"
+        "pop  ebp                   \n\t"
+        :
+        : [addr] "rm" (SWOS_DrawSprite16Pixels), [saveSprite] "rm" (saveSprite)
+        : "cc", "memory", "eax", "ebx", "esi", "edi"
+    );
+}
+
 
 extern void DrawBitmap(int x, int y, int width, int height, const char *data);
-#pragma aux DrawBitmap parm [eax] [edi] [ecx] [ebx] [esi];
 extern void SwitchToPrevVideoMode();
-#pragma aux SwitchToPrevVideoMode "*";
-extern void FatalError(char *msg);
-extern void EndProgram(bool abnormalExit);
-#pragma aux EndProgram "*" aborts;
+extern void FatalError(const char *msg) __attribute__((noreturn));
+extern void EndProgram(bool abnormalExit) __attribute__((noreturn));
 
 
 /* in printstr.c */
 void PrintSmallNumber(int num, int x, int y, bool inGame);
 
 /* use strictly these functions for interfacing with SWOS code */
-void calla(void *p);
-#pragma aux calla = \
-    "call eax"  \
-    parm [eax]  \
-    modify [eax ebx ecx edx esi edi ebp];
+static inline __attribute__((always_inline)) void calla(void *addr)
+{
+    // clobber all 7 registers = 6 for fake output (including ebp) and 1 for input
+    int r1, r2, r3, r4, r5, r6;
+    asm volatile (
+        "call %[addr]"
+        : [addr] "+r" (addr), "=&r" (r1), "=&r" (r2), "=&r" (r3), "=&r" (r4), "=&r" (r5), "=&r" (r6)
+        :
+        : "cc", "memory"
+    );
+}
 
 /* this version avoid pushing all the registers, in case we need it in SWOS code */
-void calln(void *p);
-#pragma aux calln = \
-    "call eax"  \
-    parm [eax]  \
-    modify [];
+static inline __attribute__((always_inline)) void calln(void *addr)
+{
+    asm volatile (
+        "call %[addr]"
+        :
+        : [addr] "r" (addr)
+        : "cc", "memory"
+    );
+}
 
-/** It's so annoying, it's not accepting this function as no return.
-    So better comment it out until that is sorted, or we have a time bomb. */
-/*#pragma aux jmpa aborts;
-void jmpa(void *p);
-#pragma aux jmpa = \
-    "push eax"  \
-    "retn"      \
-    parm [eax]  \
-    modify [];*/
+//test this!
+static inline __attribute__((always_inline)) void jmpa(void *addr)
+{
+    asm volatile (
+        "jmp  %[addr]   \n\t"
+        "ret"
+        :
+        : [addr] "rm" (addr)
+    );
+}
 
-/* Damn it, Watcom. I told you ebp will be modified. */
-void calla_save_ebp(void *p);
-#pragma aux calla_save_ebp = \
-    "push ebp"  \
-    "call eax"  \
-    "pop  ebp"  \
-    parm [eax]  \
-    modify [eax ebx ecx edx esi edi];
+/* Modifications on ebp must be handled with special care. */
+static inline __attribute__((always_inline)) void calla_save_ebp(void *addr)
+{
+    int r1, r2, r3, r4, r5, r6;
+    asm volatile (
+        "push ebp       \n\t"
+        "call %[addr]   \n\t"
+        "pop  ebp       \n\t"
+        : [addr] "+r" (addr), "=&r" (r1), "=&r" (r2), "=&r" (r3), "=&r" (r4), "=&r" (r5), "=&r" (r6)
+        :
+        : "cc", "memory"
+    );
+}
+
 
 /* Use this macro to replace function call with our own. */
 #define PatchCall(where, ofs, func) (*(dword *)((char *)(where) + (dword)(ofs)) = \
@@ -534,4 +578,4 @@ void calla_save_ebp(void *p);
 /* this one needs special attention, as it destroys ebp */
 int Text2Sprite(int x, int y, int pictureIndex, const char *text, const void *charsTable);
 
-#pragma aux FatalError "*" parm [edx] aborts;
+}

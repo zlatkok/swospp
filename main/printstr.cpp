@@ -1,45 +1,32 @@
 #include "swos.h"
 #include "util.h"
 
-void __declspec(naked) DrawSprite(int x, int y, int width, int height, const char *spriteData);
-void DrawSpriteWithSave(int x, int y, int width, int height, const char *spriteData);
-void DrawSpriteWithoutSave(int x, int y, int width, int height, const char *spriteData);
-
-#pragma aux DrawSpriteWithSave =    \
-    "xor  ebp, ebp"                 \
-    "call DrawSprite"               \
-    parm [eax] [edx] [ebx] [ecx]    \
-    modify [eax ebx ecx edx esi edi ebp];
-
-#pragma aux DrawSpriteWithoutSave = \
-    "or   ebp, -1"                  \
-    "call DrawSprite"               \
-    parm [eax] [edx] [ebx] [ecx]    \
-    modify [eax ebx ecx edx esi edi ebp];
-
-/* Route it to SWOS' DrawSprite, skip over reading of sprite index */
-#pragma aux DrawSprite parm [eax] [edx] [ebx] [ecx]    \
-    modify [eax ebx ecx edx esi edi ebp];
-
-/* Important notice: DrawSprite16Pixels doesn't do proper clipping by x, it simply wraps it around. During
+/* Route it to SWOS' DrawSprite, skip over reading of sprite index.
+   Important notice: DrawSprite16Pixels doesn't do proper clipping by x, it simply wraps it around. During
    the game screen has unused 64 pixels in each line, so it appears to clip properly - but that will not be
    true even in the game for sprites wider than 64 pixels. */
-void DrawSprite(int x, int y, int width, int height, const char *spriteData)
+void DrawSprite(int x, int y, int width, int height, const char *spriteData, int saveSprite)
 {
-    _asm {
-        mov  [D1], eax
-        mov  [D2], edx
-        mov  [D4], ebx
-        shr  ebx, 1
-        mov  [D7], ebx
-        mov  [D5], ecx
-        mov  eax, ecx
-        mov  ebx, [esp + 4]
-        mov  [A0], ebx
-        mov  ebx, offset SWOS_DrawSprite16Pixels + 0x88
-        call ebx
-        retn 4
-    }
+    int dummy;
+    asm volatile (
+        "mov  %[tmp], offset SWOS_DrawSprite16Pixels + 0x88     \n\t"
+        "push ebp                   \n\t"
+        "mov  [D1], %[x]            \n\t"
+        "mov  [D2], %[y]            \n\t"
+        "mov  [D4], %[width]        \n\t"
+        "shr  %[width], 10          \n\t"
+        "mov  [D7], %[width]        \n\t"
+        "mov  [D5], %[height]       \n\t"
+        "mov  [A0], %[spriteData]   \n\t"
+        "mov  ebp, %[saveSprite]    \n\t"
+        "call %[tmp]                \n\t"
+        "pop  ebp                   \n\t"
+        // do not allow ebp as a choice
+        : [tmp] "=&bcdSD" (dummy), [x] "+&bcdSD" (x), [y] "+&bcdSD" (y), [width] "+&bcdSD" (width), [height] "+&a" (height),
+            [spriteData] "+&bcdSD" (spriteData)
+        : [saveSprite] "mr" (saveSprite)
+        : "cc", "memory"
+    );
 }
 
 /** DrawSpriteInGame
@@ -49,13 +36,13 @@ void DrawSprite(int x, int y, int width, int height, const char *spriteData)
 static void DrawSpriteInGame(int x, int y, const SpriteGraphics *s)
 {
     deltaColor = 0;
-    DrawSpriteWithSave(x, y, s->wquads * 16, s->nlines, s->sprData);
+    DrawSprite(x, y, s->wquads * 16, s->nlines, s->sprData, true);
 }
 
 static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
 {
     deltaColor = 0;
-    DrawSpriteWithoutSave(x, y, s->wquads * 16, s->nlines, s->sprData);
+    DrawSprite(x, y, s->wquads * 16, s->nlines, s->sprData, false);
 }
 
 /** getSmallNumberStringLength

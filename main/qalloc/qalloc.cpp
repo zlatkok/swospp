@@ -41,20 +41,22 @@ typedef struct HeapStats {
 static HeapStats heapStats[16];
 static int numHeaps;
 
+
 static HeapStats *getHeapStats(void *heap)
 {
     int i;
-    assert(numHeaps >= 0 && numHeaps < sizeofarray(heapStats));
+    assert(numHeaps >= 0 && numHeaps < (int)sizeofarray(heapStats));
     for (i = 0; i < numHeaps; i++)
         if (heapStats[i].heap == heap)
             return &heapStats[i];
     return nullptr;
 }
 
+
 static void initHeapStats(void *heap)
 {
     HeapStats *hs;
-    assert(numHeaps >= 0 && numHeaps < sizeofarray(heapStats));
+    assert(numHeaps >= 0 && numHeaps < (int)sizeofarray(heapStats));
     if (!(hs = getHeapStats(heap)))
         hs = &heapStats[numHeaps++];
     hs->currentAllocations = hs->currentlyAllocated = hs->maxAllocations = hs->maxAllocated = 0;
@@ -64,7 +66,7 @@ static void initHeapStats(void *heap)
 static void removeHeapStats(void *heap)
 {
     int i;
-    assert(numHeaps >= 0 && numHeaps < sizeofarray(heapStats) && heap);
+    assert(numHeaps >= 0 && numHeaps < (int)sizeofarray(heapStats) && heap);
     for (i = 0; i < numHeaps; i++) {
         if (heapStats[i].heap == heap) {
             memmove(heapStats + i, heapStats + i + 1, numHeaps - i - 1);
@@ -74,6 +76,7 @@ static void removeHeapStats(void *heap)
     }
     WriteToLog(("qAlloc: Tried to remove non-existant heap stats."));
 }
+
 
 /** excludeHeapBlocks
 
@@ -97,6 +100,7 @@ void excludeHeapBlocks(void *heap, int size)
     } while (p != head);
 }
 
+
 bool isBlockExcluded(const HeapStats *hs, word ofs)
 {
     int i;
@@ -106,6 +110,7 @@ bool isBlockExcluded(const HeapStats *hs, word ofs)
             return true;
     return false;
 }
+
 
 void ExcludeBlocks()
 {
@@ -148,6 +153,7 @@ void ValidateHeap(void *heap)
         assert(head->size);
 }
 
+
 /** checkMemoryLeaks
 
     heap -> heap to test
@@ -169,7 +175,7 @@ void checkMemoryLeaks(void *heap, int size)
         checkSig(p);
         if (!p->size && p != (Block *)((char *)heap + size - sizeof(Block))) {
             int blockSize = p->next - ((dword)p - (dword)heap) - sizeof(Block);
-            if (!isBlockExcluded(hs, p - heap)) {
+            if (!isBlockExcluded(hs, (char *)p - (char *)heap)) {
                 WriteToLog(("qAlloc: Left over memory block at %#x, size %d, allocated at %s.\n",
                     (dword)p + sizeof(Block), blockSize, p->origin));
                 HexDumpToLog((char *)p + sizeof(Block), p->next - ((dword)p - (dword)internalHeap) - sizeof(Block),
@@ -191,6 +197,7 @@ void checkMemoryLeaks(void *heap, int size)
     removeHeapStats(heap);
 }
 
+
 /* Important for edge case testing. */
 int GetMaxAllocSize(int heapSize)
 {
@@ -201,6 +208,7 @@ int GetMaxAllocSize(int heapSize)
 #define setSig(p)       ((void)0)
 #define checkSig(p)     ((void)0)
 #endif
+
 
 static void addBlock(char *heap, Block *oldBlock, int size)
 {
@@ -220,6 +228,7 @@ static void addBlock(char *heap, Block *oldBlock, int size)
     }
 }
 
+
 /* Detach block off of linked list. */
 static void removeBlock(char *heap, Block *p)
 {
@@ -227,6 +236,7 @@ static void removeBlock(char *heap, Block *p)
     ((Block *)(heap + p->prev))->next = p->next;
     ((Block *)(heap + p->next))->prev = p->prev;
 }
+
 
 /* This will be taken care of by initializing code. */
 void qAllocInit()
@@ -236,6 +246,7 @@ void qAllocInit()
     initHeapStats(internalHeap);
 #endif
 }
+
 
 void qAllocFinish()
 {
@@ -247,7 +258,7 @@ void qAllocFinish()
 void qHeapInit(void *heap, int size)
 {
     Block *first = (Block *)heap, *last = (Block *)((char *)heap + size - sizeof(Block));
-    assert(size > 2 * sizeof(Block));
+    assert(size > 2 * (int)sizeof(Block));
     first->next = first->prev = (dword)last - (dword)heap;
     last->next = last->prev = 0;
     first->size = size - sizeof(Block);
@@ -292,6 +303,7 @@ void *qHeapAlloc(void *heap, int size)
     return nullptr;
 }
 
+
 void qHeapFree(void *heap, void *ptr)
 {
     /* restore block's size, try to merge it with neighbours */
@@ -326,6 +338,7 @@ void qHeapFree(void *heap, void *ptr)
 #endif
 }
 
+
 #ifdef DEBUG
 void *qAlloc_(int size, const char *file, int line)
 {
@@ -338,11 +351,13 @@ void *qAlloc(int size)
 }
 #endif
 
+
 void qFree(void *ptr)
 {
-    assert(!ptr || ptr > internalHeap && ptr < internalHeap + INTERNAL_HEAP_SIZE);
+    assert(!ptr || (ptr > internalHeap && ptr < internalHeap + INTERNAL_HEAP_SIZE));
     qHeapFree(internalHeap, ptr);
 }
+
 
 /** qSetMinSplitSize
 

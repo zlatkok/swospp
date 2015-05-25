@@ -17,8 +17,7 @@ static byte * const plRealTactics[2] = { &pl1RealTactics, &pl2RealTactics };
 static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team);
 static void RestoreTactics();
 static void OnChangeTactics(word newTactics, TeamGeneralInfo *benchTeam);
-#pragma aux OnChangeTactics parm [eax esi];
-static void __declspec(naked) SkipTacticsIinit();
+void SkipTacticsIinit() asm("SkipTacticsIinit");
 
 
 void InitTacticsContextSwitcher(const Tactics *player1CustomTactics, const Tactics *player2CustomTactics)
@@ -62,15 +61,13 @@ void DisposeTacticsContextSwitcher()
 }
 
 /* Discard return address (return to caller's caller), and unpatch us. */
-void SkipTacticsIinit()
-{
-    _asm {
-        pop  esi                        ; skip tactics init (we already did it)
-        mov  word ptr [esi - 5], 0x358b ; patch it back as it was
-        mov  [esi - 3], offset A1
-        retn
-    }
-}
+asm (
+"SkipTacticsIinit:                      \n\t"
+    "pop  esi                           \n\t"   // skip tactics init (we already did it)
+    "mov  word ptr [esi - 5], 0x358b    \n\t"   // patch it back as it was
+    "mov  dword ptr [esi - 3], offset A1 \n\t"
+    "ret                                \n\t"
+);
 
 /** VirtualizeTactics
 
@@ -121,16 +118,15 @@ static void RestoreTactics()
 {
     static const Tactics **customTactics[2] = { &pl1MPCustomTactics, &pl2MPCustomTactics };
     int benchTeamIndex = getBenchTeamIndex();
-    int i;
 
     assert(pl1Tactics < TACTICS_MAX && pl2Tactics < TACTICS_MAX);
     assert(teamPlayingUp == 1 || teamPlayingUp == 2);
     assert(benchTeamIndex == 0 || benchTeamIndex == 1);
     assert(pl1MPCustomTactics && pl2MPCustomTactics);
 
-    for (i = 0; i < 6; i++)
+    for (int i = 0; i < 6; i++)
         *strncpy(tacticsTable[TACTICS_USER_A + i]->name,
-            (*customTactics[benchTeamIndex])[i].name, member_size(Tactics, name) - 1) = '\0';
+            (*customTactics[benchTeamIndex])[i].name, sizeof(Tactics::name) - 1) = '\0';
 
     /* show real index regardless of what we really have set it to */
     selectedFormationEntry = *plRealTactics[benchTeamIndex];
@@ -145,6 +141,12 @@ static void RestoreTactics()
 */
 static void OnChangeTactics(word newTactics, TeamGeneralInfo *benchTeam)
 {
+    asm volatile(
+        ""
+        : "=S" (benchTeam)
+        : "r" (benchTeam)
+        :
+    );
     int teamNo = getBenchTeamIndex();
     assert(benchTeam && (benchTeam->playerNumber == 1 || benchTeam->playerNumber == 2));
     VirtualizeTactics(teamNo + 1, newTactics, benchTeam);

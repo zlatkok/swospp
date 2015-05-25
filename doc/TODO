@@ -1,4 +1,17 @@
 TODO:
+- provaliti gcc precompiled headers, i videti jel pomaze ista
+- replace word etc. with C++11 types?
+- test 'u' code in var dumper
+- after "perl Makefile.pl rebuild" is completed, enter has to be pressed (for some reason)
+- xml string overflow test (when parsing input file)
+- fix warning tracking for gcc in makefile.pl
+- update copyright years :P
+- change all "Called from Watcom" :P
+- change tmp registers to dummy output parameter compiler assigned
+- check if asm is volatile where need be
+- test jmpa
+- test build process on clean structure (no dirs, especially 'etc') - might fail
+- test ReadFile (dos.h), does the compiler uses ecx (which gets mangled)
 - command line parameters (for launcher)
 - about na vrh nek ide (ili bar u sredinu)
 - eliminate few global variables from mplobby.c
@@ -212,7 +225,6 @@ TODO:
 - napisati test programcic za IPX stek
 - zaista i proveri da li DOSBox odbacuje max length paket
 - ubaciti testiranje pinga mozda (pa prikazivati sa onim SWOS zvezdicama)
-- da li bi mogli swos pozivi da se implementiraju kao importi? :)
 - stavi opis u readme sta je to options.dat, sta je sve u njemu i sta ce se
   desiti ako se izgubi
 - implementiraj '_' (donju crtu) u font (samo spustiti i eventualno produziti

@@ -8,18 +8,16 @@
 global start
 global FatalError
 
-extern IPX_IsInstalled_
-extern InitializeOptions_
+extern IPX_IsInstalled
+extern InitializeOptions
 extern aboutText
 extern pl2Keyboard
 %ifdef DEBUG
-%define StartLogFile StartLogFile_
 extern StartLogFile
 %endif
-extern qAllocInit_
-extern ExcludeBlocks_
+extern qAllocInit
 extern EnableShiftSupport
-extern InstallCrashLogger_
+extern InstallCrashLogger
 
 section .data
 pressAnyKeyStr:
@@ -72,13 +70,13 @@ start:
         WriteToLog "Stack top at entry = %#x, esp = %#x", dword [SWOS_StackTop], esp
         WriteToLog "Stack memory available: %d bytes.", eax
         popfd
-        call IPX_IsInstalled_   ; test presence of IPX for multiplayer
+        call IPX_IsInstalled    ; test presence of IPX for multiplayer
         WriteToLog "IPX Network supported: %#x", eax
 %endif
         WriteToLog "Initializing qAlloc..."
-        call qAllocInit_        ; initialize QuickAlloc
-        call InstallCrashLogger_
-        call InitializeOptions_ ; try to load options
+        call qAllocInit         ; initialize QuickAlloc
+        call InstallCrashLogger
+        call InitializeOptions  ; try to load options
         call VideoBenchmark
         WriteToLog "Video memory index = %hd", eax
         mov  [videoSpeedIndex], ax
@@ -99,8 +97,8 @@ start:
 ; callers will want to print some messages first.
 ;
 global EndProgram
-extern replayStatus, CloseReplayFile, SaveOptionsIfNeeded_, ShutDownNetwork_
-extern FinishMultiplayer_, FinishMultiplayerGame_, qAllocFinish_, EndLogFile_
+extern replayStatus, CloseReplayFile, SaveOptionsIfNeeded, ShutDownNetwork
+extern FinishMultiplayer, FinishMultiplayerGame, qAllocFinish, EndLogFile
 EndProgram:
         push eax
         test byte [replayStatus], 2
@@ -112,19 +110,19 @@ EndProgram:
         call CloseReplayFile            ; close replay file and set header
 
 .no_rpl_save:
-        call SaveOptionsIfNeeded_       ; save options
-        call ShutDownNetwork_           ; and get rid of network too
-        call FinishMultiplayer_
-        call FinishMultiplayerGame_     ; in case we were in a game
+        call SaveOptionsIfNeeded        ; save options
+        call ShutDownNetwork            ; and get rid of network too
+        call FinishMultiplayer
+        call FinishMultiplayerGame      ; in case we were in a game
 
         pop  eax
         test eax, eax
         jnz  .skip_qalloc
-        call qAllocFinish_              ; check for memory leaks, but only if everything is ok
+        call qAllocFinish               ; check for memory leaks, but only if everything is ok
 
 .skip_qalloc:
 %ifdef DEBUG
-        call EndLogFile_
+        call EndLogFile
 %endif
         jmpa SWOS_EndProgram            ; this will go back into SWOS main, and return 0
 
@@ -146,18 +144,18 @@ SwitchToPrevVideoMode:
 ; Attempt to circumvent low stack situation. For now, simply manually copy stack to new location,
 ; and set esp to point to it. DOS4/GW keeps ss = ds so it's possible to do it like this.
 ;
-extern memcpy_
+extern memcpy
 SwitchStack:
         cli                     ; probably not necessary, but just in case
-        mov  ebx, [_STACKTOP]
-        sub  ebx, esp           ; ebx = ammount of stack storage taken
+        mov  ecx, [_STACKTOP]
+        sub  ecx, esp           ; ecx = ammount of stack storage taken
         mov  eax, newStackTop
         mov  [_STACKTOP], eax
-        sub  eax, ebx           ; new esp
-        mov  ecx, eax
+        sub  eax, ecx           ; new esp
+        mov  ebx, eax
         mov  edx, esp           ; old esp
-        call memcpy_            ; copy current stack state
-        mov  esp, ecx
+        call memcpy             ; copy current stack state
+        mov  esp, ebx
         mov  eax, newStack
         mov  [_STACKLOW], eax
         sti
@@ -265,20 +263,23 @@ patchCheckTable:
 ; out:
 ;      zero flag set = we are running original SWOS, otherwise it's patched
 ;
-extern memcmp_
+extern memcmp
 DetectOriginalSWOS:
         mov  esi, patchCheckTable
+        xor  ebx, ebx
 
 .next_check:
         lodsd
         test eax, eax
         jz   .out
-        movzx ebx, byte [esi]   ; must reload whole register as debug memcmp version trashes it
+
+        mov  bl, [esi]
         inc  esi
         mov  edx, esi
         add  esi, ebx
         add  eax, swosCodeBase
-        call memcmp_
+        mov  ecx, ebx
+        call memcmp
         test eax, eax
         jz   .next_check
 
@@ -463,7 +464,7 @@ DexorAbout:
 ;
 ; Support for Serbo-Croatian latin letters, called from SWOS
 ;
-extern DrawBitmap_
+extern DrawBitmap
 global WriteYULetters
 WriteYULetters:
         mov  eax, [D0]          ; get letter
@@ -550,7 +551,10 @@ WriteYULetters:
         sub  edi, 3             ; make room for extra three lines, if not 'D'
 
 .dont_sub:
-        call DrawBitmap_
+        push esi
+        push ebx
+        mov  edx, edi
+        call DrawBitmap
 
         pop  edx                ; dl = base letter
         cmp  dl, 'D'            ; dj is completely drawn

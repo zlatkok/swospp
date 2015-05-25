@@ -1,8 +1,6 @@
 #include "swos.h"
 #include "util.h"
 
-#pragma aux AnimateBalls "*";
-#pragma aux InitCounter "*";
 
 static char ball1[] = {
     0, 3, 2, 0,
@@ -51,10 +49,8 @@ static int counter;
 
 void InitBalls()
 {
-    int i;
-
     numBalls = MAX_BALLS / 2 + 1 + rand() % (MAX_BALLS / 2);
-    for (i = 0; i < numBalls; i++) {
+    for (size_t i = 0; i < numBalls; i++) {
         balls[i].x = balls[i].y = 0;
         balls[i].height = 34 + rand() % 32;
         balls[i].arg = rand() % balls[i].height;
@@ -64,21 +60,21 @@ void InitBalls()
     }
 }
 
-void InitCounter()
+extern "C" void InitCounter()
 {
     counter = 0;
     srand(currentTick);
     InitBalls();
 }
 
-void AnimateBalls()
+extern "C" void AnimateBalls()
 {
-    int sine, i, idle = true;
+    int sine, idle = true;
 
     if (counter++ < 100)
         return;
 
-    for (i = 0; i < numBalls; i++) {
+    for (size_t i = 0; i < numBalls; i++) {
         if (balls[i].x >= 320)
           continue;
         idle = false;

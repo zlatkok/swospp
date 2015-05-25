@@ -1,6 +1,9 @@
-#include <string.h>
+//#include <string.h>
 #include <stdarg.h>
 #include "swos.h"
+#include "util.h"
+
+#pragma GCC diagnostic ignored "-Wparentheses"
 
 /* Shamelessly stolen from Watcom :P */
 
@@ -9,12 +12,6 @@ static char *itoa (int value, char *buffer, int radix);
 char *ltoa (long value, char *buffer, int radix);
 
 #define BUF_SIZE 40
-
-typedef struct my_va_list {
-    va_list v;
-} my_va_list;
-
-#define MY_VA_LIST(a) (*(my_va_list *)(a))
 
 typedef struct Specification {
     int width;
@@ -43,10 +40,10 @@ typedef struct Specification {
 
 static void SetZeroPad(Specification *spec);
 static void ResetSpecification(Specification *);
-static const char *GetSpecification(const char *, Specification *, my_va_list *);
-static char *FormString(Specification *, my_va_list *, char *);
+static const char *GetSpecification(const char *, Specification *, va_list *);
+static char *FormString(Specification *, va_list *, char *);
 static void FixedPointFormat(char *buf, long value, Specification *specs);
-static void FloatFormat(char *buf, my_va_list *pargs, Specification *spec);
+static void FloatFormat(char *buf, va_list *args, Specification *spec);
 
 int __cdecl vsprintf(char *buf, const char *fmt, va_list args);
 
@@ -80,10 +77,8 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
             *out++ = *p++;
             spec.output_count++;
         } else {
-            my_va_list parg = MY_VA_LIST(args);
             ResetSpecification(&spec);
-            p = GetSpecification(++p, &spec, &parg);
-            MY_VA_LIST(args) = parg;
+            p = GetSpecification(++p, &spec, &args);
             if (*p == 'n') {
                 if (spec.is_long)
                     *va_arg(args, long int *) = spec.output_count;
@@ -93,9 +88,7 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
                     *va_arg(args, char *) = spec.output_count;
             } else {
                 spec.type = *p;
-                parg = MY_VA_LIST(args);
-                arg = FormString(&spec, &parg, buffer);
-                MY_VA_LIST(args) = parg;
+                arg = FormString(&spec, &args, buffer);
                 spec.width = spec.n0 + spec.nz0 + spec.n1 + spec.nz1 + spec.n2 + spec.nz2;
                 if (spec.alignment >= 0 && spec.space_pad) {
                     memcpy(out, buffer, spec.width);
@@ -114,7 +107,7 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
                     const static char hexDigits[] = {
                         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
                     };
-                    unsigned char *p = arg, *q = out;
+                    unsigned char *p = (uchar *)arg, *q = (uchar *)out;
                     int n = (spec.n1 + 1) / 3;
                     while (n--) {
                         *q++ = hexDigits[*p >> 4];
@@ -149,7 +142,7 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
     return spec.output_count;
 }
 
-static const char *GetSpecification(const char *p, Specification *spec, my_va_list *arg)
+static const char *GetSpecification(const char *p, Specification *spec, va_list *arg)
 {
     /* default is right align */
     spec->alignment = 1;
@@ -177,7 +170,7 @@ static const char *GetSpecification(const char *p, Specification *spec, my_va_li
 
     /* get width */
     if (*p == '*') {
-        spec->width = va_arg(arg->v, int);
+        spec->width = va_arg(*arg, int);
         if (spec->width < 0) {
             spec->width = -spec->width;
             spec->alignment = -1;
@@ -193,7 +186,7 @@ static const char *GetSpecification(const char *p, Specification *spec, my_va_li
         spec->precision = 0;
         p++;
         if (*p == '*') {
-            spec->precision = va_arg(arg->v, int);
+            spec->precision = va_arg(*arg, int);
             if (spec->precision < 0)
                 spec->precision = 0;
             p++;
@@ -231,9 +224,9 @@ void ResetSpecification(Specification *spec)
     spec->is_short = spec->is_long = spec->is_short_short = false;
 }
 
-static char *FormString(Specification *spec, my_va_list *pargs, char *buffer)
+static char *FormString(Specification *spec, va_list *args, char *buffer)
 {
-    unsigned long long_value;
+    unsigned long long_value = 0;
     unsigned int int_value;
     int radix, i, len;
     char *arg = buffer, *tmp;
@@ -251,11 +244,11 @@ static char *FormString(Specification *spec, my_va_list *pargs, char *buffer)
         /* fallthrough */
     case 'c':
         spec->length = 1;
-        buffer[0] = va_arg(pargs->v, int);
+        buffer[0] = va_arg(*args, int);
         break;
     case 'd':
     case 'i':
-        long_value = spec->is_long ? va_arg(pargs->v, long) : va_arg(pargs->v, int);
+        long_value = spec->is_long ? va_arg(*args, long) : va_arg(*args, int);
         if (spec->is_short)
             long_value = (signed short)long_value;
         else if (spec->is_short_short)
@@ -274,9 +267,9 @@ static char *FormString(Specification *spec, my_va_list *pargs, char *buffer)
     case 'x':
     case 'X':
         if (spec->is_long)
-            long_value = va_arg(pargs->v, unsigned long);
+            long_value = va_arg(*args, unsigned long);
         else {
-            long_value = va_arg(pargs->v, unsigned);
+            long_value = va_arg(*args, unsigned);
             if (spec->is_short)
                 long_value = (unsigned short)long_value;
             else if (spec->is_short_short)
@@ -290,7 +283,7 @@ static char *FormString(Specification *spec, my_va_list *pargs, char *buffer)
     case 'f':
     case 'F':
         if (spec->is_short) {
-            long_value = va_arg(pargs->v, long);
+            long_value = va_arg(*args, long);
             FixedPointFormat(buffer, long_value, spec);
             spec->length = strlen(buffer);
         }
@@ -299,11 +292,11 @@ static char *FormString(Specification *spec, my_va_list *pargs, char *buffer)
     case 'G':
     case 'e':
     case 'E':
-        FloatFormat(buffer, pargs, spec);
+        FloatFormat(buffer, args, spec);
         break;
     case 's':
         buffer[0] = '\0';
-        tmp = va_arg(pargs->v, char *);
+        tmp = va_arg(*args, char *);
         if (tmp)
             arg = tmp;
         spec->n1 = spec->length = strlen(arg);
@@ -355,7 +348,7 @@ static char *FormString(Specification *spec, my_va_list *pargs, char *buffer)
         if (!spec->width)
             spec->width = 2 * sizeof(void *);
         spec->space_pad = spec->sign_prefix = false;
-        int_value = va_arg(pargs->v, unsigned);
+        int_value = va_arg(*args, unsigned);
         itoa(int_value, buffer, 16);
         len = strlen(buffer);
         for (i = 2 * sizeof(void *) - 1; len; i--)
@@ -396,30 +389,27 @@ static void SetZeroPad(Specification *spec)
     }
 }
 
-static void FixedPointFormat(char *buf, long value, Specification *specs)
-{
-    ;
-}
-
-static void FloatFormat(char *buf, my_va_list *pargs, Specification *spec)
-{
-    ;
-}
+static void FixedPointFormat(char *, long, Specification *) {}
+static void FloatFormat(char *, va_list *, Specification *) {}
 
 /* helper convert routines */
 static const char Alphabet[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-extern int __udiv(int, int *);
+/* Get quotient and reminder using single division. */
+static int __udiv(int value, int *divQuot)
+{
+    asm (
+        "xor  edx, edx                  \t\n"
+        "div dword ptr [%[divQuot]]     \t\n"
+        "mov [%[divQuot]], edx          \t\n"
+        : "+a" (value)
+        : [divQuot] "r" (divQuot)
+        : "cc", "edx", "memory"
+    );
+    return value;
+}
 
-#pragma aux __udiv =        \
-    "xor edx,edx"           \
-    "div dword ptr [ebx]"   \
-    "mov [ebx],edx"         \
-    parm caller [eax] [ebx] \
-    modify exact [eax edx]  \
-    value [eax];
-
-static char *utoa (unsigned int value, char *buffer, int radix)
+static char *utoa(unsigned int value, char *buffer, int radix)
 {
     char *p = buffer;
     char *q;

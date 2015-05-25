@@ -9,13 +9,27 @@ exclusively use throughout the entire program. Parameters are passed in
 registers, in the following order: eax, edx, ebx, ecx. If there are more than 4
 parameters they are passed via stack, just like stdcall. Return value goes
 through eax. By default function names will have underscore appended to it
-(variables on the contrast will have it prepended).
+(in contrast to variables which will have it prepended).
 As for the asm functions that get called from Watcom, they have to abide to the
 following:
 - all registers must be preserved unless they are used to transfer parameters
   (eax is exception - it is always considered used)
-- direction flag has to be clear
+- direction flag has to be clear (it is assumed to be clear on entry)
 - if there were any parameters on the stack, called function has to clean it up
+
+
+Mixing assembly code with GCC
+-----------------------------
+Source is compiled with -mregparm=3, so 3 registers will be used for argument
+passing, in the following order: eax, edx, ecx. If there are more than 3
+arguments they will be passed via stack as usual, order is from right to left.
+Assembly function must preserve ebx, esi, edi and ebp. When calling C function
+from assembly, expect eax, ecx and edx to be changed.
+On Windows, by default GCC will prepend underscore to function names, unlike
+Watcom which appends it. That's why compiler option "-fno-leading-underscore" is
+used, which removes the underscore. But still, since we're compiling as C++
+every function that needs to be used from asm code needs to be declared as
+extern "C".
 
 
 Intel x86 Stack
@@ -29,21 +43,25 @@ POP - get operand from stack top, increase stack pointer
 Motorola 68k Registers
 ----------------------
 ;TODO
+(Disclaimer: I'm by no means expert on AMIGA and Motorola 68000 but here is some
+basic info that can help understanding how PC version of SWOS was ported.)
+PC version carries integrated Motorola 68000 emulator - native code from AMIGA
+SWOS was run through some sort of converter that created Intel x86 executable
+code out of it.
 AMIGA emulator
 registri, pozivanje, konvencije...
 
 
 SWOS Stack
 ----------
-We were very limited with stack, I think they left default 4k setting. So
+We were very limited with stack, I think they left default 4kb setting. So
 start-up code will replace SWOS stack with our own - static buffer currently
 sized 64kb.
 
 
 DPMI host
 ---------
-DOS4/GW implementira delimicno DPMI standard. Za alociranje memorije moze se
-koristiti:
+DOS4/GW partially implements DPMI standard. For memory allocation we can use:
 Int 31H Function 0501H: Allocate Memory Block
 Allocates and commits a block of linear memory.
 Call With
@@ -53,10 +71,13 @@ BX:CX = size of block (bytes, must be nonzero)
 
 Interfacing SWOS code
 ---------------------
-Posto se ne nalazimo u uzastopnom memorijskom bloku sa SWOS-om, pozivi moraju
-da se vrse preko specijalnih makroa - calla i jmpa, indirektno preko registra,
-da bi mogao da se izvrsi fixup lokacije. Inace bih morao da ih implementiram
-kao importe, hmmm.....
+Since we're not running in consequtive memory block with SWOS, calls have to be
+made using special macros - calla and jmap, indirectly through register, so the
+location could be fixed up. Alternative was to implement calls as Win32 imports
+and handle them specially during conversion in pe2bin. However that was
+abandoned as it would use up more bytes per call: 4 bytes in memory for each
+call + indirect call instruction (6 bytes) = 10 bytes total. With macros we use
+7 bytes per call. In both cases one fixup is used.
 
 
 Startup
@@ -166,6 +187,14 @@ Sekcija sa eksportima mora doci pre .ptdata.
 U najnovijoj verziji sekcije vise ne moraju da idu odredjenim redosledom.
 
 
+Data/Code Layout
+----------------
+TODO
+Code section contains merged sections from the PE, in the following order: code,
+data, rdata, bss (infered). After code comes patch data section - it contains
+patch records and is processed after loading, and before start up code runs.
+
+
 Alink
 -----
 Alink je open-source jednostavan linker na koji sam naleteo na netu.
@@ -173,7 +202,7 @@ Ispostavilo se da ima solidnu OMF podrsku, i uspeo sam da ga izmenim dovoljno
 da moze da proizvodi ispravne SWOS++ executables :)
 
 
-Mrezni protokol
+Network protocol
 ---------------
 Sastoji se iz 3 celine:
 - Lobby protokol
