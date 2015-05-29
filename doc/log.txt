@@ -1,7 +1,10 @@
+29.05.2015.
+  gotta implement packet loss, lag inducing and packet reordering)
 24.05.2015.
 - there are still some bugs, but porting to GCC is almost done!
 15.05.2015.
-- lots of fixes during the porting; especially to pe2bin and alink, and even bindmp
+- lots of fixes during the porting; especially to pe2bin and alink, and even
+  bindmp
 02.05.2014.
 - porting the source to GCC is underway
 - fixed perl makefile to include it's own timestamp in rebuild calculation - now
