@@ -1,6 +1,6 @@
-/* mpgame.c
+/** mpgame.cpp
 
-   The actual game packet exchange implementation.
+    The actual game packet exchange implementation.
 */
 
 #include <limits.h>
@@ -53,7 +53,7 @@ static void registerFrameForResend(int frameNo, word controls, byte state)
     }
 }
 
-static __inline ResendFrame *getPreviousResendFrame(int *index)
+static inline ResendFrame *getPreviousResendFrame(int *index)
 {
     return &resendFrames[*index = (*index - 1 + sizeofarray(resendFrames)) % sizeofarray(resendFrames)];
 }
@@ -129,15 +129,18 @@ typedef struct FrameHash {
 static FrameHash frameHashes[20];
 static int frameHashIndex;      /* points to one after the last one */
 
+
 static dword getActualTeam1Hash()
 {
     return simpleHash((char *)leftTeamData + 24, 145 - 24);
 }
 
+
 static dword getActualTeam2Hash()
 {
     return simpleHash((char *)rightTeamData + 24, 145 - 24);
 }
+
 
 static void storeCurrentHash()
 {
@@ -153,6 +156,7 @@ static void storeCurrentHash()
     }
 }
 
+
 static FrameHash *getHashAtPos(int spot)
 {
     if (abs(spot) >= sizeofarray(frameHashes))
@@ -160,17 +164,19 @@ static FrameHash *getHashAtPos(int spot)
     return &frameHashes[(spot + frameHashIndex - 1 + sizeofarray(frameHashes)) % sizeofarray(frameHashes)];
 }
 
+
 static void dumpSavedStates()
 {
     /* index is already set to the oldest element - one beyond last added */
     int cur = frameHashIndex;
     for (size_t i = 0; i < sizeofarray(frameHashes); i++) {
-        WriteToLog(("*** Dumping saved teams for frame %d", frameHashes[cur].frameNo));
+        WriteToLog("*** Dumping saved teams for frame %d", frameHashes[cur].frameNo);
         HexDumpToLog(&frameHashes[cur].team1Data, sizeof(frameHashes[cur].team1Data), "left team");
         HexDumpToLog(&frameHashes[cur].team2Data, sizeof(frameHashes[cur].team2Data), "right team");
         cur = (cur + 1) % sizeofarray(frameHashes);
     }
 }
+
 
 /* [DEBUG]
 
@@ -182,7 +188,7 @@ static void verifyReceivedPacket(const char *packet, int frameIndex, int frameNo
     if (framesToRender[frameIndex].type == PT_GAME_CONTROLS &&
         !(framesToRender[frameIndex].state & STATE_ABORT_MASK) &&
         memcmp(&framesToRender[frameIndex], packet, offsetof(Frame, state) + sizeof(Frame::state))) {
-        WriteToLog(("Different frames received for frameNo %d!", frameNo));
+        WriteToLog("Different frames received for frameNo %d!", frameNo);
         HexDumpToLog(packet, sizeof(Frame), "newly received packet");
         HexDumpToLog(&framesToRender[frameIndex], sizeof(Frame), "previous packet");
         assert_msg(false, "Different frames received!");
@@ -195,23 +201,23 @@ static void verifyReceivedPacket(const char *packet, int frameIndex, int frameNo
             dword h2 = fh->team2Hash;
             /* if this one is referencing next frame, which we might be in, get current hashes */
             if (hashFrameDiff == 1) {
-                WriteToLog(("Comparing to current hashes."));
+                WriteToLog("Comparing to current hashes.");
                 h1 = getActualTeam1Hash();
                 h2 = getActualTeam2Hash();
             }
             if (f->team1Hash != h1 || f->team2Hash != h2) {
-                WriteToLog(("Packet received (%d), hash mismatch for frame %d", f->frameNo, f->hashFrame));
-                WriteToLog(("Saved hashes: %#x and %#x", h1, h2));
-                WriteToLog(("Received hashes: %#x and %#x", f->team1Hash, f->team2Hash));
+                WriteToLog("Packet received (%d), hash mismatch for frame %d", f->frameNo, f->hashFrame);
+                WriteToLog("Saved hashes: %#x and %#x", h1, h2);
+                WriteToLog("Received hashes: %#x and %#x", f->team1Hash, f->team2Hash);
                 HexDumpToLog(leftTeamData, 145, "left team");
                 HexDumpToLog(rightTeamData, 145, "right team");
-                WriteToLog(("State from last %d frames:\n--------------------------\n", sizeofarray(frameHashes)));
+                WriteToLog("State from last %d frames:\n----------------------------------------\n", sizeofarray(frameHashes));
                 dumpSavedStates();
             }
             assert(h1 == f->team1Hash);
             assert(h2 == f->team2Hash);
         } else
-            WriteToLog(("Frame %d is out of range of hash history.", f->hashFrame));
+            WriteToLog("Frame %d is out of range of hash history.", f->hashFrame);
     }
 }
 #else
@@ -230,6 +236,7 @@ static void PausedLoop();
 static bool isBench1Allowed();
 static bool isBench2Allowed();
 
+
 static void initFrame(Frame *f, word controls, int frameNo, byte state)
 {
     f->type = PT_GAME_CONTROLS;
@@ -245,18 +252,19 @@ static void initFrame(Frame *f, word controls, int frameNo, byte state)
 #endif
 }
 
+
 static void sendFrame(int frameNo, word controls, byte state)
 {
     Frame frame;
-    int i;
-    WriteToLog((LM_GAME_LOOP, "Sending frame %d, controls = %#x, state = %#x", frameNo, controls, state));
+    WriteToLog(LM_GAME_LOOP, "Sending frame %d, controls = %#x, state = %#x", frameNo, controls, state);
     initFrame(&frame, controls, frameNo, state);
     SendSimplePacket(otherPlayerAddress, (char *)&frame, sizeof(frame));
     /* inform watchers of aborting also */
     if (state & STATE_ABORT_MASK)
-        for (i = 0; i < numWatchers; i++)
+        for (int i = 0; i < numWatchers; i++)
             SendSimplePacket(&watcherAddresses[i], (char *)&frame, sizeof(frame));
 }
+
 
 /* We are applying controls for this frame, should be only possible spot where it is allowed.
    Do not touch control word, or it will get propagated into future frames. */
@@ -267,19 +275,20 @@ static void applyControls(word controls, int playerNo)
     *statusWords[playerNo] = controls;
 }
 
+
 static void applyFrame(const Frame *frame)
 {
     bool playerTurn = (teamSwitchCounter & 1) ^ (playerNo == 2);    /* determine which player gets these controls */
 
-    WriteToLog((LM_GAME_LOOP, "Applying frame %d, state = %#x, controls = %#x (player %d)",
-        frame->frameNo, frame->state, frame->controls, playerTurn + 1));
+    WriteToLog(LM_GAME_LOOP, "Applying frame %d, state = %#x, controls = %#x (player %d)",
+        frame->frameNo, frame->state, frame->controls, playerTurn + 1);
     assert(playerNo != 0);
 
     applyControls(frame->controls, playerTurn);
 
     /* State change was generated blindly, possibly many frames ago. Now we have to
        decide whether we apply it or not, based on the current frame conditions.
-       Since simulation is synchronized, the other client will reach same conclusion. */
+       Since simulation is synchronized, the other client will reach the same conclusion. */
 
     if (!paused && !showingStats) {
         if (frame->state & STATE_BENCH1_CALLED && isBench1Allowed())
@@ -296,13 +305,14 @@ static void applyFrame(const Frame *frame)
        otherwise it's smeared all over the screen when stats show up. */
     if (frame->state & STATE_SHOW_STATS) {
         if (showingStats) {
-            calla(StatisticsOff);
+            calln(StatisticsOff);
         } else if (gameStatePl != 100 && !inSubstitutesMenu && !replayState && !paused &&
             (gameState < ST_STARTING_GAME || gameState > ST_GAME_ENDED)) {
-            calla(AllowStatistics);
+            calln(AllowStatistics);
         }
     }
 }
+
 
 /* Try to read next frame and store it into framesToRender array, to be ready when the time for rendering comes.
    Return true if packet processed, false if queue empty. */
@@ -316,7 +326,7 @@ static bool __attribute__((used)) receiveFrame()
     if ((packet = ReceivePacket(&length, &node))) {
         /* check packet source */
         if (!addressMatch(&node, &playerAddresses[0]) && !addressMatch(&node, &playerAddresses[1])) {
-            WriteToLog(("Received a packet from invalid player!"));
+            WriteToLog("Received a packet from invalid player!");
             qFree(packet);
             return true;
         }
@@ -330,12 +340,12 @@ static bool __attribute__((used)) receiveFrame()
                 /* reject invalid packets - saying that we aborted when we didn't */
                 if ((playerNo == 1 && frame->state & STATE_ABORT1) ||
                     (playerNo == 2 && frame->state & STATE_ABORT2)) {
-                    WriteToLog(("Fake abort? playerNo = %d, state = %#x", playerNo, frame->state));
+                    WriteToLog("Fake abort? playerNo = %d, state = %#x", playerNo, frame->state);
                     qFree(packet);
                     return true;
                 }
                 if (playerNo) {
-                    WriteToLog(("Sending last frame ack."));
+                    WriteToLog("Sending last frame ack.");
                     sendFrame(frameNo, 0, STATE_GAME_ENDED);
                 }
                 /* abort the game asap, therefore mark all frames in queue with abort bit */
@@ -371,23 +381,23 @@ static bool __attribute__((used)) receiveFrame()
                 }
                 assert_msg(frameIndex + 2 * skipFrames < (int)sizeofarray(framesToRender), "framesToRender too small!");
             } else {
-                WriteToLog(("Rejecting out of range frame: %d.", frameNo));
+                WriteToLog("Rejecting out of range frame: %d.", frameNo);
                 if (frameIndex > 25)
                     HexDumpToLog(packet, length, "crazy wild packet o_O");
             }
         } else if (getRequestType(packet, length) == PT_JOIN_GAME && length >= 2) {
             char *response = createRefuseJoinGamePacket(&length, GR_IN_PROGRRESS);
             SendSimplePacket(&node, response, length);
-            WriteToLog(("Some sucker trying to join now."));
+            WriteToLog("Some sucker trying to join now.");
         } else if (HandleWatcherPacket(packet, length, currentTick, &abort)) {
             assert_msg(playerNo == 0, "Player received watcher packet!");
             if (abort) {
-                WriteToLog(("Received game end packet from players."));
+                WriteToLog("Received game end packet from players.");
                 paused = showingStats = showStats = playGame = false;
                 gameStatus = GS_WATCHER_ENDED;
             }
         } else {
-            WriteToLog(("Invalid packet rejected in the game."));
+            WriteToLog("Invalid packet rejected in the game.");
             HexDumpToLog(packet, length, "reject packet");
         }
         qFree(packet);
@@ -396,10 +406,12 @@ static bool __attribute__((used)) receiveFrame()
     return true;
 }
 
+
 static bool sendingThisFrame()
 {
     return currentFrameNo + (currentFrameNo != teamSwitchCounter) + 2 + 2 * skipFrames >= nextSendFrameNo;
 }
+
 
 /** sendNextFrame
 
@@ -420,7 +432,7 @@ static void __attribute__((used)) sendNextFrame()
         else {
             /* this will trash current joy1Status, so better save it */
             word savedJoy1Status = joy1Status;
-            calla(Joy1SetStatus);
+            calla_ebp_safe(Joy1SetStatus);
             controls = joy1Status;
             joy1Status = savedJoy1Status;
         }
@@ -441,15 +453,18 @@ static void __attribute__((used)) sendNextFrame()
     }
 }
 
+
 bool isBench1Allowed()
 {
     return !replayState && (leftTeamData->playerNumber || leftTeamData->plCoachNum);
 }
 
+
 bool isBench2Allowed()
 {
     return !replayState && (rightTeamData->playerNumber || rightTeamData->plCoachNum);
 }
+
 
 /** getControlScanPlayerNumber
 
@@ -459,6 +474,7 @@ static int getControlScanPlayerNumber()
 {
     return teams[(teamSwitchCounter & 1) ^ (teamPlayingUp == 2)]->playerNumber;
 }
+
 
 /* Called when the game ended, on exit from main loop. Send the last frame and cleanup. */
 static void GameEnded()
@@ -470,19 +486,21 @@ static void GameEnded()
     int length, i;
     IPX_Address node;
 
-    WriteToLog(("GameEnded, gameStatus = %d", gameStatus));
+    WriteToLog("GameEnded, gameStatus = %d", gameStatus);
     if (gameStatus == GS_WATCHER_ABORTED || gameStatus == GS_WATCHER_ENDED) {
         GameFinished();
+        calla_ebp_safe(AIL_stop_play);
+        replaySelected = false;
         return;
     }
     if (gameStatus == GS_GAME_IN_PROGRESS)
         gameStatus = GS_GAME_FINISHED_OK;
     if (sendLastFrame) {
-        WriteToLog(("Waiting on exit ack..."));
+        WriteToLog("Waiting on exit ack...");
         /* keep sending the last frame until ack-ed */
         while (startTime + networkTimeout > currentTick) {
             if (lastSendTime + 25 <= currentTick) {
-                WriteToLog(("Sending abort game notification..."));
+                WriteToLog("Sending abort game notification...");
                 sendFrame(currentFrameNo, 0, STATE_GAME_ENDED);
                 lastSendTime = currentTick;
             }
@@ -491,7 +509,7 @@ static void GameEnded()
                 length == sizeof(Frame) && *(word *)packet == PT_GAME_CONTROLS &&
                 ((Frame *)packet)->state & STATE_GAME_ENDED) {
                 qFree(packet);
-                WriteToLog(("Received exit game confirmation."));
+                WriteToLog("Received exit game confirmation.");
                 ack = true;     /* got it! */
                 break;
             }
@@ -510,10 +528,11 @@ static void GameEnded()
     if (sendLastFrame && !ack)
         gameStatus = GS_GAME_DISCONNECTED;
     GameFinished();
-    WriteToLog((LM_GAME_LOOP, "Game has ended, result code is %d.", gameStatus));
+    WriteToLog(LM_GAME_LOOP, "Game has ended, result code is %d.", gameStatus);
     replaySelected = false; /* no replay, we're done */
-    calla(AIL_stop_play);
+    calla_ebp_safe(AIL_stop_play);
 }
+
 
 /** HandleMPKeys
 
@@ -551,7 +570,7 @@ int HandleMPKeys(int key)
             stateQueued |= STATE_PAUSED;
             return 0;
         case 1: /* escape */
-            WriteToLog(("Escape pressed, aborting"));
+            WriteToLog("Escape pressed, aborting");
             sendLastFrame = true;
             switch (playerNo) {
                 case 0:
@@ -575,6 +594,7 @@ int HandleMPKeys(int key)
     return key;
 }
 
+
 /* Hook main loop to enable blocking if next frame hasn't arrived yet. */
 void HookMainLoop()
 {
@@ -591,24 +611,26 @@ void HookMainLoop()
 extern void CheckForFastReplay() asm("CheckForFastReplay");
 /* Patch waiting for retrace start, as we might spend some time there, and insert network check. */
 asm(
-"HookFlip:                      \n\t"
-    "call CheckForFastReplay    \n\t"   /* we overwrote this */
-    "mov  al, mainLoopRan       \n\t"   /* prevent Flip() from getting called before OnGameLoopStart() in first frame */
-    "test al, al                \n\t"
-    "jz   return                \n\t"
+"HookFlip:                      \n"
+    "call CheckForFastReplay    \n"     /* we overwrote this */
+    "mov  al, mainLoopRan       \n"     /* prevent Flip() from getting called before OnGameLoopStart() in first frame */
+    "test al, al                \n"
+    "jz   .return               \n"
 
-    "mov  eax, playerNo         \n\t"   /* watchers don't need this */
-    "test eax, eax              \n\t"
-    "jz   receive_frame         \n\t"
+    "mov  eax, playerNo         \n"     /* watchers don't need this */
+    "test eax, eax              \n"
+    "jz   .receive_frame        \n"
 
-    "call sendNextFrame         \n\t"
-    "receive_frame:             \n\t"
-    "call receiveFrame          \n\t"
-    ";call IPX_OnIdle           \n\t"
+    "call sendNextFrame         \n"
 
-    "return:                    \n\t"
-    "ret                        \n\t"
+".receive_frame:                \n"
+    "call receiveFrame          \n"
+    ";call IPX_OnIdle           \n"
+
+".return:                       \n"
+    "ret                        \n"
 );
+
 
 /** HookUpdateStatistics
 
@@ -624,7 +646,7 @@ static void HookUpdateStatistics()
             int i;
             if (!(watcherPacket = CreateWatcherPacket(&watcherPacketSize, currentFrameNo)))
                 return;
-            WriteToLog((LM_WATCHER, "Sending packets to watchers..."));
+            WriteToLog(LM_WATCHER, "Sending packets to watchers...");
             for (i = 0; i < numWatchers; i++)
                 SendSimplePacket(&watcherAddresses[i], watcherPacket, watcherPacketSize);
         }
@@ -633,6 +655,7 @@ static void HookUpdateStatistics()
     calla(UpdateStatistics);
 }
 
+
 /* No input will be registered after this call. */
 static void DisableInput()
 {
@@ -640,21 +663,25 @@ static void DisableInput()
     *(word *)((byte *)Player2StatusProc + 0x8) = 0x15eb;
 }
 
+
 static void EnableInput()
 {
     *(word *)((byte *)Player1StatusProc + 0x8) = 0x1075;
     *(word *)((byte *)Player2StatusProc + 0x8) = 0x1074;
 }
 
+
 int GetSkipFrames()
 {
     return skipFrames;
 }
 
+
 void SetSkipFrames(int newSkipFrames)
 {
     skipFrames = max(0, min(newSkipFrames, MAX_SKIP_FRAMES));
 }
+
 
 /** ResetSprites
 
@@ -690,6 +717,7 @@ static void ResetSprites()
     *(word *)&ballSprite->y = 0;
     *(word *)&ballSprite->z = 0;
 }
+
 
 /* player 2 on keyboard might have patched this, so we better save it */
 static byte joy2SetStatusByte;
@@ -742,6 +770,10 @@ void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inN
     pl1ShortFireCounter = pl2ShortFireCounter = 0;
     EGA_graphics = 0;
 
+    /* gotta reset teams as there are some timers in there */
+    memset((char *)leftTeamData + 24, 0, sizeof(*leftTeamData) - 24);
+    memset((char *)rightTeamData + 24, 0, sizeof(*leftTeamData) - 24);
+
     paused = 0;
     sentThisFrame = false;
     mainLoopRan = 0;
@@ -777,7 +809,7 @@ void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inN
         left_team_coach_no = 0;
         right_team_player_no = playerNo ^ 3;
         right_team_coach_no = 0;
-        WriteToLog(("left_team_player_no = %d, right_team_player_no = %d", left_team_player_no, right_team_player_no));
+        WriteToLog("left_team_player_no = %d, right_team_player_no = %d", left_team_player_no, right_team_player_no);
         /* prevent SWOS from resetting variables we just set */
         *(word *)((char *)SetupPlayers + 0x2cd) = 0x04eb;
         *(word *)((char *)SetupPlayers + 0x45f) = 0x04eb;
@@ -818,21 +850,22 @@ void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inN
         SetSecondPlayerOnKeyboard(false);
     DisableInput();     /* start with disabled input, only enable when needed */
     ResetSprites();     /* SWOS doesn't initialize sprites properly... it just wasn't manifesting before this */
-    WriteToLog(("Main loop patched and hooks installed, joyKbdWord set to to %hd.", joyKbdWord));
-    WriteToLog(("Initializing game... Player addresses:"));
-    WriteToLog(("Player1: [%#.12s]", &playerAddresses[0]));
-    WriteToLog(("Player2: [%#.12s]", &playerAddresses[1]));
-    WriteToLog(("Player number = %d", playerNo));
-    WriteToLog(("Skip frames = %d", skipFrames));
+    WriteToLog("Main loop patched and hooks installed, joyKbdWord set to to %hd.", joyKbdWord);
+    WriteToLog("Initializing game... Player addresses:");
+    WriteToLog("Player1: [%#.12s]", &playerAddresses[0]);
+    WriteToLog("Player2: [%#.12s]", &playerAddresses[1]);
+    WriteToLog("Player number = %d", playerNo);
+    WriteToLog("Skip frames = %d", skipFrames);
 }
+
 
 /** FinishMultiplayerGame
 
     Clean up after the game and unpatch.
 */
-void FinishMultiplayerGame()
+extern "C" void FinishMultiplayerGame()
 {
-    WriteToLog(("Finishing multiplayer game..."));
+    WriteToLog("Finishing multiplayer game...");
     qFree(playerAddresses);
     playerAddresses = nullptr;
     CleanupWatchers();
@@ -840,7 +873,7 @@ void FinishMultiplayerGame()
         DisposeTacticsContextSwitcher();
     numLoopsJoy2 = savedNumLoopsJoy2;
     if (joyKbdWord != 4 && joyKbdWord != 5)
-        WriteToLog(("Warning, joyKbdWord = %d in FinishMultiplayerGame()", joyKbdWord));
+        WriteToLog("Warning, joyKbdWord = %d in FinishMultiplayerGame()", joyKbdWord);
     joyKbdWord -= 3;
     PatchByte(Joy2SetStatus, 0, joy2SetStatusByte);
     PatchDword(main_loop, 1, 0x00007b32);
@@ -872,6 +905,7 @@ void FinishMultiplayerGame()
         SetSecondPlayerOnKeyboard(true);
 }
 
+
 /** OnGameLoopStart
 
     Executed before the main game loop starts. Keep polling network until we
@@ -885,7 +919,6 @@ void OnGameLoopStart()
     /* very nice for desync resolving :P */
     static int gameNo;
     extern dword swosDataBase;
-    #pragma aux swosDataBase "*";
     if (!currentFrameNo) {
         if (gameNo == 1) {
             HexDumpToLog(&swosDataBase, 0xc5fc0, "entire data");
@@ -903,23 +936,22 @@ void OnGameLoopStart()
         CreateWatcherPacket(&packetSize, currentFrameNo);
     }
 
-    WriteToLog((LM_GAME_LOOP, "=================================================="));
-    WriteToLog((LM_GAME_LOOP, "OnGameLoopStart(), currentFrameNo = %d, currentTick = %d, teamPlayingUp = %d, "
+    WriteToLog(LM_GAME_LOOP, "==================================================");
+    WriteToLog(LM_GAME_LOOP, "OnGameLoopStart(), currentFrameNo = %d, currentTick = %d, teamPlayingUp = %d, "
         "paused = %d, showingStats = %d, teamSwitchCounter = %d, stoppageTimer = %d", currentFrameNo, currentTick,
-        teamPlayingUp, paused, showingStats, teamSwitchCounter, stoppageTimer));
+        teamPlayingUp, paused, showingStats, teamSwitchCounter, stoppageTimer);
     HexDumpToLog(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
     HexDumpToLog(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
 
     /* watchers don't need to wait or send anything, just try to empty out the packet queue here,
        but also check if we got disconnected from the game */
     if (!playerNo) {
-        int i;
-        for (i = 0; i < 20; i++)
+        for (int i = 0; i < 20; i++)
             if (!receiveFrame())
                 break;
         if (WatcherTimeout(networkTimeout)) {
             /* we are disconnected! */
-            WriteToLog(("Watcher timeout expired, aborting!"));
+            WriteToLog("Watcher timeout expired, aborting!");
             gameState = GS_GAME_DISCONNECTED;
             paused = showingStats = showStats = playGame = false;
         }
@@ -933,30 +965,30 @@ void OnGameLoopStart()
     sendNextFrame();
 
     if (framesToRender[0].type != PT_GAME_CONTROLS)
-        WriteToLog((LM_GAME_LOOP, "Waiting for packet %d", currentFrameNo));
+        WriteToLog(LM_GAME_LOOP, "Waiting for packet %d", currentFrameNo);
 
     /* wait till we have next frame to render, or until time is up */
     while (startTime + networkTimeout > currentTick) {
         if (framesToRender[0].type == PT_GAME_CONTROLS) {
-            WriteToLog((LM_GAME_LOOP, "Found next frame to render (%d)... controls = %#x, state = %#x",
-                framesToRender[0].frameNo, framesToRender[0].controls, framesToRender[0].state));
+            WriteToLog(LM_GAME_LOOP, "Found next frame to render (%d)... controls = %#x, state = %#x",
+                framesToRender[0].frameNo, framesToRender[0].controls, framesToRender[0].state);
             /* do not apply same frame twice */
             if (currentFrameNo != lastAppliedFrame) {
                 applyFrame(framesToRender);
                 lastAppliedFrame = currentFrameNo;
             }
             if (currentTick - startTime)
-                WriteToLog((LM_GAME_LOOP, "Wasted %d tick(s)", currentTick - startTime));
+                WriteToLog(LM_GAME_LOOP, "Wasted %d tick(s)", currentTick - startTime);
             return;
         }
 
         receiveFrame();
         if (!playGame) {
-            WriteToLog(("Exit game request received. Exiting packet wait loop."));
+            WriteToLog("Exit game request received. Exiting packet wait loop.");
             return;
         }
 
-        //calla(GetKey);  /* allow interrupt */
+        //calla_ebp_safe(GetKey);  /* allow interrupt */
         //testiraj alt-f1 nekako eksplicitno
         //nacrtaj pescanik il nesto (moze cak i animirani)
         /* resend frames from newest to oldest */
@@ -984,56 +1016,60 @@ void OnGameLoopStart()
 
     /* timeout waiting on next frame; we're not communicating with other player anymore */
     gameStatus = GS_GAME_DISCONNECTED;
-    WriteToLog(("Game loop timed out while waiting for frame %d!", currentFrameNo));
+    WriteToLog("Game loop timed out while waiting for frame %d!", currentFrameNo);
     dumpSavedStates();
     /* turn off everything so we jump right out of the loop */
     paused = showingStats = playGame = false;
 }
 
+
 void OnGameLoopEnd()
 {
-    WriteToLog((LM_GAME_LOOP, "OnGameLoopEnd()"));
+    WriteToLog(LM_GAME_LOOP, "OnGameLoopEnd()");
     burstPacketsSent = 0;
     currentFrameNo++;
     stoppageTimer += !paused;   /* do not increment while paused */
     /* shift frames to render, get rid of the one we just rendered */
     memmove(framesToRender, framesToRender + 1, sizeof(framesToRender) - sizeof(framesToRender[0]));
     framesToRender[sizeofarray(framesToRender) - 1].type = PT_GAME_CONTROLS + 1;
-    WriteToLog((LM_GAME_LOOP_STATE, "Game loop end, currentFrame = %d", currentFrameNo));
+    WriteToLog(LM_GAME_LOOP_STATE, "Game loop end, currentFrame = %d", currentFrameNo);
     HexDumpToLog(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
     HexDumpToLog(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
 }
+
 
 byte GetGameStatus()
 {
     return gameStatus;
 }
 
+
 /* Take over stats loop. */
 void ShowStatsLoop()
 {
     while (showingStats) {
         int teamControls;
-        WriteToLog((LM_GAME_LOOP, "ShowStatsLoop(), showingStats = %d, teamSwitchCounter = %d",
-            showingStats, teamSwitchCounter));
+        WriteToLog(LM_GAME_LOOP, "ShowStatsLoop(), showingStats = %d, teamSwitchCounter = %d",
+            showingStats, teamSwitchCounter);
         OnGameLoopStart();
-        calla(GetKey);
-        calla(MainKeysCheck);
-        calla(ClearBackground);
+        calla_ebp_safe(GetKey);
+        calla_ebp_safe(MainKeysCheck);
+        calla_ebp_safe(ClearBackground);
         calla(UpdateStatistics);
         if (!showingStats)
             break;
         teamSwitchCounter++;
         teamControls = getControlScanPlayerNumber();
         if (teamControls == 1)
-            calla(Player1StatusProc);
+            calla_ebp_safe(Player1StatusProc);
         else if (teamControls == 2)
-            calla(Player2StatusProc);
+            calla_ebp_safe(Player2StatusProc);
         HookUpdateStatistics();  /* to avoid watchers timing out */
-        WriteToLog((LM_GAME_LOOP, "showingStats = %d", showingStats));
+        WriteToLog(LM_GAME_LOOP, "showingStats = %d", showingStats);
         OnGameLoopEnd();
     }
 }
+
 
 /** PausedLoop
 
@@ -1044,23 +1080,24 @@ void ShowStatsLoop()
 void PausedLoop()
 {
     int teamControls;
-    WriteToLog((LM_GAME_LOOP, "PausedLoop(), paused = %d", paused));
+    WriteToLog(LM_GAME_LOOP, "PausedLoop(), paused = %d", paused);
     OnGameLoopStart();
     if (!paused)
         return;
-    calla(GetKey);
-    calla(MainKeysCheck);
+    calla_ebp_safe(GetKey);
+    calla_ebp_safe(MainKeysCheck);
     if (!paused)
         return;
     teamSwitchCounter++;
     teamControls = getControlScanPlayerNumber();
     if (teamControls == 1)
-        calla(Player1StatusProc);
+        calla_ebp_safe(Player1StatusProc);
     else if (teamControls == 2)
-        calla(Player2StatusProc);
+        calla_ebp_safe(Player2StatusProc);
     HookUpdateStatistics();  /* to avoid watchers timing out */
     OnGameLoopEnd();
 }
+
 
 /** GetRandomVariables
 
@@ -1078,6 +1115,7 @@ void GetRandomVariables(byte *vars, int *size)
     memcpy(vars + 3, &seed2, 3);
     *(word *)(vars + 6) = random_seed;
 }
+
 
 void SetRandomVariables(const char *vars, int size)
 {

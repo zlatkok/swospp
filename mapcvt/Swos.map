@@ -22,6 +22,8 @@
  0001:000016E7       nullsub_25
  0001:00002493       SquadCommon
  0001:00002794       SquadAfterDrawCommon
+ 0001:00003805       SquadMenuSavePlayerPositions
+ 0001:0000397F       UpdateBigCheckMark
  0001:00003EC3       SetMenuEntryPlayerFace
  0001:00003EFB       select_teams_for_tactics_menu
  0001:00004441       SelTeamForTacticsInit
@@ -177,7 +179,7 @@
  0001:0000AC8E       WriteHexByteWrapper
  0001:0000ACAD       WriteHexByte
  0001:0000ACBE       WriteNibble
- 0001:0000ACCF       a0123456789abcdef
+ 0001:0000ACCF       hexDigits
  0001:0000ACE0       null_string
  0001:0000ACE1       aCentre2
  0001:0000ACEB       aRawjoy1
@@ -543,7 +545,7 @@
  0001:00032700       ShowUseMatchTeamIfTraining
  0001:00032777       ShowErrorMenu
  0001:00032791       DoContinueAbortMenu
- 0001:000327E4       continue_menu
+ 0001:000327E4       continueMenu
  0001:00032828       ContinueInit
  0001:000328B2       Continue
  0001:000328B8       ContinueAbortInit
@@ -719,7 +721,7 @@
  0001:0003EC6D       EditTactics28AfterDraw
  0001:0003ED40       EditTacticsAfterDrawPlayerNames
  0001:0003F868       DrawPlayerNamesAndFaces
- 0001:0003F932       SavePlayerPositions
+ 0001:0003F932       EditTacticsMenuSavePlayerPositions
  0001:0003FAEA       SetBigCheckSprite
  0001:0003FBB5       InitializeCurrentTacticsToEdit
  0001:0003FD3B       SaveCurrentTactics
@@ -3227,7 +3229,7 @@
  0002:000314B9       mem_408k_ofs_3d400h
  0002:000314BD       menu_music_ptr
  0002:000314C9       EGA_graphics
- 0002:000314CB       setup_dat_buffer
+ 0002:000314CB       setupDatBuffer
  0002:000314CD       connected_with_chairman_scenes
  0002:000314CF       sound_off
  0002:000314D1       joyKbdWord
@@ -3316,7 +3318,7 @@
  0002:0003ECFC       down
  0002:0003ECFD       left
  0002:0003ECFE       right
- 0002:0003ED00       fire_reset_flag
+ 0002:0003ED00       fireResetFlag
  0002:0003ED02       currentMenuPtr
  0002:0003ED06       menuStatus
  0002:0003ED08       menuFade
@@ -3338,7 +3340,7 @@
  0002:0003ED66       s_chairman_scenes
  0002:0003ED68       teamFileBuffer
  0002:0004E776       surnameBuf
- 0002:0004E78E       menu_word_2
+ 0002:0004E78E       menuProcNumTimesCalled
  0002:0004E790       twoPlayers
  0002:0004E792       player1ClearFlag
  0002:0004E794       player2ClearFlag
@@ -3386,7 +3388,7 @@
  0002:00050348       drawitem_checks
  0002:0005034A       menu_x
  0002:0005034C       menu_y
- 0002:0005034E       offset_sprite_dat
+ 0002:0005034E       offsetSpriteDat
  0002:00050352       smallCharsTable
  0002:00050360       conversion_table_small
  0002:00050440       bigCharsTable
@@ -3809,8 +3811,8 @@
  0002:0005F52E       USER_E_Positions
  0002:0005F539       USER_F_Positions
  0002:0005F544       saveFileTitle
- 0002:0005F58A       old_player_skill
- 0002:0005F58C       new_player_skill
+ 0002:0005F58A       oldPlayerSkill
+ 0002:0005F58C       newPlayerSkill
  0002:0005F58E       positionsArray
  0002:0005F5AE       savedPositionsArray
  0002:0005F5CE       team1SelectedPlayerIndex
@@ -3993,7 +3995,7 @@
  0002:000A878A       team2_APP_Percent
  0002:000A8868       skill_div
  0002:000A8870       show_stadium_var
- 0002:000A887A       previous_item
+ 0002:000A887A       previousMenuItem
  0002:000A8880       in_transfer_market_menu
  0002:000A8882       goalTypeScored
  0002:000A888A       load_ending_sample_flag
@@ -4042,6 +4044,7 @@
  0002:000AB3A2       choosing_preset
  0002:000AB3A4       number_of_files
  0002:000AB3A8       found_filenames_buffer
+ 0002:000AF48A       teamSkillDiffAfterChange
  0002:000AF494       is_national_squad
  0002:000AF5D6       squad_menu
  0002:000AFAAE       aArcSoccer_bin

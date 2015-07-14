@@ -2,14 +2,26 @@
 
 #include "dos.h"
 
+/* Wrap variables used only from inline assembly with this macro to prevent optimizer from removing them */
+#undef USED_BY_ASM
+#define USED_BY_ASM(x) x asm(#x) __attribute__((used))
+
+template<typename T> static inline void swap(T a, T b) {
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
+
+#ifndef UNUSED
+#define UNUSED(x) (void)(x)
+#endif
+
+
 extern "C" {
 
 /* assert support */
 #ifdef DEBUG
 void AssertFailed(const char *, int) __attribute__((noreturn));
-/* it's actually better if we leave out the noreturn attribute, since call stack will be available then
-   (with aborts compiler generates direct jmp and leaves us without access to caller context) */
-// turning it on again for tests with GCC
 void AssertFailedMsg(const char *, int, const char *) __attribute__((noreturn));
 
 #define assert(x) ((void)((x) ? (void)0 : AssertFailed(__FILE__, __LINE__)))
@@ -75,8 +87,6 @@ extern const unsigned char IsWhat[256];
 
 #define skipWhitespace(p) {while(isspace(*p)) p++;}
 
-#define swap(a, b) { dword tmp = (dword)a; *(dword *)&a = *(dword *)&b; *(dword *)&b = tmp; }
-
 #ifndef LONG_MAX
 #define LONG_MAX    2147483647L         /* maximum value of a long int       */
 #endif
@@ -113,8 +123,8 @@ static inline __attribute__((always_inline)) time_t time(time_t *seconds)
     time_t result;
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_time_    \t\n"
-        "call %[tmp]                            \t\n"
+        "mov  %[tmp], offset swos_libc_time_    \n"
+        "call %[tmp]                            \n"
         : "=a" (result), [tmp] "=r" (dummy)
         : "a" (seconds)
         : "cc", "memory"
@@ -127,11 +137,35 @@ static inline __attribute__((always_inline)) char *ctime (const time_t *timer)
     char *result;
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_ctime_   \t\n"
-        "call %[tmp]                            \t\n"
+        "mov  %[tmp], offset swos_libc_ctime_   \n"
+        "call %[tmp]                            \n"
         : "=a" (result), [tmp] "=r" (dummy)
         : "a" (timer)
         : "cc", "memory"
+    );
+    return result;
+}
+
+static inline __attribute__((always_inline)) int getDS()
+{
+    int result;
+    asm (
+        "mov  eax, ds"
+        : "=a" (result)
+        :
+        :
+    );
+    return result;
+}
+
+static inline __attribute__((always_inline)) int getES()
+{
+    int result;
+    asm (
+        "mov  eax, es"
+        : "=a" (result)
+        :
+        :
     );
     return result;
 }

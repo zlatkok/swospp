@@ -180,7 +180,7 @@ aboutText:
         EndEntry
 
         ; about string
-        StartEntry 55, 143, 200, 40
+        StartEntry 55, 142, 200, 40
             MultiLineText 0, aboutText
             AfterDraw   AnimateBalls
         EndEntry
@@ -327,10 +327,17 @@ aboutText:
 
 section .text
 
+;
+; === Modal dialogs
+;
+
+
 ; InitModalDialog
 ;
 ; in:
 ;     eax -> initialization parameters structure
+;
+; destroys: eax only
 ;
 ; Call this before entering modal dialog loop. Format:
 ;   0 byte  - flags:
@@ -352,7 +359,7 @@ InitModalDialog:
         mov  [modalDlgArgs], eax
         mov  ax, [eax + 2]
         mov  [currentSprite], ax
-        mov  ax, word [currentTick]
+        mov  ax, [currentTick]
         mov  [lastTick], ax
         mov  word [direction], 1
         mov  byte [currentMenuFrame], 0
@@ -815,28 +822,29 @@ GetPreviousMenu:
 section .bss
 
 menuToReturnTo:     ; esp value of custom menu frame to return to (instead of the one that called us)
-    resd 1
+        resd 1
 savedMenuAfterGame: ; menu to which we return after game was played
-    resd 1
+        resd 1
 modalDlgArgs:
-    resd 1
+        resd 1
 currentSprite:
-    resw 1
+        resw 1
 lastTick:
-    resw 1
+        resw 1
 direction:
-    resb 1
+        resb 1
 currentMenuFrame:
-    resb 2
+        resb 2
 currentBitmapIndex:
-    resb 1
+        resb 1
 menuStack:          ; circular buffer of menu stack frames
-    resd 6
+        resd 6
 menuStackEnd:
+
 
 section .data
 
 menuStackPtr:
-    dd menuStack
+        dd menuStack
 logoData:
-    incbin "../bitmap/swospp-logo.bp"
+        incbin "../bitmap/swospp-logo.bp"

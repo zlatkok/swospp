@@ -1,5 +1,9 @@
 INTERNAL LIST OF STUFF DONE:
 2.0:
+- command line parameters implemented (for launcher)
+- tons of small bugs resulting from the port fixed
+- ported everything to GCC, C++11/14/17 here we come!
+- some more alink fixes
 - added importing dll functions from command line to alink, fixed incorrect
   terminating of import thunks array introduced in conversion while I was at it
 - fixed InputText to correctly handle case when input buffer already contains
@@ -27,12 +31,13 @@ INTERNAL LIST OF STUFF DONE:
 - DOSBox detection
 - assert support
 - static_assert support
-- ubacen util.c i tu ce biti sve util f-je da ne bi bile svugde po malo
-- sada se opcije snimaju i kad se iz igre izadje sa ALT-F1
-- ubivena SWOS2004 pizdarija
-- ispravljen (konacno) bag za snimanje friendly games - kad se ide na replay,
-  snimak bi sadrzao sve utakmice zajedno
-- patched: size mismatch - veliko S!
+- util.c introduced and it will contain all utility functions so they wouldn't
+  be all over the place
+- options are now saved when game is exited via ALT-F1
+- SWOS2004 removed
+- fixed (finally!) bug in recording friendly game replays - if players select
+  replay after the game, recording would contain all games combined
+- patched: size mismatch - capital S!
 - sada se na pocetku vrsi testiranje brzine video memorije (kod iz install.exe)
   pa kursor vise ne treperi kao blesav u menijima (to je takodje dobro ako se
   pokrece igra iz dosbox-a i vmware-a naizmenicno iz istog direktorijuma, video

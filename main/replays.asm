@@ -251,7 +251,7 @@ ViewReplay:
         int  0x21
         jnc  play_it
 
-cant_open:
+.cant_open:
         mov  dword [A0], cant_open_str
         calla ShowErrorMenu
         retn
@@ -335,13 +335,13 @@ SaveReplay:
         mov  edx, selected_file
         mov  ax, 0x3d00
         int  0x21
-        jc   cant_open
+        jc   ViewReplay.cant_open
         mov  esi, eax
         mov  edx, [A0]
         xor  ecx, ecx
         mov  ah, 0x3c
         int  0x21
-        jc   cant_open
+        jc   ViewReplay.cant_open
         mov  edi, eax
         mov  edx, found_filenames_buffer
 
@@ -373,7 +373,6 @@ SaveReplay:
         retn
 
 
-; bss
 section .bss
 
 rpl_handle:
@@ -399,8 +398,7 @@ rplFrameSkip:
     resb 1
 
 
-; data
-section .data
+section .rdata
 
 load_replay_str:
     db "LOAD REPLAY", 0
@@ -420,6 +418,9 @@ cant_copy_to_itself:
     db "CANT COPY FILE TO ITSELF", 0
 error_copying:
     db "ERROR COPYING FILE", 0
+
+
+section .data
 
     StartMenu replays_menu, InitReplays, 0, 0, 3
 

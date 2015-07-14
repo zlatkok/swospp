@@ -88,7 +88,7 @@ void CancelPackets();
 
 /* Raw IPX interface */
 extern "C" {
-    bool IPX_IsInstalled(); /* return true if IPX Network driver is installed           */
+    bool32 IPX_IsInstalled(); /* return true if IPX Network driver is installed         */
     void IPX_OnIdle();      /* give IPX driver a slice of CPU                           */
     IPX_Address *IPX_GetInterNetworkAddress(char *addr);    /* get our address          */
     void IPX_Listen(ECB *ecb);  /* put this ECB into listening queue                    */

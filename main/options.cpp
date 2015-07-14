@@ -17,10 +17,11 @@ extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions);
 extern "C" void RegisterControlsOptions(RegisterOptionsFunc registerOptions);
 extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions);
 
+
 /** SaveOptionsIfNeeded
 
-    Save options unless nothing is changed. Called at the end of program (be it
-    normal or abnormal exit).
+    Save options unless there are no changes.
+    Called at the end of program (be it normal or abnormal exit).
 */
 void SaveOptionsIfNeeded()
 {
@@ -33,6 +34,7 @@ void SaveOptionsIfNeeded()
     }
     SaveXmlFile(rootNode, "swospp.xml", checkIfModified);
 }
+
 
 static XmlNodeType getIntType(int length)
 {
@@ -48,6 +50,7 @@ static XmlNodeType getIntType(int length)
         return XML_EMPTY;
     }
 }
+
 
 /** getXmlNodeName
 
@@ -68,6 +71,7 @@ static const char *getXmlNodeName(const char *p, char *nameBuff, int maxSize, in
     *length = maxSize - spaceLeft;
     return p;
 }
+
 
 /** RegisterOptions
 
@@ -91,7 +95,7 @@ static const char *getXmlNodeName(const char *p, char *nameBuff, int maxSize, in
                fields without names are considered fillers, and are ignored
                if * name will be given in parameters
 
-    White space is ignored.
+    Whitespace is ignored.
     Register these options as default, and keep the list for subsequent modification, saving and loading.
 */
 void __cdecl RegisterOptions(const char *section, int sectionLen, const char *desc, int descLen, const char *format, ...)
@@ -165,6 +169,7 @@ void __cdecl RegisterOptions(const char *section, int sectionLen, const char *de
             continue;
         default:
             assert_msg(0, "Invalid code in option stream.");
+            return;
         }
         /* we have type here, get name */
         p += *p == '/';
@@ -188,6 +193,7 @@ void __cdecl RegisterOptions(const char *section, int sectionLen, const char *de
     }
 }
 
+
 void RegisterSWOSOptions(RegisterOptionsFunc registerOptions)
 {
     registerOptions("SWOS", 4, "Original SWOS options", 21,
@@ -197,10 +203,11 @@ void RegisterSWOSOptions(RegisterOptionsFunc registerOptions)
         &allPlayerTeamsEqual, &pitchType, &commentary, &chairmanScenes);
 }
 
+
 void InitializeOptions()
 {
     XmlNode *fileRoot;
-    WriteToLog(("Loading options..."));
+    WriteToLog("Loading options...");
     AddXmlNode(rootNode = NewEmptyXmlNode("SWOSPP", 6), optionsNode = lastSectionNode = NewEmptyXmlNode("options", 7));
     RegisterSWOSOptions(RegisterOptions);
     RegisterControlsOptions(RegisterOptions);
@@ -208,7 +215,7 @@ void InitializeOptions()
     RegisterUserTactics(RegisterOptions);
     ReverseChildren(rootNode);
     XmlTreeSnapshot(rootNode);      /* default options */
-    if (LoadXmlFile(&fileRoot, "swospp.xml", nullptr)) {
+    if (LoadXmlFile(&fileRoot, "swospp.xml")) {
         XmlMergeTrees(rootNode, fileRoot);
         XmlTreeSnapshot(rootNode);  /* options loaded from the file */
     }

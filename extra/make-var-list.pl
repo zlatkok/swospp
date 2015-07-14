@@ -4,11 +4,15 @@ $codeSWOS = 0x220000;
 $dataSWOS = 0x2c1000;
 $baseSWOSPP = 0x387000;
 
+$SWOS = $ENV{'SWOS'} || 'd:\\games\\swos';
+$SWOSPP = $ENV{'SWOSPP'} || 'f:\\swos';
+
 # input
-$mapSWOS = "d:\\games\\swos\\swos.map";
-$mapSWOSPP = "f:\\swospp\\etc\\swospp_dbg.map";
+$mapSWOS = "$SWOS\\swos.map";
+$mapSWOSPP = "$SWOSPP\\etc\\swospp_dbg.map";
+
 # output
-$varList = "d:\\games\\swos\\swospp.lst";
+$varList = "$SWOS\\swospp.lst";
 
 open MAP_S, "<$mapSWOS" or die "Can't open SWOS map file for reading.\n";
 open MAP_SPP, "<$mapSWOSPP" or die "Can't open SWOS++ map file for reading.\n";

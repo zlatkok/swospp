@@ -27,7 +27,7 @@ enum MP_Packet_Type {
 
 word getRequestType(const char *packet, int length);
 char *createGetGameInfoPacket(int *length);
-char *createGameInfoPacket(int *length, int numPlayers, char *gameName, byte id);
+char *createGameInfoPacket(int *length, int numPlayers, const char *gameName, byte id);
 bool unpackGameInfoPacket(const char *data, int length, int *networkVersion, int *networkSubversion,
     int *numPlayers, int *maxPlayers, char *gameName, int maxGameNameLen, byte *id);
 char *createJoinGamePacket(int *length, byte joinId, byte gameId, const char *name, const char *teamName);

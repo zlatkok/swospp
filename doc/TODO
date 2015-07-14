@@ -1,26 +1,56 @@
 TODO:
+- sigh... player2 pucnuo, partija krenula, player1 zaglavljen u lobiju.....
+  update: izgleda kad se brzo skroluje, pritisne pucanje a na prvom igracu jos
+  nije stigao da odskroluje do play game
+- swap players bug kad je broj igraca trocifren (pred utakmicu/play match menu)
+- bug case: client dc, server restarts, client joins -> boom (wrong menu)
+- ubaciti vizualni indikator kada je igra pauzirana, da ne izgleda kao da je
+  zabola
+- regression testing - test changing teams when already in game lobby
+- close room (multiplayer)
+- za sada namestiti replay/continue da radi nakon partije
+- test build process on clean structure (no dirs, especially 'etc') - might fail
+- implementirati bezbedni vsnprintf
+- napisati test programcic za IPX stek
+- za opcije: dopusti golmanima da budu izvodjaci penala ON/OFF
+- dodati neki bolji efekat na about screen
+- neka statistika za mrezu (za vreme igre), broj izgubljenih frejmova, lag itd.
+- stvarno jebu kontrole kad se pogresno iskalibrira joypad (mozda detektovati
+  kada se drzi na stranu >10-15 sec ponuditi da se disejbluje)
+- u network opcije ban lista (mozda i tekst fajl)
+- dodati mozda timestamp u binary format
+- cheat meni: pojavice se kada se u SWOS++ meniju postavi kursor na exit, drzi
+  dole i recimo 10 puta (ili pet) kratko pritisne pucanje (mozda ultra-brzi
+  igraci, sa ultra-jakim sutom i sl.)
+- kada je igrac povredjen za vreme partije, iscrtati na kratko vreme u gornjem
+  levom uglu treperuci krst u zavisnosti od tipa povrede
+- ubaciti u pe2bin proveru validnosti pdata sekcije, kao i barem neke osnovne
+  provere u loader
+- 'poke' user-a (ako svi cekaju na njega da zazeleni)
+- ne radi alt-f1 za vreme statistike
+- fix warning tracking for gcc in makefile.pl
+- kad odem na select team, pa cancel, pise jebeni stdmenutext (mozda ima veze sto sam pre toga
+  klinuo tamo pa esc)
+- from Phillip Habermann:
+    when connection between players is broken, or ended, settings should be cleared (for game options, tactics etc)
+    and set back to default
+    for all clients
 - provaliti gcc precompiled headers, i videti jel pomaze ista
 - replace word etc. with C++11 types?
 - test 'u' code in var dumper
 - after "perl Makefile.pl rebuild" is completed, enter has to be pressed (for some reason)
 - xml string overflow test (when parsing input file)
-- fix warning tracking for gcc in makefile.pl
 - update copyright years :P
-- change all "Called from Watcom" :P
-- change tmp registers to dummy output parameter compiler assigned
 - check if asm is volatile where need be
 - test jmpa
-- test build process on clean structure (no dirs, especially 'etc') - might fail
-- test ReadFile (dos.h), does the compiler uses ecx (which gets mangled)
-- command line parameters (for launcher)
 - about na vrh nek ide (ili bar u sredinu)
 - eliminate few global variables from mplobby.c
-- Choosing the same teams makes various problems! Line-up before match unchangeable, desynch!
+- (PH) Choosing the same teams makes various problems! Line-up before match unchangeable, desynch!
 - Player1 chooses custom tactic, Player2 standard! Match starts and now Player1 has standard,
   Player2 custom!  So, tactics are switched!
 - and also, the bug about remembering starting eleven, if someone rejoins for another match --> desynch
 - test kad su obe USER F
-- Following bug found:
+- Following bug found (from Philipp):
   Pitch type selection in game lobby does not work correctly!
   Chosen: SOFT    --> ingame: ICE
   Suggestion for next release:
@@ -38,7 +68,6 @@ TODO:
     [1:07:42] Philipp Habermann: Friendly = endless
 - eventualno kasnije napraviti da mogu u xml-u da se prikazuju strukture, da taktike budu human editable
 - dodjavola videti zasto kad build ne uspe svaki put se prvo kompajlira drugi fajl
-- setup.dat issutirati i ubaciti to sve u xml
 - trebace se malo razmisliti i o validaciji parametara, sad kad je xml ko zna kakvo ce djubre trpati
   neki validate() na to drvo koje se ucita iz fajla (na varijable, nece moci na drvo)
 - i eventualno neki stress test na xml, da vidimo koliko moze da gura dok ne ponestane memorije
@@ -54,31 +83,20 @@ TODO:
 - videti da li moze da se hendluje stack overflow i kako
 - test cases za XmlTreeSnapshot/XmlTreeUnmodified/MergeXmlTrees
 - mozda neki try/except napraviti kad se snima ovo stablo opcija, mozda je program u sjebanom stanju
-- Makefile.pl ima neke todo's, i nek proverava sebe za full rebuild
 - napraviti jos jedan finalni review za qalloc i bfile zajebanciju oko reportinga i init ordera
 - mozda dodati attribute format="hex" npr.
 - testirati ono prelamanje kada string ne mora da se kvotuje
 - obratiti paznju na slucaj kada je node tipa string, i prazan, da li je savedValue ok
 - provaliti interfejs perl/c i od sada pisati testove u perlu (ili pythonu)
 - proci ponekad kroz test makefile dependecies
-- implementirati bezbedni vsnprintf
-- izuciti gcc, da li moze da prosledjuje registre kao Watcom, i prebaciti se ako moze
-  http://www.ibiblio.org/gferg/ldp/GCC-Inline-Assembly-HOWTO.html
-- test za razotkrivanje steka: napraviti dva dos4gw exe-a sa razlicitom velicinom steka postavljenom iz linkera
 - relocation sekcija se goji, mozda smisliti neki specijalni fleg reloc koji ce biti samo offset u odnosu na prethodni
   (moze mozda i neko mini kodiranje, pa se fino prvo sortira i pusti to)
-- alink mozda ne bi trebalo da odvaja memoriju za .bss blokove
 - ne vidim entry point u map fajlu? jel to bag ili?
 - odraditi jednom spell check komentara
-- provaliti kako ispisivati linije u boji u perlu na windowsu 95
 - apdjetovati putanje do src fajlova u testovima sad kad je sve pretumbano
 - da make testova pozove i make koji pravi testove
 - restore taktika kad se zavrsi partija na nesto razumno (da pokrije nase prchkanje za vreme partije)
-- mislim da sad ne radi promena taktike za vreme utakmice
 - digni verziju servera (il nesto) za debug da bude nekompatibilan sa release-om
-- sigh... player2 pucnuo, partija krenula, player1 zaglavljen u lobiju.....
-  update: izgleda kad se brzo skroluje, pritisne pucanje a na prvom igracu jos
-  nije stigao da odskroluje do play game
   mozda nije stigao fire paket? (nije to u pitanju, ali takodje testirati i to)
 * na play match se bio zaglavio prvi, kad sam nesto drndao selektovao igraca
 - bilo bi jako kul pecovati novi nasm da moze da se asembluje ;)
@@ -91,11 +109,9 @@ TODO:
 - mali brojevi igraca >16 u edit tactics malo pomereni ulevo (kao da je x oduzeto malo)
 - dodatne mogucnosti soba (pogledati answer join game stringove)
 - istraziti da li moze biti problema ako imaju razlicite vrednosti za network timeout
-- regression testing - test changing teams when already in game lobby
 - time limit za drzanje parcijalnih paketa (proveriti, i po potrebi dodati)
 - shit! zvukovi za watchera - testirati kada bude komplet zvuk odradjen
 - trzanje sprajtova pri klupi
-- swap players bug kad je broj igraca trocifren (pred utakmicu/play match menu)
 - watcher - esc na pauzu (igraca)
 - istraziti da li moze nekako da se setuje trainingGame, i kakav bi to uticaj imalo na samu partiju
 - prosirenje hil formata za TomTom-a
@@ -111,29 +127,14 @@ TODO:
 - za kasnije, eventualno videti da se ukloni alokacija timova i da se direktno skladiste u selected teams buffer
 - da li ce buduci fix obuhvatati slucaj kada se loadujemo sa timovima, pa onda neko zameni?
 - memory leak kod watcher-a, mplobby:1035, mislim da je bilo kada je watcher pretisnuo escape
-- kad odem na select team, pa cancel, pise jebeni stdmenutext (mozda ima veze sto sam pre toga
-  klinuo tamo pa esc)
 - uvesti timeout za parcijalne pakete
 - test new patchit.com changes
-- za sada namestiti replay/continue da radi nakon partije
 - testirati result code-ove na kraju partije
-- ubaciti vizualni indikator kada je igra pauzirana, da ne izgleda kao da je
-  zabola
-- ne radi alt-f1 za vreme statistike
 - srpska latinica u chat (i uopste)
 - start game  -> '-' skip frames (prelazak sa meni itema na item)
-- jos malo iskomentarisati mpmenu.asm
-- 'poke' user-a (ako svi cekaju na njega da zazeleni)
 - napraviti website
-- ubaciti u pe2bin proveru validnosti pdata sekcije, kao i barem neke osnovne
-  provere u loader
-- kada je igrac povredjen za vreme partije, iscrtati na kratko vreme u gornjem
-  levom uglu treperuci krst u zavisnosti od tipa povrede
 - upustvo za multiplayer u readme.txt (kad bude release)
 - konzola! crtati uz pomoc DarkenRectangle (tu ce ici multiplayer chat)
-- cheat meni: pojavice se kada se u SWOS++ meniju postavi kursor na exit, drzi
-  dole i recimo 10 puta (ili pet) kratko pritisne pucanje (mozda ultra-brzi
-  igraci, sa ultra-jakim sutom i sl.)
 - zapisati negde (u readme.txt recimo) o tome sta raditi ako joypad pobrljavi
   (moze se desiti i da korisnik prikaci drugaciji joypad pa da pobrljavi)
 - mislim da sam jednom ostavio idle na pocetku partije par minuta (pre pocetnog
@@ -143,7 +144,6 @@ TODO:
   invertovanja)
 - assert_msg da prima printf-like parametre
 - case za test: slati pakete sa pogresnim ip-om (ili im modifikovati ip)
-- bug case: client dc, server restarts, client joins -> boom (wrong menu)
 - mplobby.c:203 memory leak, lobbyState = qAlloc(sizeof(LobbyState));
   (game loop timeout)
 - auto save replays (partija) za turnire
@@ -164,12 +164,10 @@ TODO:
 - nesto nije u redu sa timeout-om kada zatvorim jednog klijenta a drugi je na izmenama
 - mislim da nije dobra logika za promenu stanja (pauza+stats) za watchere
 - da pauza moze da se iskljuci na pucanje
-- dodati mozda timestamp u binary format
 - testirati unpatch na kraju, odigrati normalnu partiju nakon multiplayer partije
 - mozda kasnije ubaciti da moze chat da krene na bilo koji taster
 - testirati ponovo generisanje random imena za net play, zbog pretumbavanja
   random varijabli
-- u network opcije ban lista (mozda i tekst fajl)
 - mozda napraviti neki assert i za asm
 - proveriti da li je broj izmena (a i pitch type i sl.) dobar za vreme igre
 - f-ja da se zavrsi igra, pozivana iz alt-f1 hendlera
@@ -178,13 +176,10 @@ TODO:
   onda disconnected from the server dialog
 - eventualno dozvoliti obe kontrole da kontrolisu jednog igraca, i za igru i za
   namestanje tima
-- stvarno jebu kontrole kad se pogresno iskalibrira joypad
 - istraziti da li je team pointer u showTeamsMenuFunction zaista const
 - jednom prilikom proveriti da li moze da se izbaci disabledInputCycles i iskoristi clear flag
-- ubaciti game in progress odgovor
 - mislim da se no resources odgovor sa servera ne koristi trenutno, ispraviti to kasnije
 - kad stignes ponovo testiraj neuspesna logovanja na igru
-- neka statistika za mrezu (za vreme igre), broj izgubljenih frejmova, lag itd.
 - mozda (much later) optimizovati da se ne salje ping non stop nego samo ako
   nema aktivnosti (tj. da mu ostali paketi resetuju tajmer)
 - ukinuti margine na game lobby ekranu, iskoristiti celu sirinu tako da stane
@@ -217,12 +212,7 @@ TODO:
   stigli od servera? (sa izmenjenom izvornom ip adresom) javni/privatni kljuc
   bi to resio al ko ce da se cima...
 - sistem za lokalno banovanje/ignore igraca
-- close room (multiplayer)
-- dodati neki bolji efekat na about screen
-- provaliti zasto ne radi jednostavan perl kod za obrtanje niza :P
-- testirati Adler asm optimizaciju
 - prepravi movzx na cbw/cbd
-- napisati test programcic za IPX stek
 - zaista i proveri da li DOSBox odbacuje max length paket
 - ubaciti testiranje pinga mozda (pa prikazivati sa onim SWOS zvezdicama)
 - stavi opis u readme sta je to options.dat, sta je sve u njemu i sta ce se
@@ -244,8 +234,6 @@ TODO:
   da li to da patcnem
 - prilikom biranja koji ce tim da koristi primary, a koji secondary kit,
   proveriti koliko se boje preklapaju i odrediti najmanje slicne
-- napisati bar nekakvu dokumentaciju i staviti u readme.txt
-- za opcije: dopusti golmanima da budu izvodjaci penala ON/OFF
 - kada se bude imalo vremena srediti da se u replay snimaju i korektno
   prikazuju visoki brojevi igraca pri dobijanju zutog ili crvenog kartona
 - interesantno - sada je SWPE-ov interni replayer izgleda kvalitetniji od
@@ -264,7 +252,6 @@ TODO:
 - videti zasto se flag za snimanje highlighta pogresno setuje prilikom posete
   klupi
 - ukljuciti fix za draw comment bag (LoadAndPlayEndGameComment + 0x4f)
-- u pe2bin: obratiti paznju na obradu gresaka, zatvoriti fajl itd.
 - verovatno bi trebalo za exit na gore staviti da skace na najblizi entry
 - videti za onu gramatiku (na sajtu)
 - ubaciti u bindmp i da izbaci koliki je padding sekcija

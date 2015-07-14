@@ -57,7 +57,7 @@ endstruc
 ;
 ; %1 - menu name (label)
 ; %2 - before draw function (one-time initialization on menu load)
-; %3 - after draw function
+; %3 - after draw function (called once)
 ; %4 - on draw function (called repeatedly in menu loop)
 ; %5 - default entry
 

@@ -1,7 +1,7 @@
 all : ../bin/patchit.com
 
-pdata.asm : fcmp.pl $(SWOS_DIR)/swos_orig.exe $(SWOS_DIR)/patch_orig.exe
-	perl fcmp.pl "$(SWOS_DIR)\\swos_orig.exe" "$(SWOS_DIR)\\patch_orig.exe" \
+pdata.asm : fcmp.pl $(SWOS)/swos_orig.exe $(SWOS)/patch_orig.exe
+	perl fcmp.pl "$(SWOS)\\swos_orig.exe" "$(SWOS)\\patch_orig.exe" \
          >pdata.asm
 
 

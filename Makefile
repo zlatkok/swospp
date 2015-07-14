@@ -1,10 +1,12 @@
 # TODO: dist da zavisi od rel-a, & clean
 
 # set default shell
-SHELL = sh.exe
+SHELL := sh.exe
 
 # needed in sub-makefiles
-export SWOS_DIR = d:\games\swos
+ifndef SWOS
+export SWOS := d:\\games\\swos
+endif
 
 # variables used only here
 STORE_DIR = c:\\backup\\swos\\swospp
@@ -26,9 +28,9 @@ dbg : $(BIN_DIR)/loader.bin $(BIN_DIR)/patchit.com
 	@cd patch && $(MAKE)
 	@cd loader && $(MAKE)
 	@cd main && perl Makefile.pl dbg
-	@cp -f -u $(BIN_DIR)/swospp.bin $(SWOS_DIR)
-	@cp -f -u $(BIN_DIR)/loader.bin $(SWOS_DIR)
-	@cp -f -u $(BIN_DIR)/patchit.com $(SWOS_DIR)
+	@cp -f -u $(BIN_DIR)/swospp.bin $(SWOS)
+	@cp -f -u $(BIN_DIR)/loader.bin $(SWOS)
+	@cp -f -u $(BIN_DIR)/patchit.com $(SWOS)
 
 rel : $(BIN_DIR)/loader.bin $(BIN_DIR)/patchit.com
 	@cd pe2bin && $(MAKE)
@@ -36,17 +38,17 @@ rel : $(BIN_DIR)/loader.bin $(BIN_DIR)/patchit.com
 	@cd patch && $(MAKE)
 	@cd loader && $(MAKE)
 	@cd main && perl Makefile.pl rel
-	@cp -f -u $(BIN_DIR)/swospp.bin $(SWOS_DIR)
-	@cp -f -u $(BIN_DIR)/loader.bin $(SWOS_DIR)
-	@cp -f -u $(BIN_DIR)/patchit.com $(SWOS_DIR)
+	@cp -f -u $(BIN_DIR)/swospp.bin $(SWOS)
+	@cp -f -u $(BIN_DIR)/loader.bin $(SWOS)
+	@cp -f -u $(BIN_DIR)/patchit.com $(SWOS)
 
 $(BIN_DIR)/loader.bin :
 	@cd loader && $(MAKE)
-	@cp -f $(BIN_DIR)/loader.bin $(SWOS_DIR)
+	@cp -f $(BIN_DIR)/loader.bin $(SWOS)
 
 $(BIN_DIR)/patchit.com :
 	@cd patch && $(MAKE)
-	@cp -f $(BIN_DIR)/patchit.com $(SWOS_DIR)
+	@cp -f $(BIN_DIR)/patchit.com $(SWOS)
 
 dist : rel $(DIST_DIR)/swospp.zip
 

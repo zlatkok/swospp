@@ -74,7 +74,7 @@ static void removeHeapStats(void *heap)
             return;
         }
     }
-    WriteToLog(("qAlloc: Tried to remove non-existant heap stats."));
+    WriteToLog("qAlloc: Tried to remove non-existant heap stats.");
 }
 
 
@@ -116,6 +116,7 @@ void ExcludeBlocks()
 {
     excludeHeapBlocks(internalHeap, sizeof(internalHeap));
 }
+
 
 /** ValidateHeap
 
@@ -176,8 +177,8 @@ void checkMemoryLeaks(void *heap, int size)
         if (!p->size && p != (Block *)((char *)heap + size - sizeof(Block))) {
             int blockSize = p->next - ((dword)p - (dword)heap) - sizeof(Block);
             if (!isBlockExcluded(hs, (char *)p - (char *)heap)) {
-                WriteToLog(("qAlloc: Left over memory block at %#x, size %d, allocated at %s.\n",
-                    (dword)p + sizeof(Block), blockSize, p->origin));
+                WriteToLog("qAlloc: Left over memory block at %#x, size %d, allocated at %s.\n",
+                    (dword)p + sizeof(Block), blockSize, p->origin);
                 HexDumpToLog((char *)p + sizeof(Block), p->next - ((dword)p - (dword)internalHeap) - sizeof(Block),
                     "left over memory block");
                 leaks = true;
@@ -188,11 +189,11 @@ void checkMemoryLeaks(void *heap, int size)
         }
         p = (Block *)((char *)heap + p->next);
     } while (p != head);
-    WriteToLog(("qAlloc: Maximum memory allocated: %d bytes, maximum simultaneous allocations: %d",
-        hs->maxAllocated, hs->maxAllocations));
+    WriteToLog("qAlloc: Maximum memory allocated: %d bytes, maximum simultaneous allocations: %d",
+        hs->maxAllocated, hs->maxAllocations);
     if (!leaks) {
         assert(!(hs->currentAllocations - numExcludedBlocks) && !(hs->currentlyAllocated - totalExcludedMem));
-        WriteToLog(("qAlloc OK. No memory leaks."));
+        WriteToLog("qAlloc OK. No memory leaks.");
     }
     removeHeapStats(heap);
 }
@@ -299,7 +300,7 @@ void *qHeapAlloc(void *heap, int size)
         }
         p = (Block *)((char *)heap + p->next);
     } while (p != head);
-    WriteToLog(("qAlloc: Out of memory! Requested: %d bytes (heap is %#x)", size, heap));
+    WriteToLog("qAlloc: Out of memory! Requested: %d bytes (heap is %#x)", size, heap);
     return nullptr;
 }
 

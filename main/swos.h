@@ -55,7 +55,7 @@ union FixedPoint {
         data = num;
         return *this;
     }
-    operator int() const { return (int)data; }
+    operator int() const { return static_cast<int>(data); }
 };
 
 /* sprite structure used during the game */
@@ -150,6 +150,17 @@ typedef struct MenuEntry {
     void (*BeforeDraw)();
     void (*AfterDraw)();
 } MenuEntry;
+
+
+typedef struct Menu {
+    void (*onInit)();
+    void (*afterDraw)();
+    void (*onDraw)();
+    MenuEntry *currentEntry;
+    word numEntries;
+    char *endOfMenuPtr;
+} Menu;
+
 
 typedef struct TeamFile {
     byte teamFileNo;
@@ -439,7 +450,7 @@ int __cdecl sprintf(char *buf, const char *ftm, ...);
 #ifdef DEBUG
 /* we wanna overload these */
 void __cdecl WriteToLogFunc(dword messageClass, const char *fmt, ...);
-void HexDumpToLog(const void *addr, int length, const char *title);
+void HexDumpToLog(const void *addr, int length, const char *title = "memory block");
 void HexDumpToLog(dword messageClass, const void *addr, int length, const char *title);
 #endif
 
@@ -450,17 +461,14 @@ void FlushLogFile() asm ("FlushLogFile");
 void EndLogFile() asm ("EndLogFile");
 void __cdecl WriteToLogFunc(const char *fmt, ...);
 void __cdecl WriteToLogFuncNoStamp(const char *str, ...);
-#define WriteToLog(a) WriteToLogFunc a
-#define WriteToLogM(a) WriteToLogFuncM a
+#define WriteToLog(...) WriteToLogFunc(__VA_ARGS__)
 #define WriteToLogNoStamp(a) WriteToLogFuncNoStamp a
 #else
 #define EndLogFile()                ((void)0)
 #define FlushLogFile()              ((void)0)
-#define WriteToLog(a)               ((void)0)
-#define WriteToLogM(a)              ((void)0)
+#define WriteToLog(a, ...)          ((void)0)
 #define WriteToLogNoStamp(a)        ((void)0)
-#define HexDumpToLog(a, b, c)       ((void)0)
-#define HexDumpToLogM(a, b, c, d)   ((void)0)
+#define HexDumpToLog(a, ...)        ((void)0)
 #endif
 
 /* declare symbols from SWOS */
@@ -475,10 +483,10 @@ void __cdecl WriteToLogFuncNoStamp(const char *str, ...);
 static inline __attribute__((always_inline)) void DrawSprite16Pixels(int saveSprite)
 {
     asm volatile (
-        "push ebp                   \n\t"
-        "mov  ebp, %[saveSprite]    \n\t"
-        "call %[addr]               \n\t"
-        "pop  ebp                   \n\t"
+        "push ebp                   \n"
+        "mov  ebp, %[saveSprite]    \n"
+        "call %[addr]               \n"
+        "pop  ebp                   \n"
         :
         : [addr] "rm" (SWOS_DrawSprite16Pixels), [saveSprite] "rm" (saveSprite)
         : "cc", "memory", "eax", "ebx", "esi", "edi"
@@ -489,58 +497,63 @@ static inline __attribute__((always_inline)) void DrawSprite16Pixels(int saveSpr
 extern void DrawBitmap(int x, int y, int width, int height, const char *data);
 extern void SwitchToPrevVideoMode();
 extern void FatalError(const char *msg) __attribute__((noreturn));
-extern void EndProgram(bool abnormalExit) __attribute__((noreturn));
+extern void EndProgram(bool32 abnormalExit) __attribute__((noreturn));
 
 
 /* in printstr.c */
-void PrintSmallNumber(int num, int x, int y, bool inGame);
+void PrintSmallNumber(int num, int x, int y, bool32 inGame);
 
 /* use strictly these functions for interfacing with SWOS code */
 static inline __attribute__((always_inline)) void calla(void *addr)
 {
-    // clobber all 7 registers = 6 for fake output (including ebp) and 1 for input
-    int r1, r2, r3, r4, r5, r6;
+    /** There were problems relaying to GCC that this function should clobber all registers including the one
+        used to do the call, but not ebp. If we specify that 7 general registers were used ("r"), it would work
+        in case function does not have stack frame, even if ebp was wrongly assumed to be clobbered. However
+        once the stack frame was added ebp became unavailable for use and it caused impossible constraints error.
+        In case we reserved only 6 registers, and function did not use stack frame it would be possible that ebp
+        ended up as used register, and GCC might think that register that actually got used inside the function
+        did not change. Even explicitly listing registers ("=&abcdSD") was causing impossible constraints error.
+        Final incarnation bounds address to eax register, since all registers are assumed to be used anyway, and
+        seems to avoid previous pitfalls. */
     asm volatile (
-        "call %[addr]"
-        : [addr] "+r" (addr), "=&r" (r1), "=&r" (r2), "=&r" (r3), "=&r" (r4), "=&r" (r5), "=&r" (r6)
+        "push ebp       \n"
+        "call %[addr]   \n"
+        "pop  ebp       \n"
+        : [addr] "+a" (addr)
         :
-        : "cc", "memory"
+        : "ebx", "ecx", "edx", "esi", "edi", "cc", "memory"
     );
 }
 
-/* this version avoid pushing all the registers, in case we need it in SWOS code */
+/* this version avoids pushing all the registers, in case we need it in SWOS code */
 static inline __attribute__((always_inline)) void calln(void *addr)
 {
     asm volatile (
         "call %[addr]"
+        : [addr] "+r" (addr)
         :
-        : [addr] "r" (addr)
         : "cc", "memory"
     );
 }
 
-//test this!
+//untested!
 static inline __attribute__((always_inline)) void jmpa(void *addr)
 {
     asm volatile (
-        "jmp  %[addr]   \n\t"
-        "ret"
+        "jmp  %[addr]"
+        : [addr] "+r,m" (addr)
         :
-        : [addr] "rm" (addr)
     );
 }
 
 /* Modifications on ebp must be handled with special care. */
-static inline __attribute__((always_inline)) void calla_save_ebp(void *addr)
+static inline __attribute__((always_inline)) void calla_ebp_safe(void *addr)
 {
-    int r1, r2, r3, r4, r5, r6;
     asm volatile (
-        "push ebp       \n\t"
-        "call %[addr]   \n\t"
-        "pop  ebp       \n\t"
-        : [addr] "+r" (addr), "=&r" (r1), "=&r" (r2), "=&r" (r3), "=&r" (r4), "=&r" (r5), "=&r" (r6)
+        "call %[addr]"
+        : [addr] "+a" (addr)
         :
-        : "cc", "memory"
+        : "ebx", "ecx", "edx", "esi", "edi", "cc", "memory"
     );
 }
 
@@ -561,17 +574,18 @@ static inline __attribute__((always_inline)) void calla_save_ebp(void *addr)
 
     Takes up 7 bytes.
 */
-#define PatchHook(loc, hookFn)                      \
-    *(char *)loc = 0xb8;                            \
-    *(dword *)((char *)loc + 1) = (dword)hookFn;    \
-    *(word *)((char *)loc + 5) = 0xd0ff;
+#define PatchHook(loc, hookFn)                          \
+    {                                                   \
+        *(char *)loc = 0xb8;                            \
+        *(dword *)((char *)loc + 1) = (dword)hookFn;    \
+        *(word *)((char *)loc + 5) = 0xd0ff;            \
+    }
 
 /* Version that will patch and pad with nops. */
 #define PatchHookAndPad(loc, hookFn, padding)   \
-    PatchHook(loc, hookFn);                     \
     {                                           \
-        int i;                                  \
-        for(i = 0; i < padding; i++)            \
+        PatchHook(loc, hookFn);                 \
+        for(int i = 0; i < padding; i++)        \
             ((char *)loc)[i + 7] = 0x90;        \
     }
 

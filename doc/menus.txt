@@ -1,0 +1,767 @@
+Meni se cuva u obliku strukture. Prvo ide header, zatim stavke po 56
+bajtova.
+
+Registri na ulazu u menu entry funkcije (before_draw, after_draw itd.) su:
+A5 - pointer na stavku koja dobija event
+A0 - pointer na samu funkciju (jer se i poziva indirektno preko A0)
+
+Na ulazu u init i before_draw funkcije menija A6 ce pokazivati na meni
+strukturu.
+
+Header (velicina 22 bajta):
+
+           +0  - init funkcija
+           +4  - after_draw funkcija
+           +8  - meni funkcija (ako je ima, inace NULL) (dword)
+                 nesto u fazonu on_draw
+           +12 - pointer na trenutno aktivnu stavku
+                 (prema najnovijim saznanjima, mozda i selektovanu)
+           +16 - broj stavki u meniju (mozda ima i jos jednu funkciju)
+           +18 - pointer na kraj menija (ukljucujuci i dodatne stdmenutext
+                 stringove)
+
+Stavka menija, idu nakon headera:
+
+       0  ; da li je vec nacrtan? (word)
+            0 - ne
+            1 - da
+       2  ; redni broj (0-based)
+       4  ; da li je vidljiv?
+            0  - crtaj
+            !0 - ne
+       6  ; is_disabled (word) (1 = disabled, 0 = not)
+       8  ; leva stavka   ; broj stavke koja se selektuje kada se pritisne
+       9  ; desna stavka  ; levo, desno, gore, dole respektivno
+       10 ; gornja stavka
+       11 ; donja stavka
+       12 ; levo          ; [0 = gore, 1 = desno, 2 = dole, 3 = levo]
+       13 ; desno         ; pravac kretanja koji se bira kada je stavka
+       14 ; gore          ; iskljucena ili nevidljiva
+       15 ; dole
+       16 ; leva stavka   ; stavka koja se selektuje u slucaju da je ova stavka
+       17 ; desna stavka  ; iskljucena ili nevidljiva
+       18 ; gornja stavka
+       19 ; donja stavka
+       20 ; x
+       22 ; y
+       24 ; width
+       26 ; height
+       28 ; tip1 [0,1,2,3] (word)
+            0: nista ne crta se u prvom krugu
+            1: ako je 1, onda se ne crta nista, nego se poziva funkcija na
+               offsetu 30 (dword) sa parametrima x i y (u D0 i D1)
+            2: standardna stavka - pozadina i okvir
+               Donji bajt je boja pozadine, gornji bajt je boja unutrasnjeg
+               okvira. Ako je boja unutrasnjeg okvira nula, ne crtaj ga.
+               Spoljasnji okvir se crta samo ako ima prostora (visina je veca
+               od 6 ili 8). Ako je boja pozadine nula, ne crta se nikakav
+               okvir, a pozadina se crta sa bojom 15 (zuta-zelena-crna).
+            3: sprajt, i na offsetu 30 je njegov index u sprite.dat (word)
+
+       30 ; switch(ofs28) {
+            case 1:
+                ofs30 = ptr na funkciju koja prima x i y kao parametre
+            case 2:
+                ofs30 = nizi nibble: boja pozadine stavke
+                        visi nibble: boja okvira
+            case 3:
+                ofs30 = indeks sprajta
+            }
+            0 - nemoj da iscrtavas (nebitno)
+
+       34 ; tip2 [0,1,2,3,4,5,6,7]
+
+            0: nema crtanja, null entry
+            1: na ofs38 je funkcija, pozovi je sa parametrima x i y
+               (D0 i D1)
+            2: na ofs38 je pointer na string.
+               Ukoliko je pointer-1, onda se za string odvaja dodatnih 70
+               bajtova na posle kraja menija i upisuje se STDMENUTEXT, sto
+               znaci da ce string kasnije biti popunjen od strane neke od
+               funkcija.
+            3: ofs38 je indeks sprajta koji se crta
+            4: ofs38 je pointer na string tabelu:
+                 0 - pointer na indeks promenljivu
+                 4 - word, vrednost pocetnog indeksa
+                 6 - dalje ide tabela pointera na stringove
+               ispisi string iz tabele koji indeksira indeksna promenljiva
+            5: multi-line tekst. Prvi bajt je broj linija, i zatim ide isto
+               toliko null-terminated stringova (ne pointera). Ofs36, donji
+               nibl, predstavlja boju teksta
+            6: ofs38 je broj (word). Konvertuje se u string i ispisuje
+               (koristi se kod za tip 2).
+            7: sprite copy. Ofs38 je pointer na sledecu strukturu:
+                 0 - source sprite index
+                 2 - dest sprite index
+                 4 - tablica za konverziju boja, duzine 32 bajta
+               Kopira se prvi sprajt u drugi, drugi se konvertuje u 8 boja i na
+               kraju crta.
+
+       36 ; Donji nibl ofs36 predstavlja boju teksta. Ako je nula, onda upisi
+            dvojku (bela boja). Nibl 1 oznacava da li se crta sa malim ili
+            velikim fontom (tj. bit 4, a bitovi 5,6,7 moraju biti nula, posto
+            imamo samo dve mogucnosti). Ako je setovan bit 15, string je
+            left-aligned, a ako je setovan bit 14, string je right aligned.
+            Ako nijedan od ta dva nije setovan, string se centrira u entry-ju.
+            Ako 9. bit nije setovan, i ofs34 je razlicito od nule, entry se
+            crta bez teksta. Ako je setovan bit 13, tekst ce lagano treperiti.
+       38 ; videti ofs34
+       42 ; funkcija on_select
+       46 ; maska za kontrole (and-uje se sa control word-om)
+       48 ; funkcija before_draw, na ulazu esi = A5 -> stavka
+       52 ; funkcija after_draw
+
+    sizeof (menu_item) = 56
+
+Kordinate stavki su po x osi pomerene udesno za 8 piksela. Tako se stavka sa x
+koordinatom nula u stvari nalazi na osmom pikselu ekrana.
+
+Ukoliko tip1 ili tip2 nisu u propisanom opsegu, izdaje se int3 i ulece u
+beskonacnu petlju. Taj int3 ubija program ako nema debuggera.
+
+Ovo gore se odnosi na (kako sam ih nazvao) "screen menije". Postoje i
+"staticki" (takodje moj naziv) meniji, koje procedura ConvertMenu
+konvertuje u screen menije, i kopira ih u bafer current_menu. Oni imaju
+drugaciji format.
+
+Uvek prvo ide header. Prvih 16 bajtova se poklapa sa screen menijem (oni se
+uvek kopiraju neizmenjeni). Posle ide broj stavki promenljive duzine,
+kraj jedne je oznacen tipom 0 (word), a kraj menija je oznacen sa -999.
+
+Prilikom konverzije, na x koordinate stavki dodaje se 8.
+
+
+static_menu_header:
+
+        Videti header za screen meni (prvih 16 bajtova)
+        Jedino sto se razlikuje je offset 12 - kod statickog je to broj aktivne
+        stavke, dok se to kod ekranskog menija konvertuje u pointer
+
+sizeof static_menu_header = 16
+
+Stavka (promenljiva velicina):
+
+        0 - x         ;
+        2 - y         ; ova cetiri polja su fiksna,
+        4 - sirina    ; tj. uvek prisutna
+        6 - visina    ;
+        8 - tip (2, na osnovu ovoga ide skok, ima ih 22)
+       10 - sada idu neka 4 bajta, koja oznacavaju entry-je na koje
+       11 - se prelazi kada se pritisne gore, dole, levo, desno, respektivno
+       12
+       13
+       14 - tip (4)
+       16 - boja frejma i pozadine stavke
+       18 - tip (8)
+       20 - string flags
+       22 - pointer na tekst polja
+       26 - tip (13)
+       28 - funkcija tog polja (selektuje se samo ako je pritisnuto pucanje)
+       30 - tip (0 - sto oznacava kraj stavke)
+
+       (ovo je samo primer, ne mora ovako da izgleda)
+
+
+Znacenje polja se menja na osnovu tipa (moze da ih ima cak vise ili
+manje), sve dok se ne naleti na tip 0.
+
+Znacenje header wordova (oni idu pre pocetka stavke):
+
+-999   kraj menija
+-998   sledeca 2 worda su menu_x i menu_y (dodaju se na x i y stavki)
+-997   sve nailazece tipove stavljaj u temp menu entry (koji se koristi za
+       inicijalizaciju svih stavki)
+-996   vrati temp menu entry na normalu (pozovi InitMenuEntry)
+
+Tipova ima 22.
+---------------------------
+TIP 0:
+
+oznaka za kraj stavke
+---------------------------
+TIP 1:  (nevidljiva stavka)
+
+ofs4 = 1
+---------------------------
+TIP 2:  (pozicije)
+
+sledeca 4 bajta postavi na offsete:
++8
++9
++10
++11
+---------------------------
+TIP 3:  (funkcija 1)
+
+ofs28 = 1
+ofs30 = dword
+
+Taj dword je funkcija, i nista se ne crta
+---------------------------
+TIP 4:  (okvir stavke)
+
+ofs28 = 2
+ofs30 = word (boja pozadine)
+ofs32 = 0
+---------------------------
+TIP 5:  (sprajt 1)
+
+ofs28 = 3 (word)
+ofs30 = word (indeks sprajta)
+ofs32 = 0 (word)
+---------------------------
+TIP 6:  (pogresan tip)
+
+ofs28 = 4
+ofs30 = word
+ofs32 = 0
+Verovatno zaostatak pri konverziji koda - ovakvo
+nesto izazvalo bi prekid rada programa.
+---------------------------
+TIP 7:  (funkcija 2)
+
+ofs34 = 1 (word)
+ofs36 = 0 (word)
+ofs38 = dword (funkcija koja prima parametre x i y)
+---------------------------
+TIP 8:  (string)
+
+ofs34 = 2 (word)
+ofs36 = word (string flags)
+ofs38 = dword (text ptr)
+---------------------------
+TIP 9:  (sprajt 2)
+
+ofs34 = 3
+ofs36 = 0
+ofs38 = word (indeks sprajta)
+ofs40 = 0 (dopuni do dworda)
+---------------------------
+TIP 10: (string tabela)
+
+ofs34 = 4
+ofs36 = word (string flags)
+ofs38 = dword (pointer na string tabelu)
+---------------------------
+TIP 11: (multi-line text)
+
+ofs34 = 5
+ofs36 = word (string flags)
+ofs38 = dword (pointer na bajt - broj stringova, zatim sami stringovi)
+---------------------------
+TIP 12: (broj)
+
+ofs34 = 6
+ofs36 = word (string flags)
+ofs38 = word (broj koji se ispisuje)
+ofs40 = 0 (dopuni do dworda)
+---------------------------
+TIP 13: (on select funkcija - samo pucanje)
+
+ofs46 = 32
+ofs42 = dword
+funkcija on_select
+---------------------------
+TIP 14: (on select funkcija - sve kontrole dolaze u obzir)
+
+ofs46 = word
+ofs42 = dword (funkcija on select)
+---------------------------
+TIP 15: (before draw funkcija)
+
+ofs48 = dword
+Funkcija before draw.
+---------------------------
+TIP 16: (after draw funkcija)
+
+ofs52 = dword
+Funkcija after draw.
+---------------------------
+TIP 17: (levo preskakanje)
+
+ofs16 = byte (sledeca stavka ako je ova iskljucena ili nevidljiva)
+ofs12 = byte (sledeci pravac pretrage, pravac kontrola)
+---------------------------
+TIP 18: (desno preskakanje)
+
+ofs17 = byte
+ofs13 = byte
+---------------------------
+TIP 19: (gornje preskakanje)
+
+ofs18 = byte
+ofs14 = byte
+---------------------------
+TIP 20: (donje preskakanje)
+
+ofs19 = byte
+ofs15 = byte
+---------------------------
+TIP 21: (sprite copy)
+
+ofs34 = 7
+ofs36 = 0
+ofs38 = dword (pointer na strukturu, videti opis ofs34)
+
+
+====================
+Pseudokod od meni funkcija:
+
+--------
+DrawMenu
+
+lin_adr_384k -> virtualni ekran na koji se crta za vreme menija
+Crta se fiksno current_menu.
+
+- iskopiraj title.256 na virtuelni ekran
+- resetuj polje already_drawn svim stavkama
+- ukoliko meni ima on_draw funkciju, izvrsi je
+
+- za svaku stavku {
+      // 13. bit oznacava treperenje i ako je setovan 8 frejmova crtaj sa
+      // tekstom, sedam bez
+      if (ofs34 == 0 || !(ofs36 & 0x2000) (13.bit) == 0 ||
+          (++blink_counter & 0x0f) <= 7) {
+          nacrtaj stavku, pozovi DrawMenuItem
+      } else {
+          push ofs38 (text pointer)
+          ofs38 = 0 (anuliraj tekst)
+          if (ofs30 (boja?) != 0)
+              DrawMenuItem
+          pop ofs38
+      }
+  }
+
+- nacrtaj frejm oko trenutno selektovane stavke
+- uradi flip
+
+
+------------
+DrawMenuItem
+
+Prima parametar u A5, pointer na stavku koju crta.
+
+- proveri da li je stavka nevidljiva, ako jeste, odmah izadji (is_invisible)
+- setuj already_drawn na 1
+- ukoliko postoji before_draw funkcija za stavku
+    - izvrsi funkciju
+    - ponovo proveri is_invisible polje, u slucaju da ga funkcija promeni i
+      vrati se ako je setovano
+- switch (ofs28) { // entry_type
+  case 0:
+      break;
+  case 2:  // obicna stavka, izgleda
+      if ((color = ofs30) & 0x0f == 0) { // ofs30 = boja
+          if (drawitem_check == 0) break; // uvek je nula, nikad se ne menja
+          color = 15;
+          DrawMenuBack(color & 0x0f, x, y, width, height); // color = ofs30
+      } else {
+          if (height > ((color_table_length == 0 || x < 160) ? 8 : 6))
+              DrawMenuBack(color, x, y, width, height);
+              // crta frejm sa konverzijom boje
+              DrawThickFrame(color, x, y, width, height);
+          } else {
+              DrawMenuBack(color, x, y, width, height);
+          }
+          if ((ofs30 & 0xf0) >> 4 == 0) break;
+          // crta frejm bez konverzije boje
+          DrawMenuFrame((ofs30 & 0xf0) >> 4, x + 1, y + 1, width - 2,
+                        height - 2);
+      }
+      break;
+  case 3:  // sprajt
+      DrawSprite(x, y, (word)ofs30); // ofs30 je sada sprajt indeks
+      break;
+  case 1:  // funkcija
+      ofs30 = funkcija sa dva parametra (u D0 i D1)
+      // na ulazu A5 -> stavka
+      ofs30(x, y);
+      break;
+  default:
+      eksplodiraj - moguce vrednosti su samo 0, 1, 2, 3
+  }
+
+  switch(ofs34) {
+  case 0:
+      break;
+draw_text:
+  case 2:  // tekst
+      if (ofs38 == 0) break;
+
+      char_tables dd offset small_chars_table
+                  dd offset big_chars_table
+
+      A1 = char_tables[(ofs36 & 0xf0) >> 2];
+      // ofs36 - nibble 1 = mali/veliki tekst - ali koristi se samo 4. bit
+      // bitovi 5, 6, 7 moraju biti nula
+      // preuzmi visinu karaktera iz tablice, chars_h
+      D2 = height - char_h;
+
+      if (D2 != 1)
+          if (D2 != 3)
+              D2 /= 2;
+          else
+              D2 = 2;
+
+      D2 += y; // (height - char_h) / 2 + y, D2 = text start y
+      A0 = tekst;
+
+      if (ofs36 & 0x8000) { // najvisi bit setovan - bez centriranja po x-u
+          D1 = x;
+          D1 += ofs28 ? 2 : 0;
+          D3 = ofs36 & 0x0f;
+          D3 = D3 ? D3 : 2;
+          delta_color = 0;
+          // parametri: x, y, boja teksta, tekst, chars table)
+          DrawMenuText(D1, D2, D3, A0, A1);
+          // ukratko, iscrtaj tekst bez centriranja po x
+      } else if (ofs36 & 0x4000) { // drugi najvisi bit setovan - priljubi
+          D1 = x + width - 1;   // tekst uz desnu ivicu stavke
+          D1 -= ofs28 ? 2 : 0;
+          D3 = ofs36 & 0x0f;
+          D3 = D3 ? D3 : 2;
+          delta_color = 0;
+          // parametri: x (kraj teksta), y, boja teksta, tekst, chars table
+          DrawMenuTextRight(D1, D2, D3, A0, A1);
+          // ukratko, iscrtaj right-aligned string
+      } else { // dva najvisa bita nisu setovana
+          D1 = width / 2 + x;
+          D3 = ofs36 & 0x0f;
+          D3 = D3 ? D3 : 2;
+          // parametri: x (sredina teksta), y, boja teksta, tekst, chars table
+          DrawMenuTextCentered(D1, D2, D3, A0, A1);
+          // ukratko, iscrtaj centriran string
+      }
+      break;
+  case 3:  // sprajt
+      D3 = ofs38;
+      if (D3 == 0) break;
+draw_sprite:
+      DrawSprite(D3,                               // sprite index
+                 x + width / 2 - sprite_width / 2,    // x
+                 y + height / 2 - sprite_height / 2); // y
+      // nacrtaj sprajt centriran u sredini stavke
+      break;
+  case 4:  // string tabela, ofs38 = pointer na var_string tabelu
+      index_ptr = *(dword*)ofs38; // prvo polje je ptr na indeks promenljivu
+      ofs38 += 4;
+      index = *(word*)index_ptr;
+      start_index = *(word*)ofs38; // drugo polje je pocetni indeks
+      index -= start_index;        // "popravi" indeks
+      A0 = ((dword*)ofs38)[index]; // A0 -> trenutni string
+      goto draw_string; // ispisi string, takodje vaze flegovi sa ofs36
+      break;
+  case 5:  // multi-line tekst (byte, broj linija, pa toliko C-stringova)
+      if (ofs38 == 0) break;
+      A1 = chars_table[(ofs36 & 0xf0) << 2];
+      D1 = x + width / 2;
+      A0 = ofs38;
+      D4 = *(byte*)A0;
+      A0++;
+      if (D4 == 0) break;
+      D5 = height;
+      D0 = chars_height;
+      D0 *= D4; // visina karaktera * broj linija
+      D5 -= D0; // visina stavke - visina karaktera * broj linija
+      D4++;        // br. linija ++ (da se izbegne deljenje sa nulom, ili da
+                         na kraju ostane jedna prazna linija)
+      D5 /= D4; // (visina stavke - visina karaktera * broj linija) /
+                      // (broj linija + 1) - prostor izmedju linija
+      D2 = y;
+      D2 += D5;
+      D5 += chars_height;
+      D4 -= 2;     // broj linija -= 2, ona dodata malopre + jos jedna zbog
+                      // petlje
+new_line:
+      D3 = ofs36 & 0x0f;
+      D3 = D3 ? D3 : 2;
+      delta_color = 0;
+      DrawMenuTextCentered;
+      D2 += D5; // povecaj y za prostor izmedju linija
+      while (*A0++);
+      if (--D4) goto new_line;
+      break;
+  case 6:  // broj
+      // ofs38 = word
+      Int2Ascii(ofs38, nubers_buffer);
+      A0 = numbers_buffer;
+      goto draw_text;
+      break;
+  case 1:  // funkcija
+      // ofs38 = funkcija
+      ofs38(x, y); // A5 -> entry
+      break;
+  case 7:  // sprite copy
+      // ofs38 = dword, ptr ka sprite copy strukturi
+      src_sprite = *(word*)ofs38;
+      ofs38 += 2;
+      dest_sprite = *(word*)ofs38;
+      ofs38 += 2;
+      CopyWholeSprite(src_sprite, dest_sprite);
+      ConvertColors(dest_sprite, ofs38); // ofs38 je sada ptr na tablicu boja
+      D3 = dest_sprite;
+      goto draw_sprite;
+  default:
+      eksplodiraj - moguce vrednosti su samo 0..7
+  }
+
+- ukoliko postoji after_draw funkcija, izvrsi je
+
+
+------------
+DrawMenuBack(int color, int x, int y, int width, int height);
+
+Parametri:
+    D0 - color
+    D1 - x
+    D2 - y
+    D3 - widht
+    D4 - height
+
+Postavi delta_color na nulu i pozovi DrawEmptyMenuItem sa istim parametrima.
+
+
+-----------------
+DrawEmptyMenuItem(int x, int y, int width, int height, int color);
+
+Parametri:
+    D0 - x
+    D1 - y
+    D2 - width
+    D3 - height
+    D4 - color
+
+/* tablica za konverziju boja pozadine stavki menija */
+menuitem_colortable db 96, 96, 96, 32, 64, 64, 64, 96, 32, 96, 128, 160, 64,
+                    db 192, 224, 224
+
+/* ako je sirina ili visina 1, uradi najobicnije kopiranje, uz sabiranje sa
+   delta_color */
+if (width == 1 || height == 1) {
+    - na zadatu x i y poziciju plotuj boja + delta_color
+/* inace pravi nijanse uz pomoc fill.256 */
+} else {
+    - izracunaj offset u vscreen i fill.256 uz pomoc koordinata
+    - pixel na vscreen-u = boja + odgovarajuci piksel iz fill.256
+    }
+}
+
+Broj boja koje mogu imati pozadine stavki je 16. One se konvertuju preko
+menuitem_colortable tablice u DrawEmptyMenuItem. U radnoj paleti postoji vise
+grupa nijansi od po 16 boja. Posto meniji mogu imati samo 16 boja, njihova
+boja se konvertuje u pocetak nijanse, i na nju se dodaju pikseli fill.256 koji
+su napravljeni tako da budu lepo nijansirani - pitanje je samo u kojoj boji.
+U fill.256 se koriste samo 32 boje (indeksi 0..31), tako da grupe nijansi u
+radnoj paleti mogu imati maksimum 32 boje.
+
+Grupe nijansi:
+
+(boje sa nizim indeksom su tamnije)
+
+32 ..63   - plava prelazi u crnu
+64 ..95   - narandzasta prelazi u smedju
+96 ..127  - rozikasta prelazi u braon
+128..159  - svetlo crvena u jarko crvenu (skoro da i nema razlike)
+160..191  - plava u ljubicastu
+192..223  - svetlo plava u plavu
+224..255  - zuta-zelena-crna
+
+Boje od 0 do 31 (da budemo kompletni):
+
+16..31 - prelaz iz bele u smedju
+
+0  - skoro crna       <  0,   0,  36>
+1  - siva             <180, 180, 180>
+2  - bela             <252, 252, 252>
+3  - prava crna       <  0,   0,   0>
+4  - vrlo tamna braon <108,  36,   0>
+5  - smedja           <180,  72,   0>
+6  - narandzasta      <252, 108,   0>
+7  - tamnija siva     <108, 108, 108>
+8  - svetlija crna    < 36,  36,  36>
+9  - vrlo tamna siva  < 72,  72,  72>
+10 - crvena           <252,   0,   0>
+11 - plava            <  0,   0, 252>
+12 - nesto vrlo tamno <108,   0,  36>
+13 - bledo plava      <144, 144, 252>
+14 - zelena           < 36, 144,   0>
+15 - zuta             <252, 252,   0>
+
+Uzvesi sve ovo u obzir, boje koje se koriste u crtanju pozadine menija su:
+                                      spoljnji okvir:
+0  - rozikasta u braon              [bez pozadine i okvira]
+1  -          -||-                  [sivi]
+2  -          -||-                  [-||-]
+3  - plava u crnu                   [-||-]
+4  - narandzasta u smedju           [narandzasti]
+5  -        -||-                    [   -||-    ]
+6  -        -||-                    [zuti]
+7  - rozikasta u braon              [sivi]
+8  - plava u crnu                   [-||-]
+9  - rozikasta u braon              [-||-]
+10 - svetlo crvena u jarko crvenu   [-||-]
+11 - plava u ljubicastu             [bledo plavi]
+12 - narandzasta u smedju           [crveni]
+13 - svetlo plava u plavu           [sivi]
+14 - zuta-zelena-crna               [-||-]
+15 -      -||-                      [-||-]
+
+Odavde sledi da se za crtanje pozadine stavki efektivno koristi samo 7 boja
+(nijansi).
+
+Ukoliko DrawEmptyMenu dobije da crta stavku sirine ili visine 1 (linija, od
+frejma verovatno), onda se ne koristi fill.256, jedino se na boju dodaje
+vrednosti delta_color.
+
+--------------
+DrawThickFrame(int color, int x, int y, int width, int height);
+
+Parametri:
+     D0 - color
+     D1 - x
+     D2 - y
+     D3 - width
+     D4 - height
+
+frame_colors_table db 1, 9, 1, 9, 1, 9, 1, 9, 6, 9, 6, 4, 15, 4, 1, 9, 1, 9, 1,
+                   db 3, 1, 9, 13, 8, 10, 9, 1, 9, 1, 9, 1, 9
+
+- prvo konvertuj boju uz pomoc gornje tablice
+- na x i y koordinatama nacrtaj vertikalnu liniju duzine width
+- zatim na istim koordinatama iscrtaj horizontalnu liniju duzine height
+- horizontalna linija na x, y + height - 1, duzine width
+- vertikalna linija na x + width - 1, y, duzine height
+- tako se dobija rectangle oko zadane stavke
+
+Iz frame_colors_table se koristi svaka druga boja (parna), jer se indeksira
+wordom. Moguce boje za okvir su:
+
+0  - siva
+1  - siva
+2  - siva
+3  - siva
+4  - narandzasta
+5  - narandzasta
+6  - zuta
+7  - siva
+8  - siva
+9  - siva
+10 - siva
+11 - bledo plava
+12 - crvena
+13 - siva
+14 - siva
+15 - siva
+
+Jedinstvenih boja ima 5.
+
+Svetleci kursor
+---------------
+
+Njega crta DrawSelected. Svaki frejm se povecava promenljiva
+game_timer_index, koja se koristi kao indeks u tablicu koja sadrzi boje:
+color_table_shine dw 2, 2, 1, 1, 7, 7, 1, 1
+Kursor se azurira 70 puta u sekundi.
+
+--------
+MenuProc
+
+- call ReadTimerDelta -> podesi last_timer_index, game_timer_index i
+                                timer_difference
+- nacrtaj meni (DrawMenu), sada je meni na virtualnom ekranu
+ax = check_here > 50 ? 4 : 2;
+while (timer_index < ax); // loop
+timer_index = 0;
+- call ReadGamePort -> podesi joy1_X, joy1_Y, joy2_X, joy2_Y
+- sacekaj retrace
+- reprogramiraj PIT na interval PIT_countdown
+- fejduj, ako je potrebno (menu_fade flag)
+- call CheckControls -> podesi gomilu promenljivih u vezi kontrola
+
+if (sound_off != 1 && cd_audio_playing == -1 && !(IOCTL_CDROM_Read & 0x200)) {
+    call FadeOutCDMusic
+    call CDROM_StopAudio
+    call TryMIDIPlay
+}
+
+if ((A5 = Menu.selected_entry) != 0) goto item_selected;
+if (final_controls_status < 0) return; // nista nije pritisnuto
+if (previous_item == 0) goto item_selected;
+Menu.selected_entry = previous_item;
+A0 = previous_item;
+goto is_visible;
+
+item_selected:
+controls_status = 0;
+if ((A0 = A5.on_select) == 0) goto controls_inactive;
+
+D7 = 0;
+D7 |= short_fire ? 0x20 : 0;
+D7 |= fire ? 0x01 : 0;
+D7 |= left ? 0x02 : 0;
+D7 |= right ? 0x04 : 0;
+D7 |= up ? 0x08 : 0;
+D7 |= down ? 0x10 : 0;
+
+if ((D0 = final_controls_status) < 0) goto nothing_joy1;
+if ((D0 >> 1) == 0) goto joy1_up;
+if ((D0 >> 1) == 0) goto joy1_right;
+if (D0 == 2) goto joy1_down;
+D7 |= 0x40;
+goto nothing_joy1;
+
+joy1_right:
+D7 |= 0x80; goto nothing_joy1;
+
+joy1_up:
+D7 |= 0x100; goto nothing_joy1;
+
+joy1_down:
+D7 |= 0x200;
+
+nothing_joy1:
+
+if (A5.controls_flag == -1 || A5.controls_flag & D7) {
+    if (sound_off != 1 && cd_audio_playing == -1) {
+        call FadeOutCDAudio
+        call CDROM_StopAudio
+        call TryMIDIPlay
+    }
+    controls_status = D7;
+    - izvrsi menu selected proc
+}
+
+controls_inactive:
+if (fire != 0) return;
+if ((D7 = final_controls_status) < 0) return;
+A0 = A5; // trenutna stavka
+D6 = D7; // final_controls_status
+A1 = dseg_115356; // neka tablica, dw 2, 1, 3, 0
+                     // 0 = gore, 1 = desno, 2 = dole, 3 = levo
+D6 &= 6;  // maskiraj, ostaju samo gore/desno/dole/levo vrednosti
+D6 = A1[D6];
+
+no_active_entry:
+D0 = [A0 + D6 + 8];
+if (D0 == -1) return;
+
+some_sort_of_loop:
+D0 &= 0xff;
+call CalcMenuEntryAddress; // A0 -> stavka D0
+if (A0.is_disabled != 0) goto disabled;
+if (A0.is_invisible == 0) goto is_visible;
+
+disabled:
+if ([A0 + D6 + 12] == -1) goto no_active_entry;
+D0 = [A0 + D6 + 16]; // izaberi sledeci entry
+D6 = [A0 + D6 + 12]; // izaberi pravac kojim se dalje ide
+goto some_sort_of_loop;
+
+is_visible:
+previous_item = Menu.selected_entry;
+Menu.selected_entry = A0;
+if (A5.entry_type1 == 0) goto DrawMenu
+else goto CallDrawMenuItem;
+
+@@out:
+retn

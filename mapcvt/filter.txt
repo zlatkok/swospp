@@ -35,7 +35,7 @@ EndProgram, prefix SWOS_, function
 CommonMenuExit
 nextGoalPtr
 goal_base_ptr
-currentMenu
+currentMenu, Menu *
 current_hil_ptr
 hil_num_goals
 hil_file_buffer
@@ -46,7 +46,7 @@ SelectFileToSaveDialog
 ShowMenu, function
 CalcMenuEntryAddress, function
 aSetup_dat
-setup_dat_buffer
+setupDatBuffer
 WriteFile
 controlWord, word
 joy1Status, word
@@ -62,7 +62,7 @@ FlipInMenu
 DrawMenuTextCentered
 lin_adr_384k, char *
 ShowErrorMenu, function
-aExit
+aExit, array char
 SetExitMenuFlag, function
 
 ### controls
@@ -179,9 +179,9 @@ aPitchType
 aGameLength
 aSubstitutes
 aFrom
-SaveOptions
+SaveOptions, function
 RestoreOptions
-DrawMenuItem
+DrawMenuItem, function
 aOff
 aOn
 exitMenu
@@ -269,7 +269,7 @@ AIL_stop_play, function
 SWOS
 currentMenuPtr
 ExitChooseTeams
-menuFade
+menuFade, word
 contAbortResult
 CallAfterDraw
 continueAbortMenu
@@ -359,13 +359,19 @@ saveFileName, array char
 SaveCareerSelected, function
 StartContest, function
 PrepareMenu, function
-SWOS_MainMenu, array byte
+SWOS_MainMenu, array char
 playMatchTeam1Ptr, TeamFile *
 playMatchTeam2Ptr, TeamFile *
 tact_4_4_2, array Tactics
 editTacticsCurrentTactics, array Tactics
 tacticsStringTable, array char *
 InitializeTacticsPositions, function
+InitMainMenuStuff, function
+hexDigits, array const char
+continueMenu, array char
+FadeOut
+LoadFillAndSwtitle
+screenWidth
 aUSER_A, array char
 aUSER_B, array char
 aUSER_C, array char

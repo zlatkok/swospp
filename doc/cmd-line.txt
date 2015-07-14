@@ -1,0 +1,35 @@
+Original SWOS command line switches:
+
+/h - use EGA graphics mode (actually disabled by SWOS++)
+/f - don't use EGA graphics mode
+/n - allocate less memory (4mb version I believe)
+
+Command line parsing is at cseg:1adbf
+
+
+SWOS++ additional command line switches:
+
+/s<game name> - go directly to multiplayer lobby, and host a game called
+                <game name>
+/c<game name> - search for a game name <game name>, and if found try to connect
+                to it automatically
+/t<number>    - set timeout for game search (/c paremeter), it is given in
+                seconds, range is 5 to 60 seconds, if ommited default timeout
+                of 30 seconds will be used
+/i<file name> - name of info file that will be used by SWOS++ to write various
+                events and informations and about the game
+/p<nickname>  - set player nickname to what is given; it is only used for
+                current session and does not interfere with normal options; if
+                ommited saved nickname from multiplayer options will be used
+
+Parameters follow directly after switches, no spaces, If a string parameter
+contains spaces, place it in quotes.
+If /s or /c with game name was given game will try to go directly into
+multiplayer lobby as server or client.
+
+
+Examples:
+
+C:\SWOS>swos /s"DRAGONS LAIR"
+C:\SWOS>swos /c"FINAL DESTINATION" /t15
+C:\SWOS>swos /cARGMAGEDDON /t25 /p"LONE WOLF" /iout.txt

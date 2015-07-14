@@ -35,12 +35,13 @@ swospp_str:  db "SWOS++", 0
 section .text
 
 extern replayStatus, SaveOptionsIfNeeded, EndProgram, SwitchToPrevVideoMode
-extern ShutDownNetwork, qAllocFinish, FinishMultiplayer
+extern ShutDownNetwork, qAllocFinish
 
 ; Hook ALT-F1 fast exit, as well as normal exit from menu.
 HookTermination:
         WriteToLog "Termination handler invoked."
         call SwitchToPrevVideoMode
+        xor  eax, eax
         jmp  EndProgram
 
 ; We are overwritting unused invisible entry in main menu, so have to show it explicitely.
@@ -101,7 +102,7 @@ ResetControlVars:
         mov  [joy1_X_value], eax
         mov  [joy2_X_value], eax
         mov  [joy1Status], eax
-        mov  [setup_dat_buffer], ax
+        mov  [setupDatBuffer], ax
 
         mov  al, [pl2Keyboard]
         test al, al             ; if true, both players are on the keyboard
@@ -153,13 +154,13 @@ DrawPlayerNumber:
         cmp  ax, 255                ; clamp it to byte, that field in file is a byte
         ja   .skip_sprite
 
-        push byte 0
+        push byte 1
         mov  dx, word [esi + 32]    ; do not subtract center x/y, as PrintSmallNumber will do centering of its own
         sub  dx, [cameraX]          ; x - camera x
-        movsx edx, dx
         mov  cx, word [esi + 36]
         sub  cx, [cameraY]          ; y - camera y
         sub  cx, word [esi + 40]    ; subtract z
+        movsx edx, dx
         movsx ecx, cx
         movzx eax, ax               ; number to draw
         inc  ecx
@@ -216,7 +217,8 @@ EditTacticsDrawPlayerNumber:
         sub  ax, 161                ; number to draw = start of little numbers - 1
         movsx edx, word [D1]
         movsx ecx, word [D2]
-        jmp PrintSmallNumber
+        call PrintSmallNumber
+        retn
 
 .out:
         jmpa DrawSpriteCentered
@@ -259,14 +261,16 @@ HookSaveCoordinatesForHighlights:
 
 
 extern NetworkOnIdle
-HookShowMenu:
+HookMenuLoop:
         call NetworkOnIdle
         test eax, eax
         jz   .skip_menu_proc
-        calla MenuProc
+
+        calla ReadTimerDelta
+        jmpa DrawMenu
+
 .skip_menu_proc:
-        mov  ax, [exitMenu]
-        or   ax, ax
+        pop  eax
         retn
 
 
@@ -428,6 +432,17 @@ FixJoypadNumLoopsZero:
 
 .out:
         retn
+
+
+; HookMainMenuSetup
+;
+; Set initial menu SWOS shows in A6.
+;
+extern MainMenuSelect
+HookMainMenuSetup:
+    call MainMenuSelect
+    mov  [A6], eax
+    retn
 
 
 
@@ -626,9 +641,9 @@ PatchStart:
     EndRecord
 
     ; hook menu loop to implement OnIdle() for network
-    StartRecord ShowMenu + 0x4d
-        calla HookShowMenu
-        times 4 nop
+    StartRecord MenuProc
+        calla HookMenuLoop
+        times 3 nop
     EndRecord
 
     ; hook InputText loop to allow OnIdle() to run while entering text
@@ -680,6 +695,14 @@ PatchStart:
 
     ; fix InputText to limit text properly when we start with buffer already filled more than limit
     PatchByte InputText + 0x25d, 0x83
+
+    StartRecord InitMainMenuStuff + 0x114
+        calla HookMainMenuSetup
+        times 3 nop
+    EndRecord
+
+    ; kill this bastard
+    PatchByte SetDefaultOptions, 0xc3
 
 %ifdef DEBUG
     ; don't waste time on opening animations in debug version

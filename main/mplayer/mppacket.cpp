@@ -16,7 +16,14 @@ static const int PACKET_SIZE = 3 * 1024;
 static union {
     char data[PACKET_SIZE];
     word wordData[PACKET_SIZE / sizeof(word)];
+
+    operator void *() {
+        return data;
+    }
 } packet;
+
+static_assert(PACKET_SIZE % sizeof(word) == 0, "Packet size must contain whole number of words.");
+
 
 word getRequestType(const char *packet, int length)
 {
@@ -32,7 +39,7 @@ char *createGetGameInfoPacket(int *length)
     return packet.data;
 }
 
-char *createGameInfoPacket(int *length, int numPlayers, char *gameName, byte id)
+char *createGameInfoPacket(int *length, int numPlayers, const char *gameName, byte id)
 {
     char *p;
     word *w = packet.wordData;
@@ -59,7 +66,8 @@ bool unpackGameInfoPacket(const char *data, int length, int *networkVersion, int
     *maxPlayers = w[3] >> 8;
     if (*numPlayers > 99 || *maxPlayers > 99)
         return false;
-    *(char *)memcpy(gameName, data + 8, min(maxGameNameLen - 1, length - 8 - 1)) = '\0';
+    auto nameLen = min(maxGameNameLen - 1, length - 8 - 1);
+    ((char *)memcpy(gameName, data + 8, nameLen))[nameLen] = '\0';
     *id = data[length - 1];
     return true;
 }
@@ -143,10 +151,13 @@ bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, I
     char *q;
     if (length < (int)(3 + 3 + sizeof(IPX_Address) + sizeof(MP_Options)))
         return false;
+
     p = data;
     assert(*(word *)data == PT_JOIN_GAME_ACCEPTED);
+
     if ((state->numPlayers = data[2]) > MAX_PLAYERS)
         return false;
+
     for (p += 3, i = 0; i < state->numPlayers; i++) {
         /* player nickname */
         q = state->playerNames[i];
@@ -157,6 +168,7 @@ bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, I
         if (p >= limit)
             return false;
         *q = *p++;
+
         /* player team name */
         q = state->playerTeamsNames[i];
         assert(q);
@@ -166,11 +178,13 @@ bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, I
         if (p >= limit)
             return false;
         *q = *p++;
+
         /* player flags */
         limit = data + length;
         if (p >= limit)
             return false;
         state->playerFlags[i] = *p++;
+
         /* player address */
         if (p + sizeof(IPX_Address) <= limit) {
             copyAddress(addresses[i], (IPX_Address *)p);
@@ -178,8 +192,10 @@ bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, I
         } else
             return false;
     }
+
     if (p + sizeof(MP_Options) > limit)
         return false;
+    /* and in the end options */
     memcpy(&state->options, p, sizeof(MP_Options));
     return true;
 }

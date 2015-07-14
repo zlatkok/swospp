@@ -1,3 +1,39 @@
+Basic:
+- create multiplayer game
+- join multiplayer game
+- start multiplayer game
+- change multiplayer nickname and game name, verify that they get saved after game restart
+  (as well as in multiplayer options)
+- change standard SWOS options, restart SWOS and verify that options get saved
+- create multiplayer game and change MP options in lobby, restart SWOS and verify that options get saved
+- change tactics in multiplayer options menu
+- with fresh install, verify that default multiplayer game name and player nickname are created
+
+Sync/network:
+- set up 2 DOSBox'es, 1st as server, 2nd as client,
+  start playing the game, exit client via alt-F1, but make sure server isn't restarted
+  restart client, recreate game on server and try to play again - there should be no desync
+- set up 2 DOSBox'es, 1st as server, 2nd as client,
+  exit client via alt-F1, and quickly press start game on server - there should be no crash/assert
+- set up 2 DOSBox'es, 1st as server, 2nd as client,
+  join with client, then exit via alt-F1, start SWOS again quickly and rejoin - should rejoin without problems
+- set up 2 DOSBox'es, 1st as server, 2nd as client,
+  after clicking start game on server quickly click and hold client's DOSBox title bar causing connecting...
+  dialog to show up - it should show up properly and disappear after title bar is released or timeout expired
+  (additionally, message that the player left should be shown)
+- when more than one game is found in multiplayer join game menu, verify that a correct game is joined in each case
+
+Misc.:
 - drawing of player numbers >16 during the game
 -           -||-                during edit tactics menu
-- test YU letters (in about menu)
+- test YU letters (open about menu)
+
+Memory leaks:
+- each time SWOS is closed look in log file and verify there was no memory leaks
+  (also verify that memory leaks checker was invoked at all ;)
+  expected text: qAlloc OK. No memory leaks.
+- exceptions:
+    - on client side in direct mode, when server disbands the game, player left packet will not be cleaned up
+
+
+Of course, playing few games without crashing would be great :)

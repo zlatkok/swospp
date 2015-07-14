@@ -59,6 +59,10 @@ global WaitRetrace
 times 0x9977-($-$$) resb 1
 WaitRetrace:
 
+global FadeOut
+times 0x9982-($-$$) resb 1
+FadeOut:
+
 global VerifyJoypadControls
 times 0x9a0c-($-$$) resb 1
 VerifyJoypadControls:
@@ -102,6 +106,10 @@ GetKey:
 global DumpTimerVariables
 times 0xa929-($-$$) resb 1
 DumpTimerVariables:
+
+global hexDigits
+times 0xaccf-($-$$) resb 1
+hexDigits:
 
 global RestoreOldInt9Handler
 times 0xad76-($-$$) resb 1
@@ -175,9 +183,17 @@ global SetExitMenuFlag
 times 0xd7a0-($-$$) resb 1
 SetExitMenuFlag:
 
+global LoadFillAndSwtitle
+times 0xd7aa-($-$$) resb 1
+LoadFillAndSwtitle:
+
 global ReadTimerDelta
 times 0xd8cb-($-$$) resb 1
 ReadTimerDelta:
+
+global InitMainMenuStuff
+times 0xd907-($-$$) resb 1
+InitMainMenuStuff:
 
 global PrepareMenu
 times 0xdae7-($-$$) resb 1
@@ -326,6 +342,10 @@ ShowErrorMenu:
 global DoContinueAbortMenu
 times 0x32791-($-$$) resb 1
 DoContinueAbortMenu:
+
+global continueMenu
+times 0x327e4-($-$$) resb 1
+continueMenu:
 
 global ExitChooseTeams
 times 0x3a4b3-($-$$) resb 1
@@ -784,9 +804,9 @@ global EGA_graphics
 times 0xe14c9-($-$$) resb 1
 EGA_graphics:
 
-global setup_dat_buffer
+global setupDatBuffer
 times 0xe14cb-($-$$) resb 1
-setup_dat_buffer:
+setupDatBuffer:
 
 global joyKbdWord
 times 0xe14d1-($-$$) resb 1
@@ -1259,6 +1279,10 @@ menuCycleTimer:
 global vsPtr
 times 0x156758-($-$$) resb 1
 vsPtr:
+
+global screenWidth
+times 0x15675c-($-$$) resb 1
+screenWidth:
 
 global stateGoal
 times 0x1588c2-($-$$) resb 1

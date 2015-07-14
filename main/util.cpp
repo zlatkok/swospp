@@ -167,8 +167,7 @@ unsigned int rand()
 char *strupr(char *s)
 {
     assert(s);
-    while (*s = toupper(*s))
-        s++;
+    for (char *p = s; *p = toupper(*p); p++);
     return s;
 }
 
@@ -180,7 +179,7 @@ void *memcpy(void *in_dst, const void *in_src, size_t n)
     assert(!n || (in_src && in_dst && (int)n > 0));
     for (; n; --n)
         *dst++ = *src++;
-    return dst;
+    return in_dst;
 }
 
 int memcmp(const void *p, const void *q, size_t n)
@@ -202,8 +201,8 @@ int stackavail()
 {
     int result;
     asm volatile (
-        "mov  eax, offset swos_libc_stackavail_ \n\t"
-        "call eax                               \n\t"
+        "mov  eax, offset swos_libc_stackavail_ \n"
+        "call eax                               \n"
         : "=a" (result)
         :
         :
@@ -216,8 +215,8 @@ char *strncpy(char *dst, const char *src, size_t n)
     assert(!n || (dst && src && (int)n > 0));
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_strncpy_     \n\t"
-        "call %[tmp]                                \n\t"
+        "mov  %[tmp], offset swos_libc_strncpy_     \n"
+        "call %[tmp]                                \n"
         : "+a" (dst), "+d" (src), "+b" (n), [tmp] "=r" (dummy)
         :
         : "cc", "memory"
@@ -230,8 +229,8 @@ void *memset(void *ptr, int value, size_t num)
     assert(!num || ptr);
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_memset_  \n\t"
-        "call %[tmp]                            \n\t"
+        "mov  %[tmp], offset swos_libc_memset_  \n"
+        "call %[tmp]                            \n"
         : "+a" (ptr), "+d" (value), [tmp] "=r" (dummy)
         : "b" (num)
         : "cc", "memory"
@@ -245,8 +244,8 @@ int strcmp(const char *str1, const char *str2)
     int result;
     int dummy, dummy2;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_strcmp_  \n\t"
-        "call %[tmp]                            \n\t"
+        "mov  %[tmp], offset swos_libc_strcmp_  \n"
+        "call %[tmp]                            \n"
         : "=a" (result), [tmp] "=r" (dummy), "=d" (dummy2)
         : "a" (str1), "d" (str2)
         : "cc"
@@ -260,8 +259,8 @@ int strncmp(const char *str1, const char *str2, size_t n)
     int result;
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_strncmp_     \n\t"
-        "call %[tmp]                                \n\t"
+        "mov  %[tmp], offset swos_libc_strncmp_     \n"
+        "call %[tmp]                                \n"
         : "=a" (result), "+d" (str2), "+b" (n), [tmp] "=r" (dummy)
         : "a" (str1)
         : "cc"
@@ -275,8 +274,8 @@ int strlen(const char *str)
     int result;
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_strlen_      \n\t"
-        "call %[tmp]                                \n\t"
+        "mov  %[tmp], offset swos_libc_strlen_      \n"
+        "call %[tmp]                                \n"
         : "=a" (result), [tmp] "=r" (dummy)
         : "a" (str)
         : "cc"
@@ -289,8 +288,8 @@ void segread(struct SREGS *sregs)
     assert(sregs);
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_segread_     \n\t"
-        "call %[tmp]                                \n\t"
+        "mov  %[tmp], offset swos_libc_segread_     \n"
+        "call %[tmp]                                \n"
         : "+a" (sregs), [tmp] "=r" (dummy)
         :
         : "memory"
@@ -302,8 +301,8 @@ int int386x(int vec, union REGS *in, union REGS *out, struct SREGS *sregs)
     assert(in && out && sregs);
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_int386x_     \n\t"
-        "call %[tmp]                                \n\t"
+        "mov  %[tmp], offset swos_libc_int386x_     \n"
+        "call %[tmp]                                \n"
         : "+a" (vec), "+d" (in), "+b" (out), "+c" (sregs), [tmp] "=r" (dummy)
         :
         : "cc", "memory"
@@ -315,8 +314,8 @@ void exit(int status)
 {
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_exit_    \n\t"
-        "jmp  %[tmp]                            \n\t"
+        "mov  %[tmp], offset swos_libc_exit_    \n"
+        "jmp  %[tmp]                            \n"
         : "+a" (status), [tmp] "=r" (dummy)
         :
         :
@@ -329,8 +328,8 @@ void *memmove(void *dst, const void *src, size_t n)
     assert(!n || (dst && src));
     int dummy;
     asm volatile (
-        "mov  %[tmp], offset swos_libc_memmove_     \n\t"
-        "call %[tmp]                                \n\t"
+        "mov  %[tmp], offset swos_libc_memmove_     \n"
+        "call %[tmp]                                \n"
         : "+a" (dst), "+d" (src), "+b" (n), [tmp] "=r" (dummy)
         :
         : "cc", "memory"
@@ -681,13 +680,13 @@ bool UngetCharBFile(BFile *file, int c)
         if (file->readPtr > 0)
             file->buffer[--file->readPtr] = c;
         else {
-			bool seekBack = file->bytesInBuffer == file->bufferSize;
+            bool seekBack = file->bytesInBuffer == file->bufferSize;
             memmove(file->buffer + 1, file->buffer, min(file->bytesInBuffer, file->bufferSize - 1));
             file->bytesInBuffer = min(file->bytesInBuffer + 1, file->bufferSize);
             file->buffer[0] = c;
             /* seek back 1 byte in file, otherwise in the next read we will miss that byte that was kicked out */
-			if (seekBack)
-				return SeekFile(file->handle, SEEK_CUR, -1, -1) != -1;
+            if (seekBack)
+                return SeekFile(file->handle, SEEK_CUR, -1, -1) != -1;
         }
     } else {
         file->buffer[0] = c;

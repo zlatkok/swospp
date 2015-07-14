@@ -135,7 +135,6 @@ DOSBox Status Window - illegal reads/writes etc.
 NOTES/KNOWN ISSUES:
 
 - Fire doesn't cancel pause or statistics screen.
-- Custom tactics are not currently supported.
 - Auto-save game is currently not supported.
 - Currently no notifications about network activity so it might seem like game
   froze if network lags

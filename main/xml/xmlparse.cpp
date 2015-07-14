@@ -15,7 +15,7 @@
 typedef struct XmlNodeListElem {
     XmlNode *node;
     struct XmlNodeListElem *next;
-} XmlNodeListElem;
+    } XmlNodeListElem;
 
 typedef struct XmlContentListElem {
     char *content;
@@ -63,14 +63,16 @@ static void initializeParser(const char *fileName, void *heap, int heapSize)
     xmlRoot = nullptr;
 }
 
+
 #ifdef DEBUG
 static void report(const char *text)
 {
-    WriteToLog(("%s(%d): %s", xmlFile, lineNo, text));
+    WriteToLog("%s(%d): %s", xmlFile, lineNo, text);
 }
 #else
 #define report(text) ((void)0)
 #endif
+
 
 static const char *symToStr(XmlSymbol sym)
 {
@@ -98,6 +100,7 @@ static const char *symToStr(XmlSymbol sym)
     }
 }
 
+
 static void *xmlAlloc(int size)
 {
     void *mem = qHeapAlloc(xmlHeap, size);
@@ -106,6 +109,7 @@ static void *xmlAlloc(int size)
         report("error: Out of memory.");
     return mem;
 }
+
 
 static char *xmlStrdup(char *data, int len)
 {
@@ -119,10 +123,12 @@ static char *xmlStrdup(char *data, int len)
     return nullptr;
 }
 
+
 static void xmlFree(void *ptr)
 {
     qHeapFree(xmlHeap, ptr);
 }
+
 
 static bool pushNode(XmlNode *node)
 {
@@ -138,6 +144,7 @@ static bool pushNode(XmlNode *node)
     return true;
 }
 
+
 static XmlNode *popNode()
 {
     XmlNodeListElem *elem = nodeStack;
@@ -146,17 +153,20 @@ static XmlNode *popNode()
     return elem->node;
 }
 
+
 static XmlNode *topNode()
 {
     assert(xmlHeap && nodeStack);
     return nodeStack->node;
 }
 
+
 static XmlNode *peekTopNode()
 {
     assert(xmlHeap);
     return nodeStack ? nodeStack->node : nullptr;
 }
+
 
 /** getXmlEscape
 
@@ -237,6 +247,7 @@ static char getXmlEscape(BFile *file)
     return 0;
 }
 
+
 /** getStringEscape
 
     file -> buffered xml file to read from
@@ -307,6 +318,7 @@ static int getStringEscape(BFile *file)
     return -1;
 }
 
+
 /** skipXmlComment
 
     file -> buffered xml file to read from
@@ -337,6 +349,7 @@ static void skipXmlComment(BFile *file)
         report("Unterminated comment found.");
     UngetCharBFile(file, c);
 }
+
 
 /** getText
 
@@ -433,6 +446,7 @@ static int getText(BFile *file, bool inTag, char *buf, int bufSize)
     return p - buf;
 }
 
+
 /** getSymbol
 
     file    -> buffered file to read from
@@ -495,15 +509,17 @@ static XmlSymbol getSymbol(BFile *file, char *buf, int *bufSize)
     return (*bufSize = getText(file, inTag, buf, *bufSize)) ? XML_SYM_TEXT : getSymbol(file, buf, bufSize);
 }
 
+
 static bool expect(XmlSymbol expected, XmlSymbol given)
 {
     if (expected != given) {
-        WriteToLog(("%s(%d): error: Expected '%s', got '%s' instead.",
-            xmlFile, lineNo, symToStr(expected), symToStr(given)));
+        WriteToLog("%s(%d): error: Expected '%s', got '%s' instead.",
+            xmlFile, lineNo, symToStr(expected), symToStr(given));
         return false;
     }
     return true;
 }
+
 
 static bool fixXmlNodeContent(XmlNode *node)
 {
@@ -523,8 +539,8 @@ static bool fixXmlNodeContent(XmlNode *node)
     totalSize = ((XmlContentListElem *)node->value.ptr)->totalSize;
     assert(totalSize > 0);
     contents = (char *)xmlAlloc(totalSize + (node->type == XML_STRING));
-	assert(contents);
-	if (!contents)
+    assert(contents);
+    if (!contents)
         return false;
     elem = (XmlContentListElem *)node->value.ptr;
     currentOffset = totalSize;
@@ -600,6 +616,7 @@ static bool addXmlPartialContent(XmlNode *node, char *content, int size)
     }
     return true;
 }
+
 
 /** processSymbol
 
@@ -714,6 +731,7 @@ static bool processSymbol(XmlSymbol sym, char *buf, int bufSize)
     return false;
 }
 
+
 bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFunction symProc)
 {
     XmlSymbol sym;
@@ -721,7 +739,6 @@ bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFuncti
     int bufSize = sizeof(xmlBuf);
     char miniHeap[32 * 1024];
     bool success = true;
-    int oldSplitSize;
     BFile *file;
 
     if (root)
@@ -731,15 +748,15 @@ bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFuncti
         return false;
 
     initializeParser(fileName, miniHeap, sizeof(miniHeap));
-    oldSplitSize = qSetMinSplitSize(16);
+    auto oldSplitSize = qSetMinSplitSize(16);
 
     if (!symProc)
         symProc = processSymbol;
     while ((sym = getSymbol(file, xmlBuf, &bufSize)) != XML_SYM_EOF) {
-        //WriteToLog(("state: %d symbol: %s '%s'", parserState, symToStr(sym), sym == XML_SYM_TEXT ? xmlBuf : ""));
+        //WriteToLog("state: %d symbol: %s '%s'", parserState, symToStr(sym), sym == XML_SYM_TEXT ? xmlBuf : "");
         if (!symProc(sym, xmlBuf, bufSize)) {
             qSetMinSplitSize(oldSplitSize);
-			CloseBFile(file);
+            CloseBFile(file);
             return false;
         }
         bufSize = sizeof(xmlBuf);
@@ -758,6 +775,7 @@ bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFuncti
 
     return success;
 }
+
 
 static bool needsQuotes(const char *str, size_t len)
 {
@@ -779,6 +797,7 @@ static bool needsQuotes(const char *str, size_t len)
     }
     return false;
 }
+
 
 /* saves a lot of typing :P */
 #define OUT_CHAR(c)         { if (!PutCharBFile(file, c)) return false; }
@@ -852,9 +871,10 @@ static bool writeStringToFile(BFile *file, const char *string, size_t stringLen,
     }
 }
 
+
 static bool writeNodeContent(BFile *file, const XmlNode *node, int indent)
 {
-    int val;
+    int val = 0;
     char *numStr;
     assert(file && node);
     switch (XmlNodeGetType(node)) {
@@ -880,6 +900,7 @@ static bool writeNodeContent(BFile *file, const XmlNode *node, int indent)
     numStr = int2str(val);
     return WriteBFile(file, numStr, strlen(numStr));
 }
+
 
 static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
 {
@@ -959,6 +980,7 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
     return true;
 }
 
+
 bool SaveXmlFile(XmlNode *root, const char *fileName, bool checkIfNeeded)
 {
     BFile *file;
@@ -968,12 +990,12 @@ bool SaveXmlFile(XmlNode *root, const char *fileName, bool checkIfNeeded)
         return false;
 
     if (checkIfNeeded && XmlTreeUnmodified(root)) {
-        WriteToLog(("%s not modified, returning.", fileName));
+        WriteToLog("%s not modified, returning.", fileName);
         return true;
     }
 
     if (!(file = CreateBFile(ATTR_NONE, fileName))) {
-        WriteToLog(("Failed to create %s.", fileName));
+        WriteToLog("Failed to create %s.", fileName);
         return false;
     }
 
@@ -982,7 +1004,8 @@ bool SaveXmlFile(XmlNode *root, const char *fileName, bool checkIfNeeded)
         XmlTreeSnapshot(root);
 
     if (result)
-        WriteToLog(("%s written successfully.", fileName));
+        WriteToLog("%s written successfully.", fileName);
+
     CloseBFile(file);
     return result;
 }

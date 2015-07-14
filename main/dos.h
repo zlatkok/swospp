@@ -65,10 +65,10 @@ static inline __attribute__((always_inline)) dword OpenFile(enum DOS_accessMode 
     dword result;
     int dummy;
     asm volatile (
-        "mov  ah, 0x3d          \n\t"
-        "int  0x21              \n\t"
-        "sbb  %[tmp], %[tmp]    \n\t"
-        "or   eax, %[tmp]       \n\t"
+        "mov  ah, 0x3d          \n"
+        "int  0x21              \n"
+        "sbb  %[tmp], %[tmp]    \n"
+        "or   eax, %[tmp]       \n"
         : "=a" (result), [tmp] "=r" (dummy)
         : "a" (accessMode), "d" (fileName)
         : "cc"
@@ -81,10 +81,10 @@ static inline __attribute__((always_inline)) dword CreateFile(enum DOS_fileAttri
     dword result;
     int dummy;
     asm volatile (
-        "mov  ah, 0x3c          \n\t"
-        "int  0x21              \n\t"
-        "sbb  %[tmp], %[tmp]    \n\t"
-        "or   eax, %[tmp]       \n\t"
+        "mov  ah, 0x3c          \n"
+        "int  0x21              \n"
+        "sbb  %[tmp], %[tmp]    \n"
+        "or   eax, %[tmp]       \n"
         : "=a" (result), [tmp] "=r" (dummy)
         : "c" (fileAttribute), "d" (fileName)
         : "cc"
@@ -96,8 +96,8 @@ static inline __attribute__((always_inline)) int WriteFile(dword handle, const v
 {
     int result;
     asm volatile (
-        "mov  ah, 0x40  \n\t"
-        "int  0x21      \n\t"
+        "mov  ah, 0x40  \n"
+        "int  0x21      \n"
         : "=a" (result)
         : "b" (handle), "d" (pData), "c" (size)
         : "cc"
@@ -108,8 +108,8 @@ static inline __attribute__((always_inline)) int WriteFile(dword handle, const v
 static inline __attribute__((always_inline)) void CloseFile(dword handle)
 {
     asm volatile (
-        "mov  ah, 0x3e  \n\t"
-        "int  0x21      \n\t"
+        "mov  ah, 0x3e  \n"
+        "int  0x21      \n"
         :
         : "b" (handle)
         : "cc", "eax"
@@ -121,10 +121,10 @@ static inline __attribute__((always_inline)) int ReadFile(dword handle, void *pD
     int result;
     int dummy;
     asm volatile (
-        "mov  ah, 0x3f          \n\t"
-        "int  0x21              \n\t"
-        "sbb  %[tmp], %[tmp]    \n\t"
-        "or   eax, %[tmp]       \n\t"
+        "mov  ah, 0x3f          \n"
+        "int  0x21              \n"
+        "sbb  %[tmp], %[tmp]    \n"
+        "or   eax, %[tmp]       \n"
         : "=a" (result), [tmp] "=r" (dummy)
         : "b" (handle), "d" (pData), "c" (size)
         : "cc", "memory"
@@ -137,10 +137,10 @@ static inline __attribute__((always_inline)) int SeekFile(dword handle, uchar mo
     int result;
     int dummy;
     asm volatile (
-        "mov  ah, 0x42          \n\t"
-        "int  0x21              \n\t"
-        "sbb  %[tmp], %[tmp]    \n\t"
-        "or   eax, %[tmp]       \n\t"
+        "mov  ah, 0x42          \n"
+        "int  0x21              \n"
+        "sbb  %[tmp], %[tmp]    \n"
+        "or   eax, %[tmp]       \n"
         : "=a" (result), [tmp] "=r" (dummy)
         : "b" (handle), "a" (mode), "c" (ofsHi), "d" (ofsLo)
         : "cc"
@@ -163,10 +163,10 @@ static __attribute__((always_inline)) inline int FindFirstFile(const char *fileS
 {
     int result;
     asm volatile (
-        "mov  ah, 0x4e  \n\t"
-        "int  0x21      \n\t"
-        "sbb  eax, eax  \n\t"
-        "not  eax       \n\t"
+        "mov  ah, 0x4e  \n"
+        "int  0x21      \n"
+        "sbb  eax, eax  \n"
+        "not  eax       \n"
         : "=a" (result)
         : "d" (fileSpec)
         : "cc", "memory"
@@ -174,14 +174,14 @@ static __attribute__((always_inline)) inline int FindFirstFile(const char *fileS
     return result;
 }
 
-static inline __attribute__((always_inline)) bool FindNextFile()
+static inline __attribute__((always_inline)) bool32 FindNextFile()
 {
     int result;
     asm volatile (
-        "mov  ah, 0x4f  \n\t"
-        "int  0x21      \n\t"
-        "sbb  eax, eax  \n\t"
-        "not  eax       \n\t"
+        "mov  ah, 0x4f  \n"
+        "int  0x21      \n"
+        "sbb  eax, eax  \n"
+        "not  eax       \n"
         : "=a" (result)
         :
         : "cc", "memory"
@@ -192,10 +192,10 @@ static inline __attribute__((always_inline)) bool FindNextFile()
 static inline __attribute__((always_inline)) void PrintToStderr(const char *str, int count)
 {
     asm volatile (
-        "push 2         \n\t"
-        "mov  ah, 0x40  \n\t"
-        "pop  ebx       \n\t"
-        "int  0x21      \n\t"
+        "push 2         \n"
+        "mov  ah, 0x40  \n"
+        "pop  ebx       \n"
+        "int  0x21      \n"
         :
         : "d" (str), "c" (count)
         : "cc", "eax", "ebx"
@@ -206,8 +206,8 @@ static __attribute__((always_inline)) inline void SetVideoMode(int mode)
 {
     int dummy;
     asm volatile (
-        "mov  ah, 0     \n\t"   // do not disturb flags
-        "int  0x10      \n\t"
+        "mov  ah, 0     \n"     // do not disturb flags
+        "int  0x10      \n"
         : "=a" (dummy)
         : "a" (mode)
         :
@@ -218,9 +218,9 @@ static __attribute__((always_inline)) inline dword GetVideoMode()
 {
     dword result;
     asm volatile (
-        "mov  eax, 0x0f00       \n\t"
-        "int  0x10              \n\t"
-        "movzx eax, al          \n\t"
+        "mov  eax, 0x0f00       \n"
+        "int  0x10              \n"
+        "movzx eax, al          \n"
         : "=a" (result)
         :
         : "eax", "ebx"
@@ -232,10 +232,10 @@ static inline __attribute__((always_inline)) void GetDosTime(uchar *aHour, uchar
 {
     uchar hour, minute, second, hundred;
     asm volatile (
-        "mov  ah, 0x2c                      \n\t"
-        "int  0x21                          \n\t"
-        "mov  al, ch                        \n\t"
-        "mov  %b[second], dh                \n\t"
+        "mov  ah, 0x2c                      \n"
+        "int  0x21                          \n"
+        "mov  al, ch                        \n"
+        "mov  %b[second], dh                \n"
         : "=a" (hour), "=c" (minute), [second] "=q" (second), "=d" (hundred)
         :
         :
@@ -251,9 +251,9 @@ static inline __attribute__((always_inline)) void GetDosDate(ushort *aYear, ucha
     ushort year;
     uchar month, day;
     asm volatile (
-        "mov  ah, 0x2a                  \n\t"
-        "int  0x21                      \n\t"   // DOS Get System Date
-        "mov  al, dh                    \n\t"
+        "mov  ah, 0x2a                  \n"
+        "int  0x21                      \n"     // DOS Get System Date
+        "mov  al, dh                    \n"
         : "=c" (year), "=d" (day), "=a" (month)
         :
         :

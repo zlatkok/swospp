@@ -94,10 +94,10 @@ start:
 ; Performs program uninitialization. Saves options in case they were changed.
 ; Makes sure log file is flushed. Ends program. Zero exit code is always returned.
 ; Only thing not done here is switching back to previous video mode, as the
-; callers will want to print some messages first.
+; callers would probably want to print some messages first.
 ;
 global EndProgram
-extern replayStatus, CloseReplayFile, SaveOptionsIfNeeded, ShutDownNetwork
+extern replayStatus, CloseReplayFile, SaveOptionsIfNeeded
 extern FinishMultiplayer, FinishMultiplayerGame, qAllocFinish, EndLogFile
 EndProgram:
         push eax
@@ -111,8 +111,7 @@ EndProgram:
 
 .no_rpl_save:
         call SaveOptionsIfNeeded        ; save options
-        call ShutDownNetwork            ; and get rid of network too
-        call FinishMultiplayer
+        call FinishMultiplayer          ; and get rid of network too
         call FinishMultiplayerGame      ; in case we were in a game
 
         pop  eax
@@ -259,6 +258,7 @@ patchCheckTable:
 ; DetectOriginalSWOS
 ;
 ; Detect if we're running on original, unpatched version of SWOS.
+; It's just a quick and dirty method, don't wanna CRC the whole program.
 ;
 ; out:
 ;      zero flag set = we are running original SWOS, otherwise it's patched

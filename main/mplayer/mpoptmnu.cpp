@@ -29,14 +29,13 @@ static void initMpTactic(Tactics *tactic, const char *name)
 /** initMpTactics
 
     Put user tactics for multiplayer in initial state. We duplicate SWOS initialization
-    but we must must since it's not run until menu initialization.
+    but we must wait, since it's not run until menu initialization.
 */
 static void initMpTactics()
 {
-    int i;
-    for (i = 0; i < TACTICS_USER_F - TACTICS_USER_A + 1; i++)
+    for (int i = 0; i < TACTICS_USER_F - TACTICS_USER_A + 1; i++)
         initMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
-    calla(InitializeTacticsPositions);
+    calla_ebp_safe(InitializeTacticsPositions);
 }
 
 extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions)
@@ -64,11 +63,11 @@ static bool validateUserMpTactic(const Tactics *tactics)
     for (size_t i = 0; i < sizeof(tactics->name); i++)
         c |= tactics->name[i];
     if (!c) {
-        WriteToLog(("User tactics without name found."));
+        WriteToLog("User tactics without name found.");
         return false;
     }
     if (tactics->ballOutOfPlayTactics >= TACTICS_MAX) {
-        WriteToLog(("Invalid out of play tactics found."));
+        WriteToLog("Invalid out of play tactics found.");
         return false;
     }
     return true;
@@ -95,7 +94,7 @@ static char *LoadTeam()
 {
     int teamNo = currentTeamId & 0xff, ordinal = currentTeamId >> 8 & 0xff;
     D0 = teamNo;
-    calla(LoadTeamFile);
+    calla_ebp_safe(LoadTeamFile);
     assert(D0);
     return teamFileBuffer + 2 + ordinal * TEAM_SIZE;
 }
@@ -105,6 +104,14 @@ void InitializeMPOptionsMenu()
     /* stoopid DrawSprite16Pixels has hardcoded width of 384 so patch it temporarily so we can draw player icons */
     static const byte patchDrawSprite[9] = { 0xb8, 0x40, 0x01, 0x00, 0x00, 0xf7, 0xe7, 0x8b, 0xf8 };
     memcpy((char *)SWOS_DrawSprite16Pixels + 0x116, patchDrawSprite, sizeof(patchDrawSprite));
+    MPOptionsMenuAfterDraw();
+}
+
+void MPOptionsMenuAfterDraw()
+{
+    D0 = 1;
+    calla_ebp_safe(CalcMenuEntryAddress);
+    strcpy(((MenuEntry *)A0)->u2.string, GetPlayerNick());
 }
 
 void NetworkTimeoutBeforeDraw()
@@ -164,13 +171,13 @@ void ChooseMPTactics()
     tacticsIndex = (entry->u2.string - (char *)MP_Tactics) / TACTIC_SIZE;
     assert(tacticsIndex >= 0 && tacticsIndex < 6);
     chosenTactics = TACTICS_USER_A + tacticsIndex;
-    WriteToLog(("Editing tactics: %s", entry->u2.string));
+    WriteToLog("Editing tactics: %s", entry->u2.string);
     chooseTacticsTeamPtr = LoadTeam();
     calla(InitLittlePlayerSprites);
     A6 = (dword)editTacticsMenu;
     calla(ShowMenu);
     MP_Tactics[tacticsIndex] = *editTacticsCurrentTactics;
-    WriteToLog(("Finished editing tactics: %s", editTacticsCurrentTactics));
+    WriteToLog("Finished editing tactics: %s", editTacticsCurrentTactics);
 }
 
 void ExitMultiplayerOptions()
@@ -179,5 +186,5 @@ void ExitMultiplayerOptions()
     static const byte unpatchDrawSprite[9] = { 0xc1, 0xe7, 0x07, 0x8b, 0xc7, 0xd1, 0xe7, 0x03, 0xf8 };
     memcpy((char *)SWOS_DrawSprite16Pixels + 0x116, unpatchDrawSprite, sizeof(unpatchDrawSprite));
     SaveOptionsIfNeeded();
-    calla(SetExitMenuFlag);
+    calla_ebp_safe(SetExitMenuFlag);
 }

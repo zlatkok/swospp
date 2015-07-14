@@ -104,9 +104,6 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
                 out += spec.nz0;
                 spec.output_count += spec.nz0;
                 if (spec.type == 's' && spec.sharp) {
-                    const static char hexDigits[] = {
-                        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
-                    };
                     unsigned char *p = (uchar *)arg, *q = (uchar *)out;
                     int n = (spec.n1 + 1) / 3;
                     while (n--) {
@@ -240,7 +237,7 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
 
     switch (spec->type) {
     case 'C':
-        WriteToLog(("FormString: wide characters not supported."));
+        WriteToLog("FormString: wide characters not supported.");
         /* fallthrough */
     case 'c':
         spec->length = 1;
@@ -269,7 +266,7 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
         if (spec->is_long)
             long_value = va_arg(*args, unsigned long);
         else {
-            long_value = va_arg(*args, unsigned);
+            long_value = va_arg(*args, unsigned int);
             if (spec->is_short)
                 long_value = (unsigned short)long_value;
             else if (spec->is_short_short)
@@ -399,9 +396,9 @@ static const char Alphabet[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 static int __udiv(int value, int *divQuot)
 {
     asm (
-        "xor  edx, edx                  \t\n"
-        "div dword ptr [%[divQuot]]     \t\n"
-        "mov [%[divQuot]], edx          \t\n"
+        "xor  edx, edx                  \n"
+        "div dword ptr [%[divQuot]]     \n"
+        "mov [%[divQuot]], edx          \n"
         : "+a" (value)
         : [divQuot] "r" (divQuot)
         : "cc", "edx", "memory"

@@ -29,7 +29,7 @@ my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 
                   '-mno-red-zone -mrtd -march=i386 -m32 -nostdlib -ffreestanding -fno-leading-underscore -fno-stack-protector ' .
                   '-mpush-args -mno-accumulate-outgoing-args -mno-stack-arg-probe -fno-exceptions -fno-unwind-tables ' .
                   '-fno-asynchronous-unwind-tables -momit-leaf-frame-pointer -mpreferred-stack-boundary=2 ' .
-                  '-fomit-frame-pointer -fverbose-asm -Wstack-usage=43008 -Wno-multichar -o$@ $<';
+                  '-Wundef -fomit-frame-pointer -fverbose-asm -Wstack-usage=43008 -Wno-multichar -o$@ $<';
 my $AFLAGS      = '-s -w+macro-params -w+orphan-labels -fwin32 -O3 -o$@ -l$(LST_DIR)/$*.lst $<';
 
 my $DBG_CFLAGS  = ' -DDEBUG=1 -g';
@@ -39,10 +39,10 @@ my $DBG_AFLAGS  = ' -DDEBUG';
 my $LFLAGS =  <<'EOF';
     /merge:_BSS=.data /merge:CONST2=.data /merge:CONST=.data
     /merge:.strdata=.data /merge:_DATA=.data /merge:_TEXT=.text
-    /merge:.text.unlikely=.text
+    /merge:.text.unlikely=.text /merge:.rdata=.data
     /section-flags:.data=0xe07000c0 /section-align:4096 /entry:start
     /m+ /export:PatchSize /export:PatchStart /output-format:PE
-    /verbosity:1 /file-align:16
+    /verbosity:1 /file-align:8
 EOF
 
 my $OBJ_DIR = '../obj';
@@ -52,7 +52,10 @@ my $LST_DIR = '../etc';
 my $BMP_DIR = '../bitmap';
 
 # directories to copy final binary to
-my @DEST_DIRS = qw/c:\\temp d:\\games\\swos/;
+my $dirList = $ENV{'SWOS_DIRS'} || 'd:\\games\\swos2 d:\\games\\swos3';
+$dirList =~ s/^"+|"+$//g;
+my @DEST_DIRS = split(/;/, $dirList);
+
 
 ################## end of user modifiable part ##################
 use Data::Dumper;
@@ -62,7 +65,7 @@ sub ensureDirectories;
 sub logl;
 sub updateTimestamp;
 sub generateBitmaps;
-sub buildFile;
+sub buildFiles;
 sub runCommand;
 sub filterCommandOutput;
 sub createLnkFile;
@@ -81,7 +84,7 @@ my $TARGET;
 my $CLEAN = 0;
 my $DEBUG = 0;
 my $REBUILD = 0;
-my @additionalIncludes;
+my %additionalIncludes;
 my %srcFiles;
 my %includes;
 my %warnings;
@@ -120,7 +123,7 @@ find( { wanted => sub
     # each subdirectory will be additional include path
     if (-d) {
         $base ne 'deps' or die "Special dir name 'deps' is used for storing dependencies.\n";
-        push @additionalIncludes, $path;
+        $additionalIncludes{$path} = 1;
         if (File::Spec->rel2abs(getcwd()) ne File::Spec->rel2abs($path)) {
             my $dir = catdir($OBJ_DIR, $path);
             -d $dir or make_path($dir) or die "Couldn't create directory '$dir'.\n";
@@ -163,11 +166,11 @@ logl(Dumper(\%srcFiles));
 logl("Includes:");
 logl(Dumper(\%includes));
 logl("Additional include directories:");
-logl(Dumper(\@additionalIncludes));
+logl(Dumper(\%additionalIncludes));
 logl("Files to be built:");
 logl(Dumper(\@buildList));
 
-buildFile(\@buildList);
+buildFiles(\@buildList);
 createLnkFile($scriptTimestamp);
 linkFiles($scriptTimestamp);
 createBin($scriptTimestamp);
@@ -191,6 +194,7 @@ sub formDepFileName
     return catdir(catdir($OBJ_DIR, 'deps'), $file) . '.dep';
 }
 
+
 sub markAsScanned
 {
     my ($path, $file, $isInclude, $dependencies) = @_;
@@ -199,17 +203,19 @@ sub markAsScanned
     return $hashRef->{'dependencies'} = $dependencies;
 }
 
+
 # execute a search for include file in all directories, and return path to it
 sub findInclude
 {
     my ($file, $parent) = @_;
     return $file if (-e $file);
-    foreach my $dir (@additionalIncludes) {
+    foreach my $dir (keys %additionalIncludes) {
         my $path = catdir($dir, $file);
         return $path if (-e $path);
     }
     die "Included file $file (from $parent) could not be found.\n";
 }
+
 
 # scan include file for it's own dependencies, and add them to array given by reference
 sub scanIncludeDependencies
@@ -230,10 +236,11 @@ sub scanIncludeDependencies
     push(@{$dependencies}, $_) for @{$subDependencies};
 }
 
+
 sub getIncludeRegex
 {
     my ($ext) = @_;
-    # '#include' for C, '%include' and 'incbin' for NASM
+    # '#include' for C/C++, '%include' and 'incbin' for NASM
     use constant C_INCLUDE_REGEX => '#\s*(include)';
     use constant ASM_INCLUDE_REGEX => '(incbin|%\s*include)';
     my %directives = (
@@ -241,8 +248,9 @@ sub getIncludeRegex
         'asm' => \ASM_INCLUDE_REGEX, 'inc' => \ASM_INCLUDE_REGEX
     );
     my $directives = $directives{$ext} or die "Unknown extension encountered: \".$ext\".\n";
-    return qr/^\s*${$directives}\s*"([a-zA-Z0-9_.]+)"/;
+    return qr/^\s*${$directives}\s*"([a-zA-Z0-9_.\/]+)"/;
 }
+
 
 # return reference to array of dependencies for a given file
 sub getDependencies
@@ -263,16 +271,22 @@ sub getDependencies
     # form dependency file name taking care of directories
     my $depFile = formDepFileName($dir, $file);
     my $timestamp;
+
     # this is more of internal check.. see if the files that are supposed to be there are really there
     if ($parent) {
-        exists($includes{$file}) or die("Include file $file (included from $parent) could not be found.\n");
+        if (!exists($includes{$path})) {
+            -e $path or die("Include file $file ($path), included from $parent, could not be found.\n");
+            $includes{$file} = newIncludeFile($path);
+        }
         $timestamp = $includes{$file}{'timestamp'};
     } else {
         exists($srcFiles{$path}{'timestamp'}) or die("Error, source file $path is missing.\n");
         $timestamp = $srcFiles{$path}{'timestamp'};
     }
+
     # if .dep file is newer than us just read from it
-    if (getTimestamp($depFile) > $timestamp) {
+    my $isBinary = -B $path;
+    if (!$isBinary && getTimestamp($depFile) > $timestamp) {
         my @depContents;
         open($DEP, '<', "$depFile") or die "Failed to open file: $depFile\n";
         chomp(@depContents = <$DEP>);
@@ -283,29 +297,41 @@ sub getDependencies
         markAsScanned($path, $file, defined($parent) && length($parent) > 0, $dependencies);
         return $dependencies;
     }
+
     # do a crude scan for includes; it doesn't account for say conditionally included files,
     # make sure to expand it if it's ever needed; we're also assuming user will be nice and
     # wouldn't use <> for non-system includes
-    open($IN, '<', "$path") or die "Failed to open file: $path\n";
-    $path =~ /\.([^.]+)$/;
+    # but don't attempt to scan binary files included with incbin
+    if (!$isBinary) {
+        open($IN, '<', "$path") or die "Failed to open file: $path\n";
 
-    my $incRegex = getIncludeRegex($1);
-    while (<$IN>) {
-        if (/$incRegex/) {
-            # dependencies of our includes are also our dependencies
-            scanIncludeDependencies($2, $dependencies, $file);
+        $path =~ /\.([^.]+)$/;
+
+        my $incRegex = getIncludeRegex($1);
+        while (<$IN>) {
+            if (/$incRegex/) {
+                # dependencies of our includes are also our dependencies
+                scanIncludeDependencies($2, $dependencies, $file);
+            }
         }
+
+        close($IN);
     }
-    close($IN);
+
     # remove duplicates
     $dependencies = [uniq(@{$dependencies})];
+
     # finally create and fill dependencies file
-    open($OUT, '>', "$depFile") or die "Failed to create dependency file $depFile\n";
-    print $OUT "$_\n" for @{$dependencies};
-    close($OUT);
+    if (!$isBinary) {
+        open($OUT, '>', "$depFile") or die "Failed to create dependency file $depFile\n";
+        print $OUT "$_\n" for @{$dependencies};
+        close($OUT);
+    }
+
     # we're done, just mark it as scanned
     markAsScanned($path, $file, defined($parent) && length($parent) > 0, $dependencies);
 }
+
 
 sub newSrcFile
 {
@@ -326,6 +352,7 @@ sub newSrcFile
     return \%srcFile;
 }
 
+
 sub newIncludeFile
 {
     my $path = $_[0];
@@ -336,6 +363,7 @@ sub newIncludeFile
     return \%incFile;
 }
 
+
 sub assignTarget
 {
     my ($target, $realTarget) = @_;
@@ -343,6 +371,7 @@ sub assignTarget
     $TARGET = $target;
     $PARAMS{'target'} = $realTarget;
 }
+
 
 sub parseCommandLine
 {
@@ -388,11 +417,13 @@ sub parseCommandLine
     $PARAMS{'verbose'} ||= 0;
 }
 
+
 # make sure all the directories we require are present
 sub ensureDirectories
 {
     make_path(catdir(catdir($OBJ_DIR, $TARGET), 'deps'));
 }
+
 
 sub clean
 {
@@ -407,6 +438,7 @@ sub clean
     }
 }
 
+
 # set timestamp of every source file to maximum of it's own + it's dependencies
 sub updateTimestamp
 {
@@ -414,6 +446,7 @@ sub updateTimestamp
     $srcFiles{$path}{'timestamp'} =
         max($srcFiles{$path}{'timestamp'}, map { $includes{$_}{'timestamp'} } @{$srcFiles{$path}{'dependencies'}});
 }
+
 
 sub generateBitmaps
 {
@@ -434,7 +467,9 @@ sub generateBitmaps
         }
     }
     closedir($DIR);
+    $additionalIncludes{'..\bitmap'} = 1;   # for possible includes via NASM's incbin
 }
+
 
 sub runCommand
 {
@@ -448,6 +483,7 @@ sub runCommand
         exit($? >> 8);
     }
 }
+
 
 sub filterCommandOutput
 {
@@ -479,16 +515,18 @@ sub filterCommandOutput
     }
 }
 
+
 sub logl
 {
     print @_, "\n" if ($DEBUG);
 }
 
-sub buildFile
+
+sub buildFiles
 {
     my ($buildList) = @_;
-    my $cIncludeDirs = join(' ', map { "-I$_" } @additionalIncludes);
-    my $asmIncludeDirs = join(' ', map { "-I$_" } @additionalIncludes);
+    my $cIncludeDirs = join(' ', map { "-I$_" } keys %additionalIncludes);
+    my $asmIncludeDirs = join(' ', map { "-I$_" } keys %additionalIncludes);
     my $C_CMD_LINE = $CC . ' ' . $cIncludeDirs . ' ' . $CFLAGS;
     my $ASM_CMD_LINE = $AS . ' ' . $asmIncludeDirs . ' ' . $AFLAGS;
     my %buildCommands = ('.c' => $C_CMD_LINE, '.cpp' => $C_CMD_LINE, '.asm' => $ASM_CMD_LINE);
@@ -530,6 +568,7 @@ sub buildFile
     }
 }
 
+
 sub createLnkFile
 {
     my ($scriptTimestamp) = @_;
@@ -549,6 +588,7 @@ sub createLnkFile
     }
 }
 
+
 sub linkFiles
 {
     my ($scriptTimestamp) = @_;
@@ -566,6 +606,7 @@ sub linkFiles
     }
     print "PE Executable linked: $BASE_FNAME.exe [$TARGET_FULL VERSION]\n";
 }
+
 
 sub createBin
 {
@@ -592,6 +633,7 @@ sub createBin
     }
 }
 
+
 # return timestamp of a file, or 0 if not existing
 sub getTimestamp
 {
@@ -600,6 +642,7 @@ sub getTimestamp
     $ts ||= 0;
     return $ts;
 }
+
 
 sub replace
 {
@@ -613,6 +656,7 @@ sub replace
     }
 }
 
+
 sub recreateCommandLine
 {
     my $cmdLine;
@@ -621,6 +665,7 @@ sub recreateCommandLine
     $cmdLine .= ' -p' if $PARAMS{'verbose'};
     return $cmdLine;
 }
+
 
 sub showWarningReport
 {
@@ -636,8 +681,7 @@ sub showWarningReport
         }
         substr($warningReport, -1, 1, '');
         $warningReport .= '...' if ($numFilesPrinted < scalar keys %warnings);
-        # fails on Windows :/
-        #print color 'red';
+        print color 'red';
         print "$totalWarnings warning(s):\n$warningReport\n";
     }
 }

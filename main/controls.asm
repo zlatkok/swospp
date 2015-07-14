@@ -234,7 +234,7 @@ ControlsOnSelectCommon:
 .clear_controls_out:
         push byte 105           ; save changes to setup.dat
         mov  dword [A0], aSetup_dat
-        mov  dword [A1], setup_dat_buffer
+        mov  dword [A1], setupDatBuffer
         pop  dword [D1]
 WriteToLog "numLoopsJoy1 = %hd, numLoopsJoy2 = %hd", numLoopsJoy1, numLoopsJoy2
         calla WriteFile

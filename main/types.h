@@ -16,9 +16,7 @@ typedef byte uint8_t;
 typedef signed char int8_t;
 
 typedef unsigned int size_t;
-
-#define true  (1 == 1)
-#define false (1 == 0)
+typedef unsigned int bool32;
 
 #ifndef NULL
 #define NULL nullptr

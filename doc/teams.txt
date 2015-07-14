@@ -1,0 +1,1045 @@
+format team fajla (team.* u \data direktorijumu):
+
+Velicina celog tima je 684 bajta. Maksimalna velicina team fajla je 64000
+bajtova, tolika je velicina fiksnog bafera i sve preko toga prouzrokovace
+momentalan izlazak iz SWOS-a. Unutar team fajlova timovi su izgleda poredjani
+abecedno.
+
+Prvo ide word, big endian - broj timova u fajlu,
+zatim header tima, 76 bajtova
+nakon toga, ide 16 struktura koje predstavljaju igraca,
+velicina 38 bajtova
+
+header tima:
+------------
+offset:  size:  desc.
+-------  -----  -----
+   0       1    broj zemlje - broj team fajla (team.nnn), koristi se kao index
+                u nekakvu tablicu translacije, i na rezultat se dodaje 2. bajt
+                Fajlovi od 80 do 85 sadrze nacionalne timove po kontinentima:
+                80 - Evropa
+                81 - Afrika
+                82 - Juzna Amerika
+                83 - Severna Amerika
+                84 - Azija
+                85 - Australija i Okeanija
+                (za ostalo videti mapu team.* fajlova na kraju)
+   1       1    redni broj tima u fajlu
+   2       2    globalni broj tima: formira se tako sto se broj zemlje
+                konvertuje preko tablice i na njega se dodaje redni broj tima
+                (mora biti jedinstven za citav SWOS)
+   4       1    status tima (ko kontrolise tim):
+                  0 - tim nije selektovan
+                  1 - kompjuter
+                  2 - igrac-trener
+                  3 - trener
+                u fajlu je ovo polje nebitno
+   5      17    ime tima, null-terminated
+  22       1    pa valjda null terminator :P
+  23       1    and-uje sa 0xFE
+  24       1    taktika:
+                  0  - 4-4-2
+                  1  - 5-4-1
+                  2  - 4-5-1
+                  3  - 5-3-2
+                  4  - 3-5-2
+                  5  - 4-3-3
+                  6  - 4-2-4
+                  7  - 4-3-3
+                  8  - SWEEP
+                  9  - 5-2-3
+                  10 - ATACK
+                  11 - DEFEND
+                  12 - USER A
+                  13 - USER B
+                  14 - USER C
+                  15 - USER D
+                  16 - USER E
+                  17 - USER F
+  25       1    liga:
+                  0 - premier
+                  1 - prva
+                  2 - druga
+                  3 - treca
+                  4 - van lige
+                primarni set:
+  26       1    tip majice:
+                  0 - obicna
+                  1 - obojeni rukavi
+                  2 - vertikalne pruge
+                  3 - horizontalne pruge
+  27       1    boja pozadine majice
+                  0 - siva
+                  1 - bela
+                  2 - crna
+                  3 - narandzasta
+                  4 - crvena
+                  5 - plava
+                  6 - braon
+                  7 - svetlo plava
+                  8 - zelena
+                  9 - zuta
+  28        1   boja sara na majici
+  29        1   boja sortsa
+  30        1   boja carapa
+                sekundarni set:
+  31        1   tip majice
+  32        1   boja pozadine majice
+  33        1   boja sara na majici
+  34        1   boja sortsa
+  35        1   boja carapa
+  36       23   ime trenera, null-terminated
+  59        1   nekakav fleg (za fajl nebitan) mozda 0 - levi tim,
+                1 - desni tim
+                edit tactics meni pri inicijalizaciji upise 1
+  60       16   redni brojevi igraca, brojevi koji ce biti ispisani iznad njih
+                za vreme utakmice; takodje se po ovim brojevima ispisuju igraci
+                pre utakmice; po ovim brojevima se odlucuje i ko ce igrati
+                (1..11), a ko ce biti na klupi (12..16); po ovom redosledu se i
+                dodeljuju pozicije (verovatno se jos gleda i taktika)
+                <indeks je pozicija, a sadrzaj je broj igraca u fajlu - ovaj
+                niz kazuje koji igrac se nalazi na kojoj poziciji>
+
+  Velicina 76 bajtova.
+
+struktura igraca:
+----
+offset:  size:  desc.
+-------  -----  -----
+   0       1    nacionalnost:
+                  0   - ALB
+                  1   - AUT
+                  2   - BEL
+                  3   - BUL
+                  4   - CRO
+                  5   - CYP
+                  6   - TCH
+                  7   - DEN
+                  8   - ENG
+                  9   - EST
+                  10  - FAR
+                  11  - FIN
+                  12  - FRA
+                  13  - GER
+                  14  - GRE
+                  15  - HUN
+                  16  - ISL
+                  17  - ISR
+                  18  - ITA
+                  19  - LAT
+                  20  - LIT
+                  21  - LUX
+                  22  - MLT
+                  23  - HOL
+                  24  - NIR
+                  25  - NOR
+                  26  - POL
+                  27  - POR
+                  28  - ROM
+                  29  - RUS
+                  30  - SMR
+                  31  - SCO
+                  32  - SLO
+                  33  - SWE
+                  34  - TUR
+                  35  - UKR
+                  36  - WAL
+                  37  - YUG
+                  38  - BLS
+                  39  - SVK
+                  40  - ESP
+                  41  - ARM
+                  42  - BOS
+                  43  - AZB
+                  44  - GEO
+                  45  - SWI
+                  46  - IRL
+                  47  - MAC
+                  48  - TRK
+                  49  - LIE
+                  50  - MOL
+                  51  - CRC
+                  52  - SAL
+                  53  - GUA
+                  54  - HON
+                  55  - BHM
+                  56  - MEX
+                  57  - PAN
+                  58  - USA
+                  59  - BAH
+                  60  - NIC
+                  61  - BER
+                  62  - JAM
+                  63  - TRI
+                  64  - CAN
+                  65  - BAR
+                  66  - ELS
+                  67  - SVC
+                  68  - ARG
+                  69  - BOL
+                  70  - BRA
+                  71  - CHL
+                  72  - COL
+                  73  - ECU
+                  74  - PAR
+                  75  - SUR
+                  76  - URU
+                  77  - VEN
+                  78  - GUY
+                  79  - PER
+                  80  - ALG
+                  81  - SAF
+                  82  - BOT
+                  83  - BFS
+                  84  - BUR
+                  85  - LES
+                  86  - ZAI
+                  87  - ZAM
+                  88  - GHA
+                  89  - SEN
+                  90  - CIV
+                  91  - TUN
+                  92  - MLI
+                  93  - MDG
+                  94  - CMR
+                  95  - CHD
+                  96  - UGA
+                  97  - LIB
+                  98  - MOZ
+                  99  - KEN
+                  100 - SUD
+                  101 - SWA
+                  102 - ANG
+                  103 - TOG
+                  104 - ZIM
+                  105 - EGY
+                  106 - TAN
+                  107 - NIG
+                  108 - ETH
+                  109 - GAB
+                  110 - SIE
+                  111 - BEN
+                  112 - CON
+                  113 - GUI
+                  114 - SRL
+                  115 - MAR
+                  116 - GAM
+                  117 - MLW
+                  118 - JAP
+                  119 - TAI
+                  120 - IND
+                  121 - BAN
+                  122 - BRU
+                  123 - IRA
+                  124 - JOR
+                  125 - SRI
+                  126 - SYR
+                  127 - KOR
+                  128 - IRN
+                  129 - VIE
+                  130 - MLY
+                  131 - SAU
+                  132 - YEM
+                  133 - KUW
+                  134 - LAO
+                  135 - NKR
+                  136 - OMA
+                  137 - PAK
+                  138 - PHI
+                  139 - CHN
+                  140 - SGP
+                  141 - MAU
+                  142 - MYA
+                  143 - PAP
+                  144 - TAD
+                  145 - UZB
+                  146 - QAT
+                  147 - UAE
+                  148 - AUS
+                  149 - NZL
+                  150 - FIJ
+                  151 - SOL
+                  152 - CUS
+   1       1    ??? (boolean izgleda)
+   2       1    broj igraca (majice) u timu
+   3      23    ime igraca (null terminated)
+  26       1    pozicija igraca (na terenu) i slicica face
+                                 pozicija:
+                faca:    G    RB   LB   D    RW   LW   M    A
+                crni    0x10 0x30 0x50 0x70 0x90 0xB0 0xD0 0xF0
+                belac   0x00 0x20 0x40 0x60 0x80 0xA0 0xC0 0xE0
+                ridji   0x08 0x28 0x48 0x68 0x88 0xA8 0xC8 0xE8
+
+                bitovi 5,6,7 - pozicija, 0 = rezerva
+                bitovi 3 i 4 - faca (00 = belac, 10 = crnja, 01 = ridji)
+  27       1    ??? (init na nulu) 2.,3. i 4. bit su nesto, takodje bitovi
+                0 i 1, i bitovi 5,6,7
+                u fajlu je nebitno, pred partiju se bitovi 5,6,7 setuju na
+                osnovu slucajnih vrednosti
+  28       1    (h.o. nibble) ???
+                (l.o.  -||- ) passing (vrednosti 0..15)
+  29       1    (h.o.  -||- ) shooting
+                (l.o.  -||- ) heading
+  30       1    (h.o.  -||- ) tackling
+                (l.o.  -||- ) ball control
+  31       1    (h.o.  -||- ) speed
+                (l.o.  -||- ) finishing
+  32       1    cena igraca:
+                  0  - 25K-
+                  1  - 25K
+                  2  - 30K
+                  3  - 40K
+                  4  - 50K
+                  5  - 65K
+                  6  - 75K
+                  7  - 85K
+                  8  - 100K
+                  9  - 110K
+                  10 - 130K
+                  11 - 150K
+                  12 - 160K
+                  13 - 180K
+                  14 - 200K
+                  15 - 250K
+                  16 - 300K
+                  17 - 350K
+                  18 - 450K
+                  19 - 500K
+                  20 - 550K
+                  21 - 600K
+                  22 - 650K
+                  23 - 700K
+                  24 - 750K
+                  25 - 800K
+                  26 - 850K
+                  27 - 950K
+                  28 - 1M
+                  29 - 1.1M
+                  30 - 1.3M
+                  31 - 1.5M
+                  32 - 1.6M
+                  33 - 1.8M
+                  34 - 1.9M
+                  35 - 2M
+                  36 - 2.25M
+                  37 - 2.75M
+                  38 - 3M
+                  39 - 3.5M
+                  40 - 4.5M
+                  41 - 5M
+                  42 - 6M
+                  43 - 7M
+                  44 - 8M
+                  45 - 9M
+                  46 - 10M
+                  47 - 12M
+                  48 - 15M
+                  49 - 15M+
+  33       1      ? (init na nulu)
+  34       1      ? (init na nulu)
+  35       1      ? (init na nulu)
+  36       1      ? (init na nulu)
+  37       1      nekakav flag, 154 = trial igrac, 155 = rezerva
+
+Velicina 38 bajtova.
+
+
+===============================================================================
+Postoji i druga struktura tima, koja se koristi za vreme utakmice, cija je
+velicina 1704 bajtova (in-game team).
+
+offset:  size:  desc.
+-------  -----  -----
+                (konvertovane boje)
+                 primarni set:
+   0       2    tip majice
+   2       2    boja pozadine majice
+   4       2    boja pruga na majici
+   6       2    boja sortsa
+   8       2    boja carapa
+                 sekundarni set:
+  10       2    tip majice
+  12       2    boja pozadine majice
+  14       2    boja pruga na majici
+  16       2    boja sortsa
+  18       2    boja carapa
+  20       2    indeks markiranog igraca (-1 ako niko nije markiran)
+  22      17    ime tima, null terminated
+  39       1    ?
+  40       1    broj auto-golova
+  41       1    ? - ova tri polja su uvek nula u hil fajlovima
+
+Velicina headera - 42 bajta.
+
+  ofs22 se testira u FixupAndColorPitchFile, ako je donji bit setovan,
+  mesta timova su zamenjena
+
+Nakon headera, sledi 16 struktura igraca:
+
+offset:  size:  desc.
+-------  -----  -----
+   0       1    ? - uvek nula u hilovima, ako je razlicito od nule, onda se
+                preskace igrac (strelica ne moze da ga selektuje)
+   1       1    indeks igraca u file team strukturi
+   2       1    broj postignutih golova
+   3       1    redni broj igraca (broj za vreme partije)
+   4       1    indeks pozicije igraca, ili -1 ako je bio zamenjen
+   5       1    indeks face igraca
+   6       1    da li je igrac povredjen? [0,1]
+   7       1    ?
+   8       1    ne znam tacno sta je, ali ako je true igrac trosi samo 25
+                frejmova na uklizavanje umesto 55, mada se kasnije u svakom
+                slucaju vraca na -1 (wtf)
+   9       1    ima uticaja na kriterijum za crveni karton, cini mi se da je
+                kriterijum strozi ako je true
+                moguce cak da je true ako igrac vec ima zuti karton?
+  10       1    zuti/crveni kartoni - 1 ako je igrac dobio zuti karton, 3 ako
+                je dobio crveni (bilo direktno, bilo preko dva zuta)
+                bitflags:
+                bit 0 - zuti karton
+                bit 1 - crveni karton
+                opseg je izgleda 0..4
+  11       1    ne znam tacno sta je, ali ako je negativno igrac ne moze biti
+                zamenjen
+  12      14    broj + ime igraca (ili prvo slovo imena + prezime)
+  26       1    valjda zero-terminator za ovo gore
+  27       1    passing (vrednosti 0..7)
+  28       1    shooting
+  29       1    heading
+  30       1    tackling
+  31       1    ball control
+  32       1    speed
+  33       1    finishing
+  34       1    0..7, nesto za golmana, indeks u tablicu pointera
+                koji se upisuje u ofs24
+  35       1    or-uj sa player_file ofs103 & 0xff1f, bitovi 7,6 i 5 su nesto
+                - izgleda brzina treperenja crvenog krsta kada je igrac
+                povredjen; ako je ovo nula, igrac nije povredjen; ako celo
+                polje nije nula, a 5. bit nije setovan, onda je valjda trajna
+                povreda
+                5. bit oznacava laksu povredu (0x20)
+                bitovi 5, 6 i 7 oznacavaju stepen povrede, i na osnovu njihove
+                vrednosti na brzinu igraca se dodaje hendikep preko tablice:
+                0, -96, -128, -160, -192, -224, -256, -288
+  36       1    [0,1,2] ako je igrac igrao na utakmici, skoro uvek je 2, nekad
+                i jedan (ali to moze znaciti i da je igrao pa je zamenjen), a
+                nula je kada je igrac zavrsio utakmicu na klupi (nekad je i 1
+                u ovom slucaju)
+                u prvom i 46. minutu: ukoliko igrac ima 0 ili 1 zuti karton, i
+                ukoliko ovo polje nije 2, upisuje se kec
+                na poluvremenu i kraju partije: ukoliko ima 0 ili 1 zuti
+                karton, i ukoliko je ovo polje jedan, upisi 2
+                izgleda u kom je poluvremenu igrao igrac
+  37       1    index face igraca [0,1,2,3]
+  38      23    puno ime igraca
+
+61 je velicina strukture igraca. Igraci su izgleda poredjani po brojevima u
+file strukturi.
+
+Dalje sledi 686 nepoznatih bajtova, koji su u hil-ovima uvek nule.
+
+
+===============================================================================
+Struktura koja sadrzi opste informacije o timovima:
+
+offset:  size:  desc.
+-------  -----  -----
+   0       4    pointer na suparnicki tim (istu ovu strukturu)
+   4       2    kontrole igraca:
+                0 - kompjuter
+                1 - player 1 (sta god je namesteno u setup-u)
+                2 - player 2              -//-
+                od ovoga zavisi da li se poziva Player1StatusProc ili 2, i
+                odatle se kontrole kopiraju u ovu strukturu
+   6       2    broj igraca koji trenira ovaj tim (0 - niko nije trener, tim
+                kontrolise kompjuter ili igrac direktno)
+   8       2    da li je neki igrac trener ovog tima? (255 = da)
+  10       4    ptr na in-game strukturu tima
+  14       4    pointer na podatke za statistiku
+  18       2    broj tima (1 ili 2)
+  20       4    pointer na tablicu pointera na sprajtove svojih igraca
+                (in-game Sprites), ima ih tacno 11
+  24       4    ptr u pitch_cvt_table
+                na osnovu pravca u kome je okrenut golman (0..7), iz neke
+                tablice se stavlja pointer ovamo
+                ta tablica:
+                word 6   - brzina sprajta
+                word 8   - takodje neka brzina
+                word 48
+                word 52
+                word 54
+                word 58
+                za igrace je uvek jedna ista tablica
+  28       2    taktika tima
+  30       2    non-stop tajmer, povecava se do 10, pa onda opet na nulu
+  32       4    pointer na sprajt strukturu igraca koji se kontrolise
+                (ofs12 tog sprajta mora biti nula)
+  36       4    izgleda pointer na igraca koji prima pas
+  40       2    da li nas igrac kontrolise loptu?
+  42       2    nesto za turn flags (broj nekog bita)
+                ovde se upise camera direction
+  44       2    joy1_final_status
+                trenutni pravac, ili -1 ako nista nije pritisnuto
+                ne menja se ako pravac nije dozvoljen (recimo suprotan pravac
+                pri izvodjenju auta)
+  46       2    joy1_final_status (dva puta)
+                sadrzi trenutni pravac ili -1 ako nista nije pritisnuto
+                menja se za svaki frejm
+  48       1    brza vatra; vrlo brzo pucanje (-1 = true)
+  49       1    short fire flag; kratak pritisak na dugme; ali ne brzo
+                uzastopno, inace se setuje ofs48 (-1 = true)
+                nesto duze pucanje, samo u jednom frejmu setovano na -1
+  50       1    pucanje, = -1 sve dok je pritisnuto, 0 kad je pusteno
+  51       1    trenutno pucanje, setuje se na 1 vrlo kratko (na jedan frejm)
+  52       2    ??? (UpdatePlayers ga setuje) (za vreme utakmice nula)
+                ako je razlicito od nule, resetuj joy1_short_fire_counter na
+                nulu (za CPU tim)
+                mislim da je true ako igrac udara glavom
+  54       2    fire counter; uvecava se dok je pucanje; resetuje se kad nije
+                bez ogranicenja izgleda
+  56       2    pravac igraca koji kontrolise loptu:
+                        0
+                    7   |   1
+                        |
+                   6 ---+--- 2
+                        |
+                    5   |   3
+                        4
+                (menja se samo dok igrac zaista kontrolise loptu)
+  58       2    setuje se kada se sutne lopta, i resetuje se tek kada se pusti
+                pucanje
+  60       1    ???
+                na ovo se dodaje proizvod rezultata iz ofs56 tablice i
+
+                rezultata iz ofs118 tablice
+  61       1    true ako je kontrolisani igrac vrlo blizu lopte (d <= 32u)
+  62       1    true ako je kontrolisani igrac blizu lopte (32u < d <= 72u)
+  63       1    true ako je kontrolisani igrac nije mnogo daleko od lopte
+                (72u < d <= 2450u)
+  64       1    true ako je z lopte manje ili jednako 4
+  65       1    true ako je z lopte vece od 4 i manje jednako 8
+  66       1    true ako je z lopte vece od 8 i manje jednako 12
+  67       1    true ako je z lopte vece od 12 i manje jednako 17
+  68       1    true ako je z lopte vise od 17
+  69       1    u ovo se kopira ofs61
+  70       2    ??? nesto kad se golman baca
+  72       2    ??? 4 bajta pointer na nekog igraca?!
+                reko bih pointer na poslednjeg igraca koji je igrao glavom
+  74       2    udaljenost od lopte
+  76       2    ??? 5, -5 (timer)
+                ako je pozitivno smanji za jedan, ako je negativno povecaj za
+                jedan
+                ako je negativno, stavi -1 u ofs118
+                ima veze sa komentarom goalkeeper saved...
+  78       2    ???
+  80       2    true - golman se baca udesno
+  82       2    true - golman se baca ulevo
+  84       2    255 ako je lopta van igre (ili kod golmana); nula inace
+  86       2    255 ako je lopta van igre (ili kod golmana)
+                1 ako golman vodi loptu
+                0 inace
+  88       2    1 ako je dodavanje zapoceto; ostaje jedan dok lopta ne dodirne
+                svog igraca (i to verovatno onog kome je pas upucen)
+  90       2    true samo kada se vrsi precizno dodavanje, tj. kada je igrac
+                kome se dodaje privremeno kontrolisan od strane kompjutera
+  92       2    tajmer, inicijalizovan na 25; pocinje da otkucava kada igrac
+                koji nije bio kontrolisan postane kontrolisan; kada stigne do
+                nule ostaje tako
+  94       2    1 dok je lopta u igri, nula za vreme prekida
+  96       2    izgleda 1 kada igrac kontrolise kameru za vreme prekida
+                (npr. izvodi aut)
+  98       2    x koordinata lopte
+ 100       2    y koordinata lopte
+ 102       2    brojac, incijalno 25, otkucava kad se igrac otarasi lopte
+                sutem ili dodavanjem (ali nikako drugacije), inace nula
+                ako je razlicito od nule, oduzmi jedan
+ 104       4    pointer na nekakav sprajt (koji jos ne znam)
+                menja se prilikom dodavanja lopte i suta
+ 108       2    ???
+ 110       2    true kada lopta moze da se vodi, kada "miruje", false prilikom
+                suta i dodavanja (sticky)
+ 112       2    pravac igraca koji vodi loptu, menja se samo dok stvarno vodi,
+                sticky, init na -1
+ 114       2    ???
+ 116       2    ???
+ 118       2    fels tajmer, aktivira se samo kada se igrac oslobodi lopte
+                preko suta ili dodavanja, i dok je aktivan moguce je primeniti
+                fels na sut/dodavanje (ako igrac pritisne levo/desno); kada
+                istekne nema vise mogucnosti felsa
+                init na -1 (= fels nije u toku), opseg 0..9
+                ako je nula, ponisti i levi i desni fels (polja 120 i 122)
+                (moguci pocetak felsiranja)
+                koristi se kao indeks u tablicu:
+                dw 5, 4, 3, 2, 2, 2, 2, 1, 1, 1
+                ako nije 4 povecava se za jedan, i ako dodje do 10 postavlja
+                se na -1 stoji na -1
+                smisao ovog tajmera je da mora malo vremena da prodje nakon
+                suta/dodavanja da bi fels mogao da se primeni i ako se pritisne
+                levo/desno za to vreme dodajemo fels
+ 120       2    levi fels, boolean, relativno u odnosu na pravac igraca
+ 122       2    desni fels,               - || -
+ 124       2    flag za dugacko dodavanje - kada se doda, i brzo otpusti
+                pucanje + levo/desno/nista nakon toga - tada dodavanje moze da
+                ide i do pola terena (sticky, obican pas ga resetuje)
+                smanji brzinu igraca koji dodaje na 12,5%
+                nakon sto je aktivirano ne cacka se nista vise oko brzine
+                igraca
+ 126       2    dugacko uvrnuto dodavanje - kada se pritsne nazad i fels u
+                stranu, nadogradjuje se na obicno dodavanje (ne na dugo!)
+                i za ovo smanji brzinu igracu na 12,5%, i posle ne diraj
+                nije bas jasno u cemu je razlika izmedju ovog i prethodnog
+                polja
+ 128       2    passing flag; setovan bez obzira da li se dodaje u prazno;
+                resetovanje nije bas najbolje uradjeno
+                ako je razlicito od nule, oduzmi jedan
+ 130       2    AI tajmer; inkrementuje se u svakom frejmu ako kompjuter
+                kontrolise tim; ne resetuje se nikad
+ 132       2    AI; tajmer, init na 4; setuje se random
+ 134       2    ???
+ 136       2    ???
+ 138       2    ??? (tajmer)
+                nula za vreme utakmice
+ 140       2    true ako golman vodi loptu kao obican igrac
+                koliko sam video, za vreme utakmice nula
+ 142       2    ako je != 0 preskoci AI
+                ne apdejtuj loptu ako je true
+ 144       1    joy1_secondary_fire - -1 dok se drzi drugo dugme, 0 dok je
+                pusteno
+
+Velicina 145 bajtova.
+
+
+===============================================================================
+Struktura koja sadrzi informacije o statistici timova:
+
+offset:  size:  desc.
+-------  -----  -----
+   0       2     vreme poseda lopte (u sekundama ili vec nekim jedinicama)
+   2       2     broj izvedenih kornera
+   4       2     broj faulova
+   6       2     broj zutih kartona
+   8       2     broj crvenih kartona
+  10       2     sutevi na gol (ukupno)
+  12       2     sutevi u okvir gola
+
+Velicina 14 bajtova.
+
+
+===============================================================================
+Mapa team fajlova:
+
+fajl:                zemlja:
+------------        ----------
+team.000             Albanija
+team.001             Austrija
+team.002             Belgija
+team.003             Bugarska
+team.004             Hrvatska
+team.005             Kipar
+team.006             Ceska
+team.007             Danska
+team.008             Engleska
+team.010             Estonija
+team.011             Farska ostrva
+team.012             Finska
+team.013             Francuska
+team.014             Nemacka
+team.015             Grcka
+team.016             Madjarska
+team.017             Island
+team.018             Republika Irska
+team.019             Izrael
+team.020             Italija
+team.021             Letonija
+team.022             Litvanija
+team.023             Luksemburg
+team.024             Malta
+team.025             Holandija
+team.026             Severna Irska
+team.027             Norveska
+team.028             Poljska
+team.029             Portugal
+team.030             Rumunija
+team.031             Rusija
+team.032             San Marino
+team.033             Skotska
+team.034             Slovenija
+team.035             Spanija
+team.036             Svedska
+team.037             Svajcarska
+team.038             Turska
+team.039             Ukrajina
+team.040             Vels
+team.041             Jugoslavija
+team.042             Alzir
+team.043             Argentina
+team.044             Australija
+team.045             Bolivija
+team.046             Brazil
+team.047             Kostarika
+team.048             Cile
+team.049             Kolumbija
+team.050             Ekvador
+team.051             El Salvador
+team.055             Japan
+team.057             Juzna Koreja
+team.059             Malezija
+team.060             Meksiko
+team.062             Novi Zeland
+team.064             Paragvaj
+team.065             Peru
+team.066             Surinam
+team.067             Tajvan
+team.068             Izgleda neki azijski kup
+team.069             Juzno-africka republika
+team.070             Tanzanija
+team.071             Urugvaj
+team.072             customs valjda
+team.073             USA
+team.074             svetsko prvenstvo
+team.075             Indija
+team.076             Belorusija
+team.077             Venecuela
+team.078             Slovacka
+team.079             Gana
+team.080             Evropa          - nacionalne selekcije
+team.081             Afrika          -       - || -
+team.082             Juzna Amerika   -       - || -
+team.083             Severna Amerika -       - || -
+team.084             Azija           -       - || -
+team.085             Okeanija        -       - || -
+team.172             stari timovi (ima i Zvezda 90-91.)
+..\customs.edt       edited custom teams
+
+Interna tabela, preko koje se vrsi translacija brojeva zemalja u stringove.
+countries_table:
+                  0   - Albanija
+                  1   - Austrija
+                  2   - Belgija
+                  3   - Bugarska
+                  4   - Hrvatska
+                  5   - Kipar
+                  6   - Ceska
+                  7   - Danska
+                  8   - Engleska
+                  9   - Engleska (drugi put, ali se ne upotrebljava)
+                  10  - Estonija
+                  11  - Farska ostrva
+                  12  - Finska
+                  13  - Francuska
+                  14  - Nemacka
+                  15  - Grcka
+                  16  - Madjarska
+                  17  - Island
+                  18  - Republika Irska
+                  19  - Izrael
+                  20  - Italija
+                  21  - Letonija
+                  22  - Litvanija
+                  23  - Luksemburg
+                  24  - Malta
+                  25  - Holandija
+                  26  - Severna Irska
+                  27  - Norveska
+                  28  - Poljska
+                  29  - Portugal
+                  30  - Rumunija
+                  31  - Rusija
+                  32  - San Marino
+                  33  - Skotska
+                  34  - Slovenija
+                  35  - Spanija
+                  36  - Svedska
+                  37  - Svajcarska
+                  38  - Turska
+                  39  - Ukrajina
+                  40  - Vels
+                  41  - Jugoslavija
+                  42  - Alzir
+                  43  - Argentina
+                  44  - Australija
+                  45  - Bolivija
+                  46  - Brazil
+                  47  - /
+                  48  - Cile
+                  49  - Kolumbija
+                  50  - Ekvador
+                  51  - El Salvador
+                  52  - /
+                  53  - /
+                  54  - /
+                  55  - Japan
+                  56  - /
+                  57  - /
+                  58  - /
+                  59  - /
+                  60  - Meksiko
+                  61  - /
+                  62  - Novi Zeland
+                  63  - /
+                  64  - Paragvaj
+                  65  - Peru
+                  66  - Surinam
+                  67  - Tajvan
+                  68  - /
+                  69  - Juzna Afrika
+                  70  - /
+                  71  - Urugvaj
+                  72  - custom
+                  73  - USA
+                  74  - /
+                  75  - Indija
+                  76  - Belorusija
+                  77  - Venecuela
+                  78  - Slovacka
+                  79  - Gana
+                  80  - Evropa
+                  81  - Afrika
+                  82  - Juzna Amerika
+                  83  - Severna Amerika
+                  84  - Azija
+                  85  - Okeanija
+                  86..99 - /
+                  100 - edited customs
+                  101..251 - /
+                  252 - kvalifikacije za svetsko prvenstvo
+                  253 - evropsko prvenstvo
+                  254 - svet
+                  255 - null country
+
+===============================================================================
+Niz 12 osmobajtnih struktura predstavljaju listu utakmica u contest meniju,
+te strukture su u stvari dva pointera.
+
+Ono na sta pokazuje prvi pointer:
+
+offset:  size:  description
+-------  -----  -----------
+   0       1    ???
+   5       1    ???
+
+Ono na sta pokazuje drugi pointer:
+
+offset:  size:  description
+-------  -----  -----------
+  11       1    neki flegovi
+                ako je peti bit setovan i ako je sedmi bit resetovan, printaj
+                "1ST LEG %0-%1"
+                ako je peti bit resetovan, kao i osmi, ne printaj nista
+                inace:
+                ako su: drugi i treci bit resetovani a sesti bit setovan,
+                printaj "(REPLAY)"
+                i tako dalje i tako blize...
+
+  12       2    broj prvog tima
+  14       2    broj drugog tima
+  16       2    ???
+  18       2    ???
+  20       2    ???
+
+===============================================================================
+Organizacija timova
+
+Postoji vise tabela, ali centralna je competitions_table. To je tablica
+pointera na promenljive strukture. Prvi clan je dword, moze biti obican
+pointer, a moze biti i -1 i -2, kao i broj manji od 256 gde taj broj
+predstavlja broj zemlje. Takodje se posebno gleda vrednost indeksa (koja je
+zemlja u pitanju) pa i tu postoji razlicit tretman.
+
+Prvo ide pointer na ligu zemlje. Zatim -2 pa pointeri na kupove i dodatna
+takmicenja. Ona se ne prikazuju kada se bira tim koji ce se voditi u karijeri.
+Kraj je oznacen sa -1.
+
+Ukoliko je u pitanju kontinent (indeksi 80-85) ili word_table, onda nakon kraja
+tablice (-1 dworda) slede bajtovi - brojevi zemalja koje pripadaju kontinentu,
+i niz tih bajtova zavrsava se bajtom -1 (0xff).
+
+Format takmicenja:
+
+offset:  size:  description
+-------  -----  -----------
+   0       1    broj takmicenja
+   1       1    tip takmicenja: 0 = divizija, 1 = kup, 2 = liga
+   2       1    broj zemlje, tj. dat fajla iz koga se citaju timovi, 255 =
+                custom
+   3       1    pocetni mesec takmicenja (puta 8)
+   4       1    zavrsni mesec takmicenja   -||-
+   5       1    custom name ako je razlicito od nule: ovo + pointer na
+                takmicenje + 5 daju pointer na dword, koji kada se sabere sa
+                aChairmanScenes (offset 0x16f8) daje pointer na ime takmicenja
+   6       3    ???
+   9       1    broj liga
+
+
+1) 14BDC6 (-1 terminated)
+2) 14BE62 (     -||-    ) - tablica kontinentalnih takmicenja
+3) 14BE7E (     -||-    )
+4) 14BF36 (     -||-    )
+5) 14BFD2, verovatno kupovi,
+
+
+GetPlayerPrice
+==============
+
+Odredjuje cenu zadatog igraca.
+
+terminologija:
+- kvadrant - teren je podeljen u 35 kvadranata na kojima se moze naci lopta
+- za svakog igraca je definisan odredisni kvadrant na koji ce trcati za svaki
+  od 35 kvadranata na kojima se moze naci lopta
+
+Algoritam:
+- uzmi skilove igraca i spakuj ih u jedan dword sledecim redosledom (niblovi):
+  ???, passing, shooting, heading, tackling, ball control, speed, finishing
+- skilovi inace zauzimaju po pola bajta, znaci 0..15 ali se prilikom
+  kalkulisanja cene uzimaju u obzir samo donja tri bita (vrednosti % 8)
+- za svaki kvadrant lopte:
+    - ukoliko trenutni kvadrant nije u gornja i donja dva reda i nije donji
+      centralni kvadrant ispred sesnaesterca odredi broj igraca koji tamo idu
+      (uporedi sa kvadrantima na koji trce svih 10 igraca kad je lopta na
+      trenutnom kvadrantu)
+    - inace za pomenute kvadrante se uzima broj jedan
+    - za CPU team vrednuj svaki kvadrant sa 1
+    - spremi vrednost u numPlayersAtQuadrant
+  - na osnovu odredisnog kvadranta igrac uzima se maska iz tablice, tu su ponderi
+    skilova spakovani u dword, sa vrednostima od 0 do 5
+
+    priceSkillPonders: (indeks je broj kvadranta)
+    dd 00005020h, 00024010h, 00034000h, 00024010h, 00005020h, 01003030h, 01013020h
+    dd 00024010h, 01013020h, 01003030h, 02002030h, 02013010h, 01013000h, 02013010h
+    dd 02002030h, 02010130h, 02013000h, 03011000h, 02013000h, 02010130h, 02001230h
+    dd 03000220h, 04100200h, 03000220h, 02001230h, 03000240h, 02210220h, 03230312h
+    dd 02210220h, 03000240h, 03000330h, 02200221h, 01220124h, 02200221h, 03000330h
+
+  - poenta ovoga je da se za odbrambene pozicije vise vrednuje npr. tackling,
+    za napadacke shooting/finishing itd.
+  - primetimo da je maksimalna vrednost zbira pondera skilova 14, a minimalna 5
+  - maksimalno razlicitih skilova po poziciji: 6, minimalno 2
+
+- vrednost skill-a se pomera u opseg 1..8, i zatim se odredjuje vrednost sa kojom
+  se mnozi iz sledece tablice:
+
+  skillValuePonders:
+  db 0, 1, 3, 6, 10, 15, 21, 28
+  indeks je ekstraktovana vrednost skill-a iz priceSkillPonders
+
+- tako ponderisana vrednost skill-a se smesta u akumulator
+
+  ponder | val |
+         |     | skill: 1   2   3   4   5   6   7   8
+  =======+=====+=====================================
+    0    |  0  |        0   0   0   0   0   0   0   0
+    1    |  1  |        1   2   3   4   5   6   7   8
+    2    |  3  |        3   6   9  12  15  18  21  24
+    3    |  6  |        6  12  18  24  30  36  42  48
+    4    |  10 |       10  20  30  40  50  60  70  80
+    5    |  15 |       15  30  45  60  75  90 105 120
+    /    |  21 |
+    /    |  28 |
+
+- na osnovu tablice minimalna vrednost akumulatora je na kraju 8, a maksimalna 200
+- taj akumulator je nekakva vrednost skilova igraca za dati kvadrant
+
+- zbirna vrednost skilova se prepolovljuje [4..100]
+- dalje se mnozi sa koeficijentom iz donje tablice:
+  skillsPerQuadrant:
+  db 4, 4, 4, 3, 3, 4, 4, 4, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2, 3, 2, 1, 1, 2, 3, 1, 1, 1, 2
+  db 3, 3, 4, 4, 4, 3, 3, 4, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 2, 2, 2, 3, 3, 2, 1, 1, 2, 3, 2, 1, 1, 1, 3
+  db 3, 4, 4, 4, 3, 3, 4, 4, 4, 3, 2, 4, 4, 4, 2, 1, 3, 4, 3, 1, 1, 2, 3, 2, 1, 1, 1, 3, 1, 1, 1, 1, 4, 1, 1
+  db 3, 3, 1, 2, 2, 3, 3, 2, 2, 2, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3
+  db 2, 2, 1, 3, 3, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4, 3, 3, 3, 4, 4
+  db 1, 1, 2, 1, 1, 2, 3, 4, 3, 2, 3, 4, 4, 4, 3, 3, 4, 4, 4, 3, 3, 4, 4, 4, 3, 1, 2, 3, 2, 1, 1, 1, 1, 1, 1
+  db 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 3, 2, 1, 2, 3, 4, 3, 2, 3, 4, 4, 4, 3, 3, 4, 4, 4, 3, 3, 4, 4, 4, 3
+
+  Red se odredjuje na osnovu pozicije igraca: G, RB, LB, D, RW, LW, M, A (golman se ne racuna)
+  Ideks unutar reda je kvadrant. Vrednost oznacava koliko vrednujemo kvadrant za zadatog igraca (na osnovu pozicije
+  na kojoj igra). Tako da vidimo da se za odbrambene igrace vise vrednuju kvadranti blizi nasem golu, dok se to
+  pomera kako se blizimo napadacima.
+
+- vrednost je sada [4..400]
+
+- tablica poredjana po pod-matricama (prvo razviti svaku pod-matricu u red za linearni prikaz):
+quadrantDistanceFactor:
+32,  24,  16,   8,   2,     24,  32,  24,  16,   8,     16,  24,  32,  24,  16,      8,  16,  24,  32,  24,      2,   8,  16,  24,  32,
+24,  24,  16,   8,   2,     24,  24,  24,  16,   8,     16,  24,  24,  24,  16,      8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+16,  16,  16,   8,   2,     16,  16,  16,  16,   8,     16,  16,  16,  16,  16,      8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+ 8,   8,   8,   8,   2,      8,   8,   8,   8,   8,      8,   8,   8,   8,   8,      8,   8,   8,   8,   8,      2,   8,   8,   8,   8,
+ 2,   2,   2,   2,   2,      2,   2,   2,   2,   2,      2,   2,   2,   2,   2,      2,   2,   2,   2,   2,      2,   2,   2,   2,   2,
+ 1,   1,   1,   1,   1,      1,   1,   1,   1,   1,      1,   1,   1,   1,   1,      1,   1,   1,   1,   1,      1,   1,   1,   1,   1,
+ 0,   0,   0,   0,   0       0,   0,   0,   0,   0       0,   0,   0,   0,   0       0,   0,   0,   0,   0       0,   0,   0,   0,   0
+
+24,  24,  16,   8,   2,     24,  24,  24,  16,   8,     16,  24,  24,  24,  16,      8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+32,  24,  16,   8,   2,     24,  32,  24,  16,   8,     16,  24,  32,  24,  16,      8,  16,  24,  32,  24,      2,   8,  16,  24,  32,
+24,  24,  16,   8,   2,     24,  24,  24,  16,   8,     16,  24,  24,  24,  16,      8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+16,  16,  16,   8,   2,     16,  16,  16,  16,   8,     16,  16,  16,  16,  16,      8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+ 8,   8,   8,   8,   2,      8,   8,   8,   8,   8,      8,   8,   8,   8,   8,      8,   8,   8,   8,   8,      2,   8,   8,   8,   8,
+ 2,   2,   2,   2,   2,      2,   2,   2,   2,   2,      2,   2,   2,   2,   2,      2,   2,   2,   2,   2,      2,   2,   2,   2,   2,
+ 1,   1,   1,   1,   1       1,   1,   1,   1,   1       1,   1,   1,   1,   1       1,   1,   1,   1,   1       1,   1,   1,   1,   1
+
+16,  16,  16,   8,   2,     16,  16,  16,  16,   8,     16,  16,  16,  16,  16,      8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+24,  24,  16,   8,   2,     24,  24,  24,  16,   8,     16,  24,  24,  24,  16,      8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+32,  24,  16,   8,   2,     24,  32,  24,  16,   8,     16,  24,  32,  24,  16,      8,  16,  24,  32,  24,      2,   8,  16,  24,  32,
+24,  24,  16,   8,   2,     24,  24,  24,  16,   8,     16,  24,  24,  24,  16,      8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+16,  16,  16,   8,   2,     16,  16,  16,  16,   8,     16,  16,  16,  16,  16,      8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+8,    8,   8,   8,   2,     8,    8,   8,   8,   8,      8,   8,   8,   8,   8,      8,   8,   8,   8,   8,      2,   8,   8,   8,   8,
+2,    2,   2,   2,   2      2,    2,   2,   2,   2       2,   2,   2,   2,   2       2,   2,   2,   2,   2       2,   2,   2,   2,   2
+
+ 8,   8,   8,   8,   2,      8,   8,   8,   8,   8,       8,   8,   8,   8,   8,     8,   8,   8,   8,   8,      2,   8,   8,   8,   8,
+16,  16,  16,   8,   2,     16,  16,  16,  16,   8,      16,  16,  16,  16,  16,     8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+24,  24,  16,   8,   2,     24,  24,  24,  16,   8,      16,  24,  24,  24,  16,     8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+32,  24,  16,   8,   2,     24,  32,  24,  16,   8,      16,  24,  32,  24,  16,     8,  16,  24,  32,  24,      2,   8,  16,  24,  32,
+24,  24,  16,   8,   2,     24,  24,  24,  16,   8,      16,  24,  24,  24,  16,     8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+16,  16,  16,   8,   2,     16,  16,  16,  16,   8,      16,  16,  16,  16,  16,     8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+ 8,   8,   8,   8,   2       8,   8,   8,   8,   8        8,   8,   8,   8,   8      8,   8,   8,   8,   8       2,   8,   8,   8,   8
+
+  2,   2,   2,   2,   2,      2,   2,   2,   2,   2,      2,   2,   2,   2,   2,     2,   2,   2,   2,   2,      2,   2,   2,   2,   2,
+  8,   8,   8,   8,   2,      8,   8,   8,   8,   8,      8,   8,   8,   8,   8,     8,   8,   8,   8,   8,      2,   8,   8,   8,   8,
+ 16,  16,  16,   8,   2,     16,  16,  16,  16,   8,     16,  16,  16,  16,  16,     8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+ 24,  24,  16,   8,   2,     24,  24,  24,  16,   8,     16,  24,  24,  24,  16,     8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+ 32,  24,  16,   8,   2,     24,  32,  24,  16,   8,     16,  24,  32,  24,  16,     8,  16,  24,  32,  24,      2,   8,  16,  24,  32,
+ 24,  24,  16,   8,   2,     24,  24,  24,  16,   8,     16,  24,  24,  24,  16,     8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+ 16,  16,  16,   8,   2      16,  16,  16,  16,   8      16,  16,  16,  16,  16      8,  16,  16,  16,  16       2,   8,  16,  16,  16
+
+ 1,   1,   1,   1,   1,       1,   1,   1,   1,   1,      1,   1,   1,   1,   1,     1,   1,   1,   1,   1,      1,   1,   1,   1,   1,
+ 2,   2,   2,   2,   2,       2,   2,   2,   2,   2,      2,   2,   2,   2,   2,     2,   2,   2,   2,   2,      2,   2,   2,   2,   2,
+ 8,   8,   8,   8,   2,       8,   8,   8,   8,   8,      8,   8,   8,   8,   8,     8,   8,   8,   8,   8,      2,   8,   8,   8,   8,
+16,  16,  16,   8,   2,       16,  16,  16,  16,   8,     16,  16,  16,  16,  16,    8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+24,  24,  16,   8,   2,       24,  24,  24,  16,   8,     16,  24,  24,  24,  16,    8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+32,  24,  16,   8,   2,       24,  32,  24,  16,   8,     16,  24,  32,  24,  16,    8,  16,  24,  32,  24,      2,   8,  16,  24,  32,
+24,  24,  16,   8,   2        24,  24,  24,  16,   8      16,  24,  24,  24,  16     8,  16,  24,  24,  24       2,   8,  16,  24,  24
+
+ 0,   0,   0,   0,   0,       0,   0,   0,   0,   0,       0,   0,   0,   0,   0,    0,   0,   0,   0,   0,      0,   0,   0,   0,   0,
+ 1,   1,   1,   1,   1,       1,   1,   1,   1,   1,       1,   1,   1,   1,   1,    1,   1,   1,   1,   1,      1,   1,   1,   1,   1,
+ 2,   2,   2,   2,   2,       2,   2,   2,   2,   2,       2,   2,   2,   2,   2,    2,   2,   2,   2,   2,      2,   2,   2,   2,   2,
+ 8,   8,   8,   8,   2,       8,   8,   8,   8,   8,       8,   8,   8,   8,   8,    8,   8,   8,   8,   8,      2,   8,   8,   8,   8,
+16,  16,  16,   8,   2,      16,  16,  16,  16,   8,      16,  16,  16,  16,  16,    8,  16,  16,  16,  16,      2,   8,  16,  16,  16,
+24,  24,  16,   8,   2,      24,  24,  24,  16,   8,      16,  24,  24,  24,  16,    8,  16,  24,  24,  24,      2,   8,  16,  24,  24,
+32,  24,  16,   8,   2       24,  32,  24,  16,   8       16,  24,  32,  24,  16     8,  16,  24,  32,  24       2,   8,  16,  24,  32
+
+- red se bira na osnovu kvadranta lopte, a kolona je kvadrant na koji igrac treba da ode za zadati kvadrant lopte
+- ovo je izgleda koeficijent uticaja blizine kvadranta - sto je dalji kvadrant na koji igrac treba da otrci to ce manji uticaj na ukupni
+  zbir imati skill koeficijent tog kvadranta
+- nakon mnozenja rezultat se deli sa 8, tako da su koeficijenti u stvari 0..4, ali pomnozeni sa 8 radi preciznijeg mnozenja i deljenja
+- vrednost je sada [0..1600]
+- ako ima vise od dva igraca koji idu na taj kvadrant (znaci jos neki osim ovog), vrednost se deli sa brojem igraca koji tamo idu manje jedan
+  [0..1600] / 1..9
+- za CPU team se ne vrsi deljenje
+- zatim se mnozi sa "faktorom blizine" (takodje se preskace za CPU tim)
+  - broje se "blizi" kvadranti za trenutni kvadrant, po tablici iznad, racunaju se samo kvadranti sa udaljenoscu barem 8
+  - za svaki od tih "bliskih" kvadranata se gleda odredisni kvadrant, i on se poredi sa odredisnim kvadrantom trenutnog
+  - broje se odredisni kvadranti koji nisu udaljeniji od 4 (efektivno isto ko ovo iznad)
+  - faktor cene se mnozi sa brojem blizih kvadranata i deli sa brojem blizih odredisnih kvadranata (taj kolicnik moze biti max 1)
+- ovo je sve po kvadrantu, na kraju se sabira za svih 35 kvadranata [0..56000]
+- deli se sa 350 [0..160]
+- oduzima se 8 [-8..152]
+- namesta se u opseg [0..49], ako je manje od 0 => 0, ako je vece od 49 => 49
+- od dobijenog rezultata se oduzima cena igraca iz fajla
+- ukoliko je nasa izracunata cena manja, to ce biti rezultat i vracamo se
+- ukoliko je veca, sa razlikom indeksiramo tablicu plPricesIncreaseTable i na rezultat dodajemo na cenu iz fajla,
+  i to vracamo kao rezultat
+plPricesIncreaseTable:
+db 0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10,
+db 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
+- s obzirom da su oba broja u opsegu [0..49], razlika mora biti u opsegu [1..49]
+- vrednosti tablice su tako nastelovane da ce rezultat u svakom slucaju biti [0..49]
+- vrednosti tablice moraju biti manje ili jednake vrednosti indeksa da bi rezultat bio u [0..49] opsegu

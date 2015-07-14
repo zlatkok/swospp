@@ -1,4 +1,27 @@
+13.07.2015.
+- WriteToLog parameters finally enclosed in only one parentheses pair :)
+27.06.2015.
+- development is going fine, lot of bugs have been fixed and it feels like I
+  might be back on track; the reason I was writing this entry was to note that
+  GCC is treating bool as single byte value, while Watcom was treating it as
+  full double word - this is what asm code was expecting and it already caused
+  few weird and hard to track bugs
+22.06.2015.
+- some small bugs fixed, artefacts of porting are still showing up; today was
+  forced to merge .rdata into .data despite having support for it in pe2bin -
+  it seems executable was built in such a way that beginning of an array in bss
+  section was before the end of data (despite alignment, probably to use space
+  more efficiently); however I have no idea how to detect this, and correctly
+  offset fixup to point to bss (since reference is within raw size of .data
+  section)
+  edit: lowering file-align in alink fixed that problem even without merging,
+  but both lowering alignment and merging .rdata lowered executable size, so I'm
+  using both now ;)
+  edit 2: just discovered that I did some testing with -Os and forgot it on; the
+  whole deal was probably some size optimization... right now on -O3 it leaves
+  plenty of space between last data and first bss byte
 29.05.2015.
+- wrote IPX server in Python to be used in stress testing the network (still
   gotta implement packet loss, lag inducing and packet reordering)
 24.05.2015.
 - there are still some bugs, but porting to GCC is almost done!
@@ -6,7 +29,7 @@
 - lots of fixes during the porting; especially to pe2bin and alink, and even
   bindmp
 02.05.2014.
-- porting the source to GCC is underway
+- porting the source to GCC is under-way
 - fixed perl makefile to include it's own timestamp in rebuild calculation - now
   everything rebuilds if script is changed (as it should)
 11.11.2014.
@@ -35,7 +58,7 @@
   register gets which param... wooops, and found out just now; seemingly small
   changes can have potent effect, one can never be too careful
 05.11.2014.
-- found out iswhat macros were voulnerable (isspace, isdigit...), they weren't
+- found out iswhat macros were vulnerable (isspace, isdigit...), they weren't
   normalizing input index before accessing the table, they were assuming it was
   a char; this caused infinite loop in xml parser when last character was
   whitespace following non-whitespace - ouch...
@@ -55,17 +78,16 @@
   back to registers, and continue execution right after invalid bytes; it
   actually worked surprisingly well!
 15.09.2014.
-- velika zajebancija oko simbola za test build - u util.c imali smo neke f-je
-  tipa memmove koje su samo wrapper za SWOS-ov memmove (swos_libc_memmove_), i
-  ja sam pokusavao u mock fajlu to da prevezem na Watcom-ov memmove, ali je
-  linker pronalazio simbol u util.c i na njega vezivao - dobijao sam jednu lepu
-  stack overflow beskonacnu rekurziju :P; uspeo sam da popravim tako sto sam
-  eksplicitno linkeru navodio objektne fajlove iz lib fajla _PRE_ korisnickih
-  obj fajlova
+- big fuss with test build symbols - in util.c we had some functions such as
+  memmove which were only wrappers for SWOS' memmove (swos_libc_memmove_), and
+  in mock file I was trying to reroute it to Watcom's memmove, but the linker
+  was discovering symbol in util.c and linked to it - resulting in lovely stack
+  overflow due to infinite recursion :P; managed to fix it by explicitly
+  listing object files from lib files _BEFORE_ user obj files
 14.09.2014.
-- portovan source na OpenWatcom - on se vise buni od tate i uhvatio je neke
-  greske koje su sanirane; sada bi SWOS++ vec mogao da se kompajlira na
-  modernom Windows-u, videcu da prebacim sledecom prilikom
+- source ported to OpenWatcom - he's complaining more than his daddy and has
+  already caught some errors that have been sanitized; now SWOS++ might compile
+  on modern Windows, I'll see if I can switch it at next opportunity
 01.09.2014.
 - jos jedan veseli bagitj resen: primetio sam da nije sljakala bss sekcija u
   nekim slucajevima, naduvao se exe kada sam ubacio stack buffer u main.asm;
@@ -308,7 +330,7 @@
   nerviralo. Ali evo danas sam bio iznenadjujuce miran, i za nesto vise od pola
   dana sam nasao razlog :) Ne tacan, ali barem priblizan :P - problem je bio
   sto sam pisao kod u .data sekciji. Sta tacno ne valja ne znam, ali vrlo
-  verovatno je aligment sjeban + imam i ono spajanje sekcija pa ko zna sta od
+  verovatno je alignment sjeban + imam i ono spajanje sekcija pa ko zna sta od
   toga na kraju ispada. Kad se kod stavi u .text sekciju kao sto bog zapoveda
   onda sve radi kako treba.
   I pazi kad sam ladno predvideo string menu entries. Svaka cast. Meni.

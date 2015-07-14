@@ -13,8 +13,6 @@
 #define MAX_CHAT_LINE_LENGTH    25
 #define MAX_TEAM_NAME_LEN       17
 
-extern char playerNick[NICKNAME_LEN + 1];      /* player name for online games */
-extern char gameName[GAME_NAME_LENGTH];        /* name of current game         */
 extern dword currentTeamId;                    /* id of current team           */
 
 /* structure used to communicate state of waiting games to GUI */
@@ -31,11 +29,11 @@ typedef struct MP_Options {
     byte numSubs;
     byte maxSubs;
     byte skipFrames;
-    byte networkTimeout;
-    byte padding[2];
+    byte padding[1];
+    word networkTimeout;
 } MP_Options;
 
-#define DEFAULT_MP_OPTIONS sizeof(MP_Options), 1, 4, 2, 5, 2, 8, 'z', 'z'
+#define DEFAULT_MP_OPTIONS sizeof(MP_Options), 1, 4, 2, 5, 2, 'z', 8,
 
 typedef struct LobbyState {
     int numPlayers;
@@ -61,35 +59,55 @@ enum MP_Join_Game_Response {
 
 /* GUI callbacks */
 typedef void (*SendWaitingToJoinReport)(const WaitingToJoinReport *report);
-typedef bool (*ModalFunction)(int status, const char *errorText);
+typedef bool32 (*ModalFunction)(int status, const char *errorText);
 typedef void (*EnterGameLobbyFunction)();
 typedef void (*UpdateLobbyFunction)(const LobbyState *state);
 
 extern "C" {
-    void InitMultiplayer();
+    const char *InitMultiplayer();
     void FinishMultiplayer();
     void InitPlayerNick();
-    char *GetPlayerNick();
     char *InitGameName();
+    const char *GetGameName();
+    void SetGameName(const char *newGameName);
+    const char *GetPlayerNick();
+    void SetPlayerNick(const char *newPlayerNick);
+    const char *GetDirectGameName();
+    const char *GetDirectGameNickname();
+    void InitializeMPOptions(const MP_Options *options);
+    void UpdateMPOptions(const MP_Options *options);
+    bool CompareMPOptions(const MP_Options *options);
+    MP_Options *GetMPOptions(MP_Options *destOptions);
+    MP_Options *SetMPOptions(const MP_Options *options);
+    void ApplyMPOptions(const MP_Options *options);
+    MP_Options *GetFreshMPOptions(MP_Options *options);
+    void SaveClientMPOptions();
+    void ReleaseClientMPOptions();
+    int GetNumSubstitutes();
+    int SetNumSubstitutes(byte newNumSubs);
+    int GetMaxSubstitutes();
+    int SetMaxSubstitutes(byte newMaxSubs);
+
+    /* Game Lobby menu */
+    void InitMultiplayerLobby();
+    void FinishMultiplayerLobby();
+    MP_Options *GetSavedClientOptions();
+    void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const LobbyState *),
+        void (*errorFunc)(), void (*onGameEndFunc)(), bool inWeAreTheServer);
     void DisbandGame();
     void GoBackToLobby();
     void SetPlayerReadyState(bool isReady);
     void SetPlayerOrWatcher(bool isWatcher);
-    void SetupTeams(bool (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *));
-    bool CanGameStart();
+    void SetupTeams(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *));
+    bool32 CanGameStart();
     char *SetTeam(char *newTeamName, dword teamIndex);
     void AddChatLine(const char *line);
     void StartGame();
     void GameFinished();
 
-    /* Game Lobby menu */
-    void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const LobbyState *),
-        void (*errorFunc)(), void (*onGameEndFunc)(), bool inWeAreTheServer);
-    void InitializeMPOptions(const MP_Options *options);
-    void UpdateMPOptions(const MP_Options *options);
-    bool CompareMPOptions(const MP_Options *options);
-    MP_Options *GetMPOptions(MP_Options *options);
+    /* Multiplayer options menu */
     void InitializeMPOptionsMenu();
+    void MPOptionsMenuAfterDraw();
     void NetworkTimeoutBeforeDraw();
     void SkipFramesBeforeDraw();
     void IncreaseNetworkTimeout();
@@ -101,20 +119,20 @@ extern "C" {
     void ExitMultiplayerOptions();
 
     /* Join game menu GUI interfacing */
-    void EnterWaitingToJoinState(SendWaitingToJoinReport updateFunc);
+    void EnterWaitingToJoinState(SendWaitingToJoinReport updateFunc = nullptr, int findGamesTimeout = 0);
     void RefreshList();
     void LeaveWaitingToJoinState();
     void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
-        void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(), bool (*modalSyncFunc)(),
+        void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(), bool32 (*modalSyncFunc)(),
         void (*showTeamMenuFunc)(const char *, const char *), void (*onErrorFunc)(),
         void (*onGameEndFunc)());
 
     /* Network loop during menus. Return false during blocking operations. */
-    bool NetworkOnIdle();
+    bool32 NetworkOnIdle();
     void BroadcastControls(byte controls, word longFireFlag);
     dword GetControlsFromNetwork();
     int HandleMPKeys(int key);
-    bool SwitchToNextControllingState();
+    bool32 SwitchToNextControllingState();
 }
 
 
@@ -135,7 +153,7 @@ extern "C" {
     void SetSkipFrames(int newSkipFrames);
 }
 
-/* Options bookkeeping */
+/* User tactics bookkeeping */
 bool ValidateUserMpTactics();
 Tactics *GetUserMpTactics();
 

@@ -85,6 +85,7 @@ extern SetPrevVideoModeEndProgram
 extern SWOS_EndProgram
 extern ProgramPIT
 extern WaitRetrace
+extern FadeOut
 extern VerifyJoypadControls
 extern ReadGamePort
 extern Joy1SetStatus
@@ -96,6 +97,7 @@ extern FlipInMenu
 extern SetControlWord
 extern GetKey
 extern DumpTimerVariables
+extern hexDigits
 extern RestoreOldInt9Handler
 extern DumpScreen
 extern CDROM_StopAudio
@@ -114,7 +116,9 @@ extern ShowMenu
 extern CallAfterDraw
 extern SetCurrentEntry
 extern SetExitMenuFlag
+extern LoadFillAndSwtitle
 extern ReadTimerDelta
+extern InitMainMenuStuff
 extern PrepareMenu
 extern CalcMenuEntryAddress
 extern DrawMenu
@@ -152,6 +156,7 @@ extern ExitPlayMatch
 extern PlayMatchSelected
 extern ShowErrorMenu
 extern DoContinueAbortMenu
+extern continueMenu
 extern ExitChooseTeams
 extern ChooseTeamsDialog
 extern DrawLittlePlayersAndBall
@@ -265,7 +270,7 @@ extern A4
 extern A5
 extern A6
 extern EGA_graphics
-extern setup_dat_buffer
+extern setupDatBuffer
 extern joyKbdWord
 extern videoSpeedIndex
 extern joy1_X_value
@@ -384,6 +389,7 @@ extern hil_file_buffer
 extern hil_num_goals
 extern menuCycleTimer
 extern vsPtr
+extern screenWidth
 extern stateGoal
 extern spritesIndex
 extern found_filenames_buffer

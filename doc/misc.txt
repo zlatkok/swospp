@@ -22,34 +22,58 @@ Mixing assembly code with GCC
 -----------------------------
 Source is compiled with -mregparm=3, so 3 registers will be used for argument
 passing, in the following order: eax, edx, ecx. If there are more than 3
-arguments they will be passed via stack as usual, order is from right to left.
-Assembly function must preserve ebx, esi, edi and ebp. When calling C function
+arguments they will be passed via stack as usual, and will be pushed from right
+to left (rightmost argument gets pushed first, second rightmost second, etc.).
+Due to compilation option -mrtd, all called functions are responsible for
+cleaning up the stack, and must pop any parameters that were sent via the
+stack.
+Assembly function must preserve ebx, esi, edi and ebp (this is general
+convention GCC is using for it's own functions too). When calling C function
 from assembly, expect eax, ecx and edx to be changed.
 On Windows, by default GCC will prepend underscore to function names, unlike
-Watcom which appends it. That's why compiler option "-fno-leading-underscore" is
-used, which removes the underscore. But still, since we're compiling as C++
+Watcom which appends it. That's why compiler option "-fno-leading-underscore"
+is used, which removes the underscore. But still, since we're compiling as C++
 every function that needs to be used from asm code needs to be declared as
 extern "C".
 
 
 Intel x86 Stack
 ---------------
-Stack grows downards, pointer is set to highest address, and approaches lowest
+Stack grows downwards, pointer is set to highest address, and approaches lowest
 as the stack gets more full.
 PUSH - decrease stack pointer, put operand on top of the stack
 POP - get operand from stack top, increase stack pointer
 
+PUSHAD
+------
++28 EAX
++24 ECX
++20 EDX
++16 EBX
++12 ESP (original)
++8  EBP
++4  ESI
++0  EDI
+
+
 
 Motorola 68k Registers
 ----------------------
-;TODO
-(Disclaimer: I'm by no means expert on AMIGA and Motorola 68000 but here is some
-basic info that can help understanding how PC version of SWOS was ported.)
-PC version carries integrated Motorola 68000 emulator - native code from AMIGA
-SWOS was run through some sort of converter that created Intel x86 executable
-code out of it.
-AMIGA emulator
-registri, pozivanje, konvencije...
+[Disclaimer: I'm by no means expert on AMIGA or Motorola 68000 CPU or emulators
+or anything :) this is just what I believe was done in order to port SWOS to
+PC, and this basic info should help in understanding how SWOS++ and PC version
+of SWOS work.]
+PC version was built using technique called "binary translation", where
+sequences of code in 68k instruction set were translated into 80386 instruction
+set. Assembly code from AMIGA SWOS (or output from a compiler) was run through
+some sort of converter that created Intel x86 executable code out of it. Then
+PC specific and performance sensitive routines where hand-crafted.
+68k CPU has 16 general purpose 32-bit registers, labeled D0-D7, A0-A7. All
+registers except A7 were mapped to 32-bit memory locations. A7 is stack
+pointer, and it was mapped directly to Intel ESP register.
+Parameters to SWOS subroutines seem to be passed almost exclusively in
+registers, and stack is only used for saving and restoring registers.
+Most integer variables are 2 bytes long, as it is optimal for 16-bit data bus.
 
 
 SWOS Stack
@@ -72,12 +96,18 @@ BX:CX = size of block (bytes, must be nonzero)
 Interfacing SWOS code
 ---------------------
 Since we're not running in consequtive memory block with SWOS, calls have to be
-made using special macros - calla and jmap, indirectly through register, so the
+made using special macros - calla and jmpa, indirectly through register, so the
 location could be fixed up. Alternative was to implement calls as Win32 imports
 and handle them specially during conversion in pe2bin. However that was
 abandoned as it would use up more bytes per call: 4 bytes in memory for each
 call + indirect call instruction (6 bytes) = 10 bytes total. With macros we use
 7 bytes per call. In both cases one fixup is used.
+Since there is no way to relay information to GCC that ebp register is used by
+the assembly code, ebp is saved and restored each time. In case we know for
+sure ebp will be preserved there is also a version that doesn't save it.
+Most SWOS functions will not touch ebp but since it's used for parameters for
+DrawSpriteInGame and DrawSprite16Pixels these two and anything that calls them
+will trash it.
 
 
 Startup
@@ -88,15 +118,18 @@ registara su... TODO
 Pisi o sanaciji steka
 
 
-BSS Sekcija
+BSS Section
 -----------
-BSS je u potpunosti implementiran, i podaci deklarisani u .bss sekciji (u asm
-kodu) ili kao ne-lokalne neinicijalizovane C promenljive ce ici tamo, i nece
-povecavati velicinu izlaznog fajla.
+BSS is completely implemented, so asm variables declared in .bss section and
+non-local uninitialized C variables will end up there without increasing final
+output file size.
+BSS size is difference between .data section virtual and raw size. For this to
+work properly all data sections are expected to be merged (including all rdata
+sections).
 
 
-Dibagovanje
------------
+Debugging
+---------
 Na raspolaganju su WriteToLog rutine, dostupne i iz C-a i iz asemblera.
 Parametri su u printf stilu. Izlaz se snima u SWOSPP.LOG fajl. U release
 verziji pozivi su izbaceni. WriteToLogM prima dodatni parametar - klasu poruke,
@@ -115,6 +148,8 @@ Za pravljenje hex damp-ova tu je HexDumpToLog rutina. Na osnovu parametara
 snimice hex dump u log fajl, postoji samo u debug verziji.
 Takodje se prave listinzi svih objektnih fajlova u etc direktorijumu, kao i map
 fajl.
+Enhanced DOSBox debug version is of great help, as it will automatically break
+into debugger whenever a bad memory access occurs.
 Skoro je opravljen DOSBox debugger, tako da moze da ucita i prikaze simbole.
 Postoji perl skript koji ce od map fajlova napraviti text file koji moze da se
 ucita u debugger i sadrzi sve javne simbole.
@@ -166,6 +201,7 @@ Prema konvenciji kada definisemo bafer uvek alociramo jedan bajt vise za nulu.
 Ako je velicina nekog imena npr. 16 karaktera, za bafer se mora odvojiti 17
 bajtova, tako da mozemo smestiti maksimalnih 16 karaktera zajedno sa nulom i da
 to bude validan string. primer za strncpy
+
 
 Ne postoji read-only sekcija
 ----------------------------
@@ -225,6 +261,7 @@ svih igraca. Svaki igrac ima svoju "instancu" custom taktika, i one se
 prikazuju po potrebi - u meniju trenutno kontrolisuceg igraca, i kod zamena za
 igraca koji je pozvao klupu. Na tim u samoj igri se uvek primenjuje korektna
 taktika, koju je igrac izabrao i to na oba klijenta.
+While in sync phase SyncOnIdle() will be handling network packets.
 
 Glavna SWOS petlja je prepravljena tako da se na pocetku vrsi cekanje na frejm
 koji treba da stigne, ukoliko tog frejma nema igra je blokirana u busy loop-u.
@@ -295,19 +332,60 @@ objavi partije i server prihvata samo one klijente koji mu vrate korektan game
 id. Kod povezivanja iz komandne linije ovo se ignorise (samo je IP bitan).
 
 
-Konverzija memorijska lokacija <-> funkcija
--------------------------------------------
-Na pocetku log fajla bice ispisana adresa na koju je SWOS++ ucitan, kao i
-odakle pocinju SWOS code i data segmenti. Na osnovu toga se lako moze odrediti
-funkcija koja je u pitanju. Za lokaciju u IDI dodati 0x10000 za kod, i 0xc0000
-za podatke.
-Za lokaciju u fajlu na relativni offset dodati 48 (velicina ZKBF header-a).
-Standardne lokacije u DOSBox-u su:
+Multiplayer options
+-------------------
+To avoid multiplayer games interfering with single player game options,
+multiplayer options are kept separately. GetFreshMPOptions() will get fresh,
+up-to-date options, while ApplyOptions() will apply given options to SWOS.
+Since server and client must be in perfect sync, that means they also must use
+same options. Server sends its options within accepting packet when client first
+joins the lobby. Client has to save its own options first, and then overwrite
+them with server's.
+                                                     saved
+SWOS                           MP                    client
+options                      options                 options
++-----+ GetFreshMPOptions()  +-----+ GetMPOptions()  +-----+
+|     | -------------------> |     |---------------> |     |  (as well as
+|     | <------------------- |     |<--------------- |     |  other users)
++-----+ ApplyOptions()       +-----+ SetMPOptions()  +-----+
+
+
+
+Converting memory location to function
+--------------------------------------
+SWOS++ address, along with SWOS code and data load addresses can be found at
+the beginning of log file. Knowing these we can easily track any address in
+SWOS/SWOS++ address space. In order to get location in IDA after we need to
+subtract load address from the given address, and then add 0x10000 for code,
+and 0xc0000 for data.
+
+Standard DOSBox base locations are:
 SWOS++:     0x387000
 SWOS code:  0x220000
 SWOS data:  0x2c1000
-MAP fajl ce biti napravljen u etc direktorijumu, i cesto ume da bude koristan
-za utvrdjivanje koja se funkcija izvrsavala na osnovu lokacije.
+
+So assuming standard load addresses let's try to locate symbols for a couple of
+addresses. A data item shows up at address 0x369def in debugger:
+0x369def - 0x2c1000 = 0xa8def, 0xa8def + 0xc0000 = 0x168def, and in IDA we can
+see it's location of spritesIndex.
+Code item at 0x22f539:
+0x22f539 - 0x220000 = 0xf539, 0xf539 + 0x10000 = 0x1f539, an address belonging
+to GetTextSize function.
+If we're tracking an address belonging to SWOS++ we would need to consult map
+file (residing in etc/ directory). It contains addresses of all public symbols.
+Combined code section starts at 0x401000, when we subtract that from public
+symbol address to get its raw offset in memory. If we're lucky and symbol is
+public, there will be exact match to the address from map file and our job is
+done. But if the symbol is private we need to look into disassembly listing of
+that object file. We have to locate object file which emitted the symbol by
+looking at the map file and finding addresses that the address is between (this
+might be ambiguous, and sometimes two files might have to be checked). It is a
+very tedious process alleviated greatly by getaddr.py script.
+Downside is that private symbols declared in file that has no public symbols
+(and therefore doesn't show up in map file) can not be found without manual
+search; example would be pdata.asm.
+If we need to find out offset in raw bin file, we need to add 48 to relative
+offset (ZKBF header size).
 
 
 Patch-ovanje relativnih poziva

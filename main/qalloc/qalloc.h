@@ -2,6 +2,7 @@
 
 extern "C" void qAllocInit();
 extern "C" void qAllocFinish();
+
 #ifdef DEBUG
 #define qAlloc(size) qAlloc_(size, __FILE__, __LINE__)
 #define qHeapAlloc(heap, size) qHeapAlloc_(heap, size, __FILE__, __LINE__)
@@ -15,6 +16,7 @@ extern "C" void ExcludeBlocks();
 void *qAlloc(int size);
 void *qHeapAlloc(void *heap, int size);
 #endif
+
 void qFree(void *ptr);
 void qHeapFree(void *heap, void *ptr);
 void qHeapInit(void *heap, int size);

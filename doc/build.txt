@@ -1,49 +1,81 @@
-Description of build process, necessary tools, directory hierarchy, what goes where...
+Description of build process, necessary tools, directory hierarchy,
+what goes where...
 
 Programs needed for full recompilation:
 - GNU make
-- any working Unix environment (for shell, and some UNIX utilities) - I'm using DJGPP + MINGW make
-- Open Watcom C Compiler
-- NASM 0.98.36 my patched version (because they broke some macros... see if we can fix this)
+- subset of any working Unix environment (for shell, and some UNIX utilities)
+- Open Watcom C Compiler (main program used to be compiled with it, but
+  nowadays used for test programs only)
+- GCC 4.9.x (4.8.x might not work)
+- NASM 0.98.36 my patched version (because they broke some macros... see if we
+  can fix this) (in /extra)
 - Perl (any not-totally-ancient version will do), with Switch module
-- alink, my modified version
-- go32, my util [OBSOLETE - not needed with the new Perl build script]
-- winzip, for dist package packing [not used atm, see if we can use it again or remove it]
+- Python, same note
+- alink, my modified version (in /extra)
+- go32, my util [OBSOLETE - not needed with new Perl build script]
+- winzip, for dist package packing [not used atm, see if we can use it again or
+  remove it]
+
 
 bin    - binary files, SWOS++, loader, utility programs...
 dist   - this is where the dist archive will be created
 doc    - various documentation, both internal and published
-etc    - various files that don't belong anywhere else, listings, lib files, etc.
+etc    - various files that don't belong anywhere else, listings, lib files,
+         etc.
+extra  - additional scripts and executables needed for build
 loader - loader source
 main   - SWOS++ source
-mapcvt - source of converter from map file to .asm/.inc/.h
+mapcvt - map file and source of converter from map file to .asm/.inc/.h
 obj    - object files, as well as executables
 other  - other sources not belonging to the project
 patch  - patcher source
-pe2bin - source of converter from Win32 PE to my binary format
+pe2bin - source of converter from Win32 PE to custom executable format
 test   - unit tests for various components, and misc test code
+
+
+Environment
+
+Few environment variables need to be set to build and use utility scripts:
+SWOS        - contains path where SWOS is installed
+SWOSPP      - contains path to SWOS++ dev root dir
+SWOS_DIRS   - additional SWOS directories for testing (separated with
+              semicolon)
+
+Assuming everything is set up properly, binary can be built by running:
+make rel (for release version)
+and
+make dbg (for debug version)
+
+If everything went well, swospp.bin and other required binaries will be placed
+into bin directory.
+
 
 Includes
 
-Svaki c fajl mora ukljuciti swos.h, i pozeljno util.h, tim redosledom.
-Za svaki fajl koji zavisi od swos.h mora se dodati i swossym.h kao dependency.
-[OBSOLETE - new Perl script automatically determines dependencies]
-#pragma once konvencija
+New Perl script will automagically determine dependencies, so no need to set
+them explicitely anymore.
+Each include has to include #pragma once line.
+
 
 Defines
 
-DEBUG (release = !debug)
-TEST
-jos nesto?
+DEBUG - defined in debug version, undefined in release
+TEST  - creating testing build (to be implemented)
+
 
 Perl Makefile
+
+TODO
+
 
 mapcvt, detaljni opis, kako se dodaju simboli
 
 Describe, TODO :)
 
-Proces sastavljanja bin fajla
 
+bin file construction process
+
+TODO - translate & expand
 Najpre se kompajliraju i asembluju osnovni fajlovi projekta. Dobija se win32 pe
 executable, pomalo specifican, sa odredjenim potrebnim sekcijama i
 eksportovanim simbolima. Zatim se to salje konvertoru koji konvertuje exe u

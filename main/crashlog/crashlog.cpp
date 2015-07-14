@@ -1,24 +1,21 @@
 #include "swos.h"
 #include "util.h"
 #include "crashlog.h"
-#include "dos.h"
-#include "qalloc.h"
-#include "dosipx.h"
-#include "options.h"
+
 
 /* exception context */
-static byte exceptionNo asm("exceptionNo") __attribute__((used));
-static dword rEax asm("rEax") __attribute__((used));
-static dword rEbx asm("rEbx") __attribute__((used));
-static dword rEcx asm("rEcx") __attribute__((used));
-static dword rEdx asm("rEdx") __attribute__((used));
-static dword rEsi asm("rEsi") __attribute__((used));
-static dword rEdi asm("rEdi") __attribute__((used));
-static dword rEbp asm("rEbp") __attribute__((used));
-static dword rEip asm("rEip") __attribute__((used));
-static dword rEsp asm("rEsp") __attribute__((used));
-static word rCs asm("rCs") __attribute__((used));
-static word rSs asm("rSs") __attribute__((used));
+static byte USED_BY_ASM(exceptionNo);
+static dword USED_BY_ASM(rEax);
+static dword USED_BY_ASM(rEbx);
+static dword USED_BY_ASM(rEcx);
+static dword USED_BY_ASM(rEdx);
+static dword USED_BY_ASM(rEsi);
+static dword USED_BY_ASM(rEdi);
+static dword USED_BY_ASM(rEbp);
+static dword USED_BY_ASM(rEip);
+static dword USED_BY_ASM(rEsp);
+static word USED_BY_ASM(rCs);
+static word USED_BY_ASM(rSs);
 
 void ExceptionHandler() asm("ExceptionHandler");
 void UserExceptionHandler() asm ("UserExceptionHandler");
@@ -136,11 +133,12 @@ void UserExceptionHandler()
         "Known registers:\r\n"
         "EAX %08x EDX %08x EBP %08x\r\n"
         "EBX %08x ESI %08x ESP %08x\r\n"
-        "ECX %08x EDI %08x SS      %04x\r\n",
+        "ECX %08x EDI %08x SS      %04x\r\n"
+        "Current:     DS      %04x ES      %04x\r\n",
         exceptionNo, getExceptionName(exceptionNo), rCs, rEip,
-        rEax, rEdx, rEbp, rEbx, rEsi, rEsp, rEcx, rEdi, rSs
+        rEax, rEdx, rEbp, rEbx, rEsi, rEsp, rEcx, rEdi, rSs, getDS(), getES()
      );
-     WriteToLog(("\n%s", buf));
+     WriteToLog("\n%s", buf);
      assert(charCount < 10032 - 1);
      buf[charCount] = '\n';
      SwitchToPrevVideoMode();
@@ -158,10 +156,10 @@ bool InstallCrashLogger()
         !InstallExceptionHandler(0, Exception0Handler) || !InstallExceptionHandler(6, Exception6Handler) ||
         !InstallExceptionHandler(10, Exception10Handler) || !InstallExceptionHandler(12, Exception12Handler) ||
         !InstallExceptionHandler(11, Exception11Handler)) {
-        WriteToLog(("Crash logger failed to install one or more exception handlers."));
+        WriteToLog("Crash logger failed to install one or more exception handlers.");
         return false;
     } else {
-        WriteToLog(("Crash logger installed successfully."));
+        WriteToLog("Crash logger installed successfully.");
         return true;
     }
 }

@@ -15,5 +15,5 @@ typedef enum XmlSymbol {
 
 typedef bool (*XmlSymbolProcessingFunction)(XmlSymbol sym, char *buf, int bufSize);
 
-bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFunction symProc);
+bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFunction symProc = nullptr);
 bool SaveXmlFile(XmlNode *root, const char *fileName, bool checkIfNeeded);

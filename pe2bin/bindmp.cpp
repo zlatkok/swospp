@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     uchar *contents;
 
     fprintf(stderr, "bindmp - utility for dumping ZK binary files\n");
-    fprintf(stderr, "Copyright Zlatko Karakas 2003, 2004.\n\n");
+    fprintf(stderr, "Copyright Zlatko Karakas 2003, 2015.\n\n");
 
     if (argc < 2) {
         fprintf(stderr, "Input filename missing.\n");

@@ -7,8 +7,8 @@ import re
 import sys
 
 
-swosppDir = r'f:\swospp';
-swosDir = r'd:\games\swos';
+swosppDir = os.getenv('SWOSPP', r'f:\swospp');
+swosDir = os.getenv('SWOS', r'd:\games\swos');
 
 
 def getAddress():

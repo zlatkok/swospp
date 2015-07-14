@@ -1,12 +1,14 @@
-#include "swos.h"
-#include "util.h"
-#include "mptact.h"
+/** mptact.cpp
 
-/** Virtual tactics support - it will appear to each player that they are using their own custom tactics,
+    Virtual tactics support - it will appear to each player that they are using their own custom tactics,
     and will have no notion of the other player's tactics. That is accomplished by switching tactics
     every time we need to show formation menu - only custom tactics of the player that requested bench
     will be showing.
 */
+
+#include "swos.h"
+#include "util.h"
+#include "mptact.h"
 
 static const Tactics *pl1MPCustomTactics;   /* point to actual custom tactics */
 static const Tactics *pl2MPCustomTactics;
@@ -23,32 +25,39 @@ void SkipTacticsIinit() asm("SkipTacticsIinit");
 void InitTacticsContextSwitcher(const Tactics *player1CustomTactics, const Tactics *player2CustomTactics)
 {
     assert(playMatchTeam1Ptr && playMatchTeam2Ptr);
-    /* save real tactics first */
-    pl1RealTactics = playMatchTeam1Ptr->tactics;
-    pl2RealTactics = playMatchTeam2Ptr->tactics;
-    WriteToLog(("Initial tactics: %d (\"%s\"), %d (\"%s\")", pl1RealTactics, tacticsTable[pl1RealTactics],
-        pl2RealTactics, tacticsTable[pl2RealTactics]));
+
+    /* save real tactics first, they're swapped initially */
+    pl1RealTactics = playMatchTeam2Ptr->tactics;
+    pl2RealTactics = playMatchTeam1Ptr->tactics;
+    WriteToLog("Initial tactics: %s - %d (\"%s\"), %s - %d (\"%s\")", playMatchTeam1Ptr->teamName, pl1RealTactics, tacticsTable[pl1RealTactics],
+        playMatchTeam2Ptr->teamName, pl2RealTactics, tacticsTable[pl2RealTactics]);
     pl1MPCustomTactics = player1CustomTactics;
     pl2MPCustomTactics = player2CustomTactics;
     pl1Tactics = pl1RealTactics;
     pl2Tactics = pl2RealTactics;
+
     /* let's keep tactics 1 as fixed at start */
     VirtualizeTactics(2, pl2RealTactics, rightTeamData);
+
     /* overwrite selectedFormationEntry assignment with our call */
     PatchCall(ShowFormationMenu, 0x27, RestoreTactics);
     PatchByte(ShowFormationMenu, 0x26, 0xe8);
     PatchByte(ShowFormationMenu, 0x2b, 0x90);
+
     /* hook new tactics selection, for both players */
     PatchCall(ChangeFormationIfFiring, 0x3f, OnChangeTactics);
     PatchByte(ChangeFormationIfFiring, 0x3e, 0xe8);
     PatchByte(ChangeFormationIfFiring, 0x43, 0x90);
+
     PatchCall(ChangeFormationIfFiring, 0x118, OnChangeTactics);
     PatchByte(ChangeFormationIfFiring, 0x117, 0xe8);
     PatchByte(ChangeFormationIfFiring, 0x11c, 0x90);
+
     /* prevent initialization of player tactics, since our init is called before; this one unpatches itself */
     PatchByte(SetupPlayers, 0x465, 0xe8);
     PatchCall(SetupPlayers, 0x466, SkipTacticsIinit);
 }
+
 
 void DisposeTacticsContextSwitcher()
 {
@@ -60,14 +69,16 @@ void DisposeTacticsContextSwitcher()
     PatchDword(ChangeFormationIfFiring, 0x119, &pl2Tactics);
 }
 
+
 /* Discard return address (return to caller's caller), and unpatch us. */
 asm (
-"SkipTacticsIinit:                      \n\t"
-    "pop  esi                           \n\t"   // skip tactics init (we already did it)
-    "mov  word ptr [esi - 5], 0x358b    \n\t"   // patch it back as it was
-    "mov  dword ptr [esi - 3], offset A1 \n\t"
-    "ret                                \n\t"
+"SkipTacticsIinit:                      \n"
+    "pop  esi                           \n"     // skip tactics init (we already did it)
+    "mov  word ptr [esi - 5], 0x358b    \n"     // patch it back as it was
+    "mov  dword ptr [esi - 3], offset A1 \n"
+    "ret                                \n"
 );
+
 
 /** VirtualizeTactics
 
@@ -83,8 +94,10 @@ static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team
     static Tactics const **plMPCustomTactics[2] = { &pl1MPCustomTactics, &pl2MPCustomTactics };
     static word * const plTactics[2] = { &pl1Tactics, &pl2Tactics };
     int otherTeam = --teamNo ^ 1;
+
     const Tactics *thisTeamCustomTactics = *plMPCustomTactics[teamNo];
     const Tactics *otherTeamCustomTactics = *plMPCustomTactics[otherTeam];
+
     assert(team);
     assert(teamNo == 0 || teamNo == 1);
     assert(pl1Tactics < TACTICS_MAX && pl2Tactics < TACTICS_MAX && newTactics < TACTICS_MAX);
@@ -92,19 +105,23 @@ static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team
 
     /* store original new tactics immediately, before we ruin it :P */
     *plRealTactics[teamNo] = newTactics;
+
     /* for other team only fix tactics name in case it's custom */
     if (*plTactics[otherTeam] >= TACTICS_USER_A)
         *tacticsTable[*plTactics[otherTeam]] = otherTeamCustomTactics[*plRealTactics[otherTeam] - TACTICS_USER_A];
+
     /* check if new tactics are custom, if so check if there's a conflict and resolve it */
     if (newTactics >= TACTICS_USER_A) {
         if ((newTactics += newTactics == *plTactics[otherTeam]) == TACTICS_MAX)
             newTactics = TACTICS_MAX - 2;
         *tacticsTable[newTactics] = thisTeamCustomTactics[*plRealTactics[teamNo] - TACTICS_USER_A];
     }
+
     /* store new, possibly adjusted tactics */
     *plTactics[teamNo] = newTactics;
     team->tactics = newTactics;
 }
+
 
 /* Return index of player which requested bench. */
 static int getBenchTeamIndex()
@@ -113,7 +130,8 @@ static int getBenchTeamIndex()
     return (benchTeam == rightTeamData) ^ (teamPlayingUp == 2);
 }
 
-/* Restore tactics to "being able to show" state. */
+
+/* Restore tactics to "being able to show" state. Called when player opens up bench menu. */
 static void RestoreTactics()
 {
     static const Tactics **customTactics[2] = { &pl1MPCustomTactics, &pl2MPCustomTactics };
@@ -128,19 +146,21 @@ static void RestoreTactics()
         *strncpy(tacticsTable[TACTICS_USER_A + i]->name,
             (*customTactics[benchTeamIndex])[i].name, sizeof(Tactics::name) - 1) = '\0';
 
-    /* show real index regardless of what we really have set it to */
+    /* show real index regardless of what we have set it to */
     selectedFormationEntry = *plRealTactics[benchTeamIndex];
 }
 
+
 /** OnChangeTactics
 
-    newTactics -  new tactics to apply, what user selected from menu
-    benchTeam  -> team that requested bench (and to which tactics change applies)
+    newTactics -  (in eax) new tactics to apply, what user selected from menu
+    benchTeam  -> (in esi) team that requested bench (and to which tactics change applies)
 
-    Player has selected new tactics from formation menu.
+    Player has selected new tactics from formation menu. Called from SWOS.
 */
 static void OnChangeTactics(word newTactics, TeamGeneralInfo *benchTeam)
 {
+    /* force param to esi */
     asm volatile(
         ""
         : "=S" (benchTeam)

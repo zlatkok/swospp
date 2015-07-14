@@ -345,10 +345,12 @@ static XmlAttribute *findAttribute(const XmlNode *node, const char *attrName, ui
     return nullptr;
 }
 
-bool checkNodeType(XmlNodeType type, const char *name, const char *value)
+static bool checkNodeType(XmlNodeType type, const char *name, const char *value)
 {
+    UNUSED(name);
+    UNUSED(value);
     if (type == XML_TYPE_MAX) {
-        WriteToLog(("Xml node '%s' has invalid type (%s).", name, value));
+        WriteToLog("Xml node '%s' has invalid type (%s).", name, value);
         return false;
     }
     return true;
@@ -361,7 +363,7 @@ bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const cha
     assert(node && name && value);
     hash = simpleHash(name, nameLen);
     if (findAttribute(node, name, hash)) {
-        WriteToLog(("Attribute '%s' already specified for node '%s'.", name, node->name));
+        WriteToLog("Attribute '%s' already specified for node '%s'.", name, node->name);
         return false;
     }
     assert(simpleHash("type", 4) == 0x7c9ebd07);

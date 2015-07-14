@@ -10,7 +10,7 @@
 #define UNACK_POOL_SIZE     6 * 1024
 
 #define DEFAULT_TIMEOUT     8 * 70
-#define MAX_TIMEOUT         20 * 70
+#define MAX_TIMEOUT         30 * 70
 #define MIN_TIMEOUT         3 * 70
 
 static word timeout = DEFAULT_TIMEOUT;  /* anything beyond this we disconnect */
@@ -115,25 +115,35 @@ static dword Adler32(const byte *data, int len)
         b += a;
         b -= -(b >= MOD_ADLER) & MOD_ADLER;
     }
-    return b << 16 | a;
+    return (b << 16) | a;
 }
+
+
+static inline bool IsNetworkTimeoutInRange(word timeout)
+{
+    return timeout >= MIN_TIMEOUT && timeout <= MAX_TIMEOUT;
+}
+
 
 void SetNetworkTimeout(word newTimeout)
 {
-    if (newTimeout >= MIN_TIMEOUT && newTimeout <= MAX_TIMEOUT)
+    if (IsNetworkTimeoutInRange(newTimeout))
         timeout = newTimeout;
 }
+
 
 word GetNetworkTimeout()
 {
     return timeout;
 }
 
+
 static void ResetClientAckIds(ClientAckId *ackId)
 {
     assert(ackId);
     ackId->sendingId = ackId->receivingId = ackId->sendingGroupId = 0;
 }
+
 
 static ClientAckId *FindClientAckId(const IPX_Address *address)
 {
@@ -238,7 +248,7 @@ static char *AddPacketFragment(int *bufSize, char *data, int length,
         /* first fragment of a packet arrived */
         p = (FragmentLink *)qAlloc(sizeof(FragmentLink) + length);
         if (!p) {
-            WriteToLog(("Out of memory while trying to store packet fragment!"));
+            WriteToLog("Out of memory while trying to store packet fragment!");
             *bufSize = -1;
             return nullptr;
         }
@@ -262,7 +272,7 @@ static char *AddPacketFragment(int *bufSize, char *data, int length,
             char *bufPtr, *curPtr;
             *bufSize = p->totalSize + length;
             if (!(bufPtr = (char *)qAlloc(*bufSize))) {
-                WriteToLog(("Insufficient memory to assemble packet (needs %d bytes).", *bufSize));
+                WriteToLog("Insufficient memory to assemble packet (needs %d bytes).", *bufSize);
                 *bufSize = -1;
                 return nullptr;
             }
@@ -278,7 +288,7 @@ static char *AddPacketFragment(int *bufSize, char *data, int length,
             /* store this fragment to the end of the list */
             auto q = (Fragment *)qAlloc(sizeof(Fragment) + length);
             if (!q) {
-                WriteToLog(("Out of memory while trying to store packet fragment!"));
+                WriteToLog("Out of memory while trying to store packet fragment!");
                 *bufSize = -1;
                 return nullptr;
             }
@@ -301,12 +311,12 @@ static char *AddPacketFragment(int *bufSize, char *data, int length,
 static void CancelFragmentedPacket(const IPX_Address *source, dword fragId)
 {
     FragmentLink *p, *prev;
-    WriteToLog(("Received request for cancellation for group with id %d", fragId));
+    WriteToLog("Received request for cancellation for group with id %d", fragId);
     FindFragmentStart(source, fragId, &p, &prev);
     if (p)
         RemoveFragmentList(p, prev);
     else
-        WriteToLog(("Group id not found."));
+        WriteToLog("Group id not found.");
 }
 
 /** InitializeNetwork
@@ -341,7 +351,7 @@ const char *InitializeNetwork()
     /* -1 cause DOSBox actually rejects packets of max size */
     if ((maxPacketSize = IPX_GetMaximumPacketSize() - 1) < (int)sizeof(IPX_Header) + 128)
         return "Insufficient IPX packet size.";
-    WriteToLog(("IPX maximum packet size is %d.", maxPacketSize));
+    WriteToLog("IPX maximum packet size is %d.", maxPacketSize);
     /* allocate 1 more byte for receiving buffer just in case (DOSBox receive() allows full size) */
     lowMemorySize = MAX_RECV_PACKETS * (sizeof(ECB) + (maxPacketSize + 1));
     sendPacket = (SWOSPP_Packet *)lowMemorySize;
@@ -349,7 +359,7 @@ const char *InitializeNetwork()
     lowMemory = (char *)AllocateLowMemory(lowMemorySize);
     if (!lowMemory)
         return "Failed to allocate DOS memory.";
-    WriteToLog(("%d bytes of low memory allocated, at %#x", lowMemorySize, lowMemory));
+    WriteToLog("%d bytes of low memory allocated, at %#x", lowMemorySize, lowMemory);
     /* got the memory, now initialize it and set up all the pointers */
     memset(lowMemory, 0, lowMemorySize);
     /* initialize send buffer, we can only send 1 max size descriptor anyway */
@@ -398,7 +408,7 @@ void ShutDownNetwork()
         qFree(clientAckIds);
         clientAckIds = nullptr;
         ReleaseFragmentedPackets();
-        WriteToLog(("Releasing low memory, ptr is %#x", lowMemory));
+        WriteToLog("Releasing low memory, ptr is %#x", lowMemory);
         FreeLowMemory(lowMemory);
         lowMemory = nullptr;
     }
@@ -417,7 +427,7 @@ bool ConnectTo(const IPX_Address *dest)
     c = &clientAckIds[numClients++];
     copyAddress(&c->address, dest);
     ResetClientAckIds(c);
-    WriteToLog(("New connection to [%#.12s] established.", dest));
+    WriteToLog("New connection to [%#.12s] established.", dest);
     return true;
 }
 
@@ -429,12 +439,12 @@ void DisconnectFrom(const IPX_Address *dest)
         if (addressMatch(&clientAckIds[i].address, dest))
             break;
     if (i >= numClients) {
-        WriteToLog(("Trying to disconnect from non-connected client: [%#.12s]", dest));
+        WriteToLog("Trying to disconnect from non-connected client: [%#.12s]", dest);
         return;
     }
     memmove(clientAckIds + i, clientAckIds + i + 1, (numClients-- - i - 1) * sizeof(*clientAckIds));
     IPX_Disconnect(dest);
-    WriteToLog(("Disconnected from [%#.12s].", dest));
+    WriteToLog("Disconnected from [%#.12s].", dest);
 }
 
 void SendBroadcastPacket(const char *data, int length)
@@ -445,7 +455,7 @@ void SendBroadcastPacket(const char *data, int length)
 
 void SendAck(const IPX_Address *dest, dword id)
 {
-    //WriteToLog(("Acknowledging packet %d from [%#.12s]", id, dest));
+    //WriteToLog("Acknowledging packet %d from [%#.12s]", id, dest);
     sendPacket->type = ACK_PACKET_SIG;
     SendPacket(dest, (char *)&id, sizeof(id));
 }
@@ -453,8 +463,8 @@ void SendAck(const IPX_Address *dest, dword id)
 void SendSimplePacket(const IPX_Address *dest, const char *data, int length)
 {
     if ((int)(length + sizeof(SWOSPP_Packet) - sizeof(ECB)) > maxPacketSize) {
-        WriteToLog(("Trying to send too large simple packet. Size = %d, max size = %d.",
-            length, maxPacketSize - sizeof(SWOSPP_Packet) + sizeof(ECB)));
+        WriteToLog("Trying to send too large simple packet. Size = %d, max size = %d.",
+            length, maxPacketSize - sizeof(SWOSPP_Packet) + sizeof(ECB));
         return;
     }
     sendPacket->type = UNIMPORTANT_PACKET_SIG;
@@ -464,7 +474,7 @@ void SendSimplePacket(const IPX_Address *dest, const char *data, int length)
 bool SendImportantPacket(const IPX_Address *dest, const char *destBuf, int destSize)
 {
     if (!FindClientAckId(dest)) {
-        WriteToLog(("Trying to send important packet to a non-connected client [%#.12s]", dest));
+        WriteToLog("Trying to send important packet to a non-connected client [%#.12s]", dest);
         return false;
     }
     if (destSize <= (int)(maxPacketSize - sizeof(SWOSPP_Packet) + sizeof(ECB) - sizeof(dword))) {
@@ -480,14 +490,14 @@ bool SendImportantPacket(const IPX_Address *dest, const char *destBuf, int destS
         int bytesLeft = destSize, dataSpace, totalFragments, numFragmentedIds = 0;
         dword fragmentedIds[MAX_FRAGMENTS], groupId = GetClientNextSendingGroupId(dest);
         if (!groupId) {
-            WriteToLog(("Trying to send fragmented packet to a non-connected client"));
+            WriteToLog("Trying to send fragmented packet to a non-connected client");
             return false;
         }
         /* extra space for: dword id, dword group id, byte total */
         dataSpace = maxPacketSize - sizeof(SWOSPP_Packet) + sizeof(ECB) - 9;
         totalFragments = (destSize + dataSpace - 1) / dataSpace;
         if (totalFragments > MAX_FRAGMENTS) {
-            WriteToLog(("Trying to send too big packet, size = %d, %d fragments", destSize, totalFragments));
+            WriteToLog("Trying to send too big packet, size = %d, %d fragments", destSize, totalFragments);
             return false;
         }
         while (bytesLeft > 0) {
@@ -498,7 +508,7 @@ bool SendImportantPacket(const IPX_Address *dest, const char *destBuf, int destS
                 int i;
                 RollbackSendingId(dest);    /* or client will wait for this packet forever */
                 /* cancel all fragments - entire group fails if one fails */
-                WriteToLog(("Out of memory while trying to send fragmented packet!"));
+                WriteToLog("Out of memory while trying to send fragmented packet!");
                 for (i = 0; i < numFragmentedIds; i++)
                     AcknowledgePacket(fragmentedIds[i], dest);
                 sendPacket->type = CANCEL_PARTIAL_SIG;
@@ -519,10 +529,10 @@ bool SendImportantPacket(const IPX_Address *dest, const char *destBuf, int destS
 static void SendPacket(const IPX_Address *dest, const char *data, int length)
 {
     int i;
-    //WriteToLog(("Sending packet of size %d", length));
+    //WriteToLog("Sending packet of size %d", length);
     assert(length > 0);
     for (i = 0; i < 200 && sendPacket->ecb.inUseFlag; i++) {
-        WriteToLog(("SendPacket(): ecb in use flag != 0, impossible!!!"));
+        WriteToLog("SendPacket(): ecb in use flag != 0, impossible!!!");
         IPX_OnIdle();
     }
     memcpy(sendPacket->ecb.immediateAddress, dest->node, sizeof(dest->node));
@@ -537,7 +547,7 @@ static void SendPacket(const IPX_Address *dest, const char *data, int length)
     //HexDumpToLog((char *)sendPacket, sizeof(SWOSPP_Packet) + length, "next packet to send");
     IPX_Send((ECB *)sendPacket);
     if (sendPacket->ecb.completionCode)
-        WriteToLog(("Error sending packet! Code is %#02x", sendPacket->ecb.completionCode));
+        WriteToLog("Error sending packet! Code is %#02x", sendPacket->ecb.completionCode);
 }
 
 static char *ReceiveNextPacket(int *destSize, IPX_Address *node, int currentPacketIndex)
@@ -549,7 +559,7 @@ static char *ReceiveNextPacket(int *destSize, IPX_Address *node, int currentPack
        it affects the performance (menus become unresponsive)
        bah, seems that IPX itself causes it... or it's just VMWare */
     if (stackavail() < 128 || packetProcessingDepth > MAX_RECV_PACKETS * 2) {
-        WriteToLog(("Stack overflow prevention triggered."));
+        WriteToLog("Stack overflow prevention triggered.");
         *destSize = 0;
         return nullptr;
     }
@@ -579,8 +589,8 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
     size = htons(packets[i]->ipx.length) - sizeof(SWOSPP_Packet) + sizeof(ECB);
     /* our packets always have size limit */
     if (size < 0) {
-        WriteToLog(("Rejecting invalid size packet, with total size of %d bytes",
-            htons(packets[i]->ipx.length)));
+        WriteToLog("Rejecting invalid size packet, with total size of %d bytes",
+            htons(packets[i]->ipx.length));
         return ReceiveNextPacket(destSize, node, i);
     }
     srcPtr = packets[i]->data;
@@ -588,13 +598,13 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
     copyAddress(node, &packets[i]->ipx.source);
     /* verify the stamp */
     if (packets[i]->verifyStamp != 'SWPP') {
-        WriteToLog(("Rejecting packet with invalid stamp: %08x:", packets[i]->verifyStamp));
+        WriteToLog("Rejecting packet with invalid stamp: %08x:", packets[i]->verifyStamp);
         return ReceiveNextPacket(destSize, node, i);
     }
     /* this is probably overkill */
     if (packets[i]->adler32Checksum != Adler32((const byte *)packets[i]->data, size)) {
-        WriteToLog(("Rejecting packet with invalid Adler32 checksum (%d, expecting %d).",
-            packets[i]->adler32Checksum, Adler32((const byte *)packets[i]->data, size)));
+        WriteToLog("Rejecting packet with invalid Adler32 checksum (%d, expecting %d).",
+            packets[i]->adler32Checksum, Adler32((const byte *)packets[i]->data, size));
         HexDumpToLog(packets[i]->data, size, "packet with failed checksum");
         return ReceiveNextPacket(destSize, node, i);
     }
@@ -605,11 +615,11 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
     case PARTIAL_PACKET_SIG:
     case IMPORTANT_PACKET_SIG:
         if (size < 4 + 5 * (packets[i]->type == PARTIAL_PACKET_SIG)) {
-            WriteToLog(("Malformed important/partial packet rejected, size = %d", size));
+            WriteToLog("Malformed important/partial packet rejected, size = %d", size);
             return ReceiveNextPacket(destSize, node, i);
         }
         if (!(currentId = GetClientCurrentReceivingId(&packets[i]->ipx.source))) {
-            WriteToLog(("Rejecting important packet because client not connected."));
+            WriteToLog("Rejecting important packet because client not connected.");
             HexDumpToLog(&packets[i]->ipx.source, sizeof(IPX_Address), "disconnected client address");
             /* maybe send them disconnect too for good measure? */
             DisconnectFrom(&packets[i]->ipx.source);
@@ -618,7 +628,7 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
         id = *(dword *)srcPtr;
         if (id > *currentId + 1) {
             /* OUT OF ORDER! YOU WILL OBEY! */
-            //WriteToLog(("Out of order packet detected, id = %d, expecting %d", id, *currentId + 1));
+            //WriteToLog("Out of order packet detected, id = %d, expecting %d", id, *currentId + 1);
             return ReceiveNextPacket(destSize, node, i);
         }
         if (id == *currentId + 1) {
@@ -630,13 +640,13 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
                 byte total;
                 dword fragId;
                 if (size < 6) {
-                    WriteToLog(("Malformed partial packet rejected, size = %d.", size));
+                    WriteToLog("Malformed partial packet rejected, size = %d.", size);
                     return ReceiveNextPacket(destSize, node, i);
                 }
                 fragId = *(dword *)srcPtr;
                 total = srcPtr[4];
                 if (total > MAX_FRAGMENTS) {
-                    WriteToLog(("Too many frragments for partial packet (%d).", total));
+                    WriteToLog("Too many frragments for partial packet (%d).", total);
                     return ReceiveNextPacket(destSize, node, i);
                 }
                 size -= 5;
@@ -655,38 +665,41 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
                 size = *destSize;
             }
             ++*currentId;
-            //WriteToLog(("Increasing current id for node [%#.12s], id is %d now.", &packets[i]->ipx.source, *currentId));
+            //WriteToLog("Increasing current id for node [%#.12s], id is %d now.", &packets[i]->ipx.source, *currentId);
         } else {
             /* we've already processed this one, get next */
-            //WriteToLog(("Discarding packet with ID %d (already processed, cur. id = %d)", id, *currentId));
+            //WriteToLog("Discarding packet with ID %d (already processed, cur. id = %d)", id, *currentId);
             SendAck(&packets[i]->ipx.source, id);
             return ReceiveNextPacket(destSize, node, i);
         }
         break;
     case ACK_PACKET_SIG:
         if (size != 4)
-            WriteToLog(("Discarding ack packet with invalid size (%d)", size));
+            WriteToLog("Discarding ack packet with invalid size (%d)", size);
         else {
             AcknowledgePacket(*(dword *)srcPtr, &packets[i]->ipx.source);
         }
         return ReceiveNextPacket(destSize, node, i);
     case CANCEL_PARTIAL_SIG:
         if (size != sizeof(dword))
-            WriteToLog(("Received partial cancelation packet with invalid size: %d", size));
+            WriteToLog("Received partial cancelation packet with invalid size: %d", size);
         else
             CancelFragmentedPacket(&packets[i]->ipx.source, *(dword *)srcPtr);
         return ReceiveNextPacket(destSize, node, i);
         break;
     default:
-        WriteToLog(("Invalid packet type: %#x", packets[i]->type));
+        WriteToLog("Invalid packet type: %#x", packets[i]->type);
         return ReceiveNextPacket(destSize, node, i);
     }
+
     if (!destBuf)
         destBuf = (char *)qAlloc(size);
+
     if (!destBuf) {
         *destSize = -1; /* signal memory exhaustion */
         return nullptr;
     }
+
     /* only ack if we're sure everything went well */
     if (packets[i]->type == PARTIAL_PACKET_SIG || packets[i]->type == IMPORTANT_PACKET_SIG)
         SendAck(&packets[i]->ipx.source, id);
@@ -694,7 +707,7 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
         *destSize = size;
         memcpy(destBuf, srcPtr, size);
     }
-    //WriteToLog(("Source address: [%#.12s]", node));
+    //WriteToLog("Source address: [%#.12s]", node);
     //HexDumpToLog(packets[i], size + sizeof(SWOSPP_Packet), "received packet data");
     IPX_Listen((ECB *)packets[i]);
     return destBuf;
@@ -703,7 +716,7 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
 void CancelPackets()
 {
     int i;
-    WriteToLog(("Canceling all packets..."));
+    WriteToLog("Canceling all packets...");
     /* cancel all pending operations */
     for (i = 0; i < MAX_RECV_PACKETS; i++)
         if (packets[i]->ecb.inUseFlag && packets[i]->ecb.completionCode != 0xf9)
@@ -742,8 +755,8 @@ UnAckPacket *ResendUnacknowledgedPackets()
 /* Call it with result from ResendUnacknowledgedPackets() if retrying. */
 void ResendTimedOutPacket(UnAckPacket *packet)
 {
-    //WriteToLog(("Resending packet to [%#.12s] with id %d of size %d",
-    //    &packet->address, *(dword *)packet->data, packet->size));
+    //WriteToLog("Resending packet to [%#.12s] with id %d of size %d",
+    //    &packet->address, *(dword *)packet->data, packet->size);
     sendPacket->type = packet->type;
     SendPacket(&packet->address, (const char *)packet->data, packet->size);
 }
@@ -754,7 +767,7 @@ char *AddUnacknowledgedPacket(const IPX_Address *address, dword id, byte type, c
     UnAckPacket *p;
     assert(offset >= 0);
     assert(size + (int)sizeof(dword) + offset <= maxPacketSize);
-    //WriteToLog(("Adding unacknowledged packet to queue, for [%#.12s], id is %d", address, id));
+    //WriteToLog("Adding unacknowledged packet to queue, for [%#.12s], id is %d", address, id);
     if (!(p = (UnAckPacket *)qAlloc(sizeof(UnAckPacket) + size + sizeof(dword) + offset)))
         return nullptr;
     p->size = size + sizeof(dword) + offset;
@@ -772,7 +785,7 @@ char *AddUnacknowledgedPacket(const IPX_Address *address, dword id, byte type, c
 static void AcknowledgePacket(dword id, const IPX_Address *dest)
 {
     UnAckPacket *p, **prev = &unAckList;
-    //WriteToLog(("Packet with id %d for [%#.12s] confirmed.", id, dest));
+    //WriteToLog("Packet with id %d for [%#.12s] confirmed.", id, dest);
     for (p = unAckList; p; p = p->next) {
         if (*p->data == id && addressMatch(&p->address, dest))
             break;
@@ -800,7 +813,7 @@ void FreeAllUnAck()
 static void ClearClientUnAckQueue(const IPX_Address *node)
 {
     UnAckPacket *p = unAckList, **prev = &unAckList;
-    //WriteToLog(("Clearing unack queue for [%#.12s]", node));
+    //WriteToLog("Clearing unack queue for [%#.12s]", node);
     while (p) {
         UnAckPacket *next = p->next;
         if (addressMatch(node, &p->address)) {
@@ -861,15 +874,15 @@ void FreeLowMemory(void *ptr)
     rm.es = (short)((unsigned long)ptr >> 4);
     RM_Interrupt(0x21, &rm);
     if (rm.flags & 1)
-        WriteToLog(("Error while freeing low memory block %#0x", ptr));
+        WriteToLog("Error while freeing low memory block %#0x", ptr);
 }
 
-bool IPX_IsInstalled()
+bool32 IPX_IsInstalled()
 {
     memset(&rm, 0, sizeof(rm));
     rm.eax = 0x7a00;
     RM_Interrupt(0x2f, &rm);
-    WriteToLog(("IPX FAR entry point should be %#x:%#x", rm.es, rm.edi));
+    WriteToLog("IPX FAR entry point should be %#x:%#x", rm.es, rm.edi);
     return (rm.eax & 0xff) == 0xff;
 }
 
@@ -890,7 +903,7 @@ int IPX_OpenSocket()
 {
     memset(&rm, 0, sizeof(rm));
     RM_Interrupt(0x7a, &rm);
-    WriteToLog(("Result from open socket: %#x, socket = %#x", rm.eax & 0xff, rm.edx));
+    WriteToLog("Result from open socket: %#x, socket = %#x", rm.eax & 0xff, rm.edx);
     return rm.eax & 0xff ? -1 : rm.edx;
 }
 
@@ -900,7 +913,7 @@ void IPX_CloseSocket(int socketNumber)
     rm.ebx = 1;
     rm.edx = socketNumber;
     RM_Interrupt(0x7a, &rm);
-    WriteToLog(("Closed socket: %#x", socketNumber & 0xffff));
+    WriteToLog("Closed socket: %#x", socketNumber & 0xffff);
 }
 
 /* IPX_OnIdle
@@ -925,7 +938,7 @@ void IPX_Listen(ECB *ecb)
     rm.ebx = 0x0004;
     RM_Interrupt(0x7a, &rm);
     if (rm.eax & 0xff)
-        WriteToLog(("IPX_Listen failed, error code: %d", rm.eax & 0xff));
+        WriteToLog("IPX_Listen failed, error code: %d", rm.eax & 0xff);
 }
 
 void IPX_Send(ECB *ecb)
@@ -936,7 +949,7 @@ void IPX_Send(ECB *ecb)
     rm.ebx = 0x0003;
     RM_Interrupt(0x7a, &rm);
     if (rm.eax & 0xff)
-        WriteToLog(("IPX_Send failed, error code: %d", rm.eax & 0xff));
+        WriteToLog("IPX_Send failed, error code: %d", rm.eax & 0xff);
 }
 
 void IPX_Cancel(ECB *ecb)
@@ -947,7 +960,7 @@ void IPX_Cancel(ECB *ecb)
     rm.ebx = 0x0006;
     RM_Interrupt(0x7a, &rm);
     if (rm.eax & 0xff)
-        WriteToLog(("IPX_Cancel failed, error code: %d", rm.eax & 0xff));
+        WriteToLog("IPX_Cancel failed, error code: %d", rm.eax & 0xff);
 }
 
 uint IPX_GetMaximumPacketSize()
@@ -955,7 +968,7 @@ uint IPX_GetMaximumPacketSize()
     memset(&rm, 0, sizeof(rm));
     rm.ebx = 0x001a;
     RM_Interrupt(0x7a, &rm);
-    WriteToLog(("IPX retry count is %hu", rm.ecx));
+    WriteToLog("IPX retry count is %hu", rm.ecx);
     return rm.eax;
 }
 
