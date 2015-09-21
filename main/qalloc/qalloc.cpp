@@ -103,9 +103,8 @@ void excludeHeapBlocks(void *heap, int size)
 
 bool isBlockExcluded(const HeapStats *hs, word ofs)
 {
-    int i;
     assert(hs);
-    for (i = 0; i < hs->numExcludedBlocks; i++)
+    for (size_t i = 0; i < hs->numExcludedBlocks; i++)
         if (hs->excludedBlocks[i] == ofs)
             return true;
     return false;

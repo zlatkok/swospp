@@ -202,7 +202,7 @@ CloseReplayFile:
 
 global ShowReplaysMenu
 ShowReplaysMenu:
-        mov  dword [A6], replays_menu
+        mov  dword [A6], replaysMenu
         calla ShowMenu
         retn
 
@@ -422,7 +422,7 @@ error_copying:
 
 section .data
 
-    StartMenu replays_menu, InitReplays, 0, 0, 3
+    StartMenu replaysMenu, InitReplays, 0, 0, 3
 
         StartEntry 92, 0, 120, 15
             EntryColor 0x17

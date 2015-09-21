@@ -240,7 +240,7 @@ static inline __attribute__((always_inline)) void GetDosTime(uchar *aHour, uchar
         :
         :
     );
-    *aHour = hour;
+    *aHour = hour % 24;     /* DOSBox seems to return values >24 when running for long time */
     *aMinute = minute;
     *aSecond = second;
     *aHundred = hundred;

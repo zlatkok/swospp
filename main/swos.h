@@ -8,6 +8,7 @@ enum debugMessageClasses {
     LM_SYNC             = 4,
     LM_WATCHER          = 8,
     LM_SUBS_MENU        = 16,
+    LM_PACKETS          = 32,
 };
 
 /* screen width and height */

@@ -26,9 +26,9 @@ const char *InitMultiplayer()
     if (auto failureReason = InitializeNetwork())
         return failureReason;
 
-    calla_ebp_safe(SaveOptions);
-    autoReplays = 0;            /* force auto-replays off */
-    allPlayerTeamsEqual = 0;    /* force equal teams off  */
+    calla_ebp_safe(SaveOptions);    /* save options here and not in menu to cover for alt-f1 exit */
+    autoReplays = 0;                /* force auto-replays off */
+    allPlayerTeamsEqual = 0;        /* force equal teams off  */
     gameType = 0;
 
     if (!mpOptions.size)
@@ -48,6 +48,7 @@ const char *InitMultiplayer()
 
 void FinishMultiplayer()
 {
+    calla_ebp_safe(RestoreOptions);
     FinishMultiplayerLobby();
     ShutDownNetwork();
     ReleaseClientMPOptions();

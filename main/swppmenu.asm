@@ -1,5 +1,5 @@
 ; Contains SWOS++ main menu, and some of the menus derived from it, as well
-; as menu manipulating routines.
+; as belonging menu manipulation routines.
 
 [list -]
 %include "swos.inc"
@@ -641,14 +641,13 @@ DrawShiningFrame:
 ;     esi -> currentMenu
 ;
 ; Set the menu we should return to after the game (if menu that called the game
-; isn't suitable).
+; isn't suitable). Patched right before main loop starts.
 ;
 global HookMenuSaveAfterTheGame
 HookMenuSaveAfterTheGame:
         pop  ebx
         push dword [esi + Menu.currentEntry]
-        mov  eax, [currentMenuPtr]
-        push eax
+        push dword [currentMenuPtr]
         mov  [savedMenuAfterGame], esp
         jmp  ebx
 
@@ -705,6 +704,7 @@ PushMenu:
         cmp  esi, menuStackEnd
         jnz  .ptr_ok
 
+        WriteToLog "PushMenu(), overflow!!!"
         mov  esi, menuStack
 
 .ptr_ok:
@@ -728,21 +728,19 @@ PushMenu:
 ;
 global PopMenu
 PopMenu:
-        mov  eax, [menuToReturnTo]
-        test eax, eax
-        jz   .pop_menu
-
-        pop  ebx
-        mov  esp, eax
-        mov  dword [menuToReturnTo], 0
-        push ebx
-        jmp  .out
-
-.pop_menu:
         mov  esi, [menuStackPtr]
         call DecreasePtr
         mov  [esi], eax
         mov  [menuStackPtr], esi
+
+        mov  eax, [menuToReturnTo]
+        test eax, eax
+        jz   .out
+
+        pop  ebx        ; pick up return address first, since we're trashing the stack
+        mov  esp, eax
+        mov  dword [menuToReturnTo], 0
+        push ebx
 
 .out:
         mov  word [exitMenu], 0

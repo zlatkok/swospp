@@ -26,7 +26,7 @@ my $DIS         = '';       # no need for wdis anymore, gcc can generate listing
 my $LINK        = 'alink';
 
 my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 -Wa,-adhlns=$(LST_DIR)/$*.lst -fno-ident ' .
-                  '-mno-red-zone -mrtd -march=i386 -m32 -nostdlib -ffreestanding -fno-leading-underscore -fno-stack-protector ' .
+                  '-mno-red-zone -mrtd -march=i386 -nostdlib -ffreestanding -fno-leading-underscore -fno-stack-protector ' .
                   '-mpush-args -mno-accumulate-outgoing-args -mno-stack-arg-probe -fno-exceptions -fno-unwind-tables ' .
                   '-fno-asynchronous-unwind-tables -momit-leaf-frame-pointer -mpreferred-stack-boundary=2 ' .
                   '-Wundef -fomit-frame-pointer -fverbose-asm -Wstack-usage=43008 -Wno-multichar -o$@ $<';
@@ -117,9 +117,11 @@ find( { wanted => sub
     my $path = catdir('.', $File::Find::name);
     my ($base, $dir, $ext) = fileparse($path, qr/\.[^.]*/);
     my $file = $base . $ext;
+
     # skip files from debug dir if we're not building debug version
     return if (substr(canonpath($path), 0, 5) eq 'debug' && $TARGET ne 'dbg');
     next if ($IGNORE_SRCS{$file} || $IGNORE_SRCS{$base});
+
     # each subdirectory will be additional include path
     if (-d) {
         $base ne 'deps' or die "Special dir name 'deps' is used for storing dependencies.\n";
@@ -131,6 +133,7 @@ find( { wanted => sub
         }
     }
     return if !-f;
+
     if ($SRC_EXTENSIONS{$ext}) {
         logl("Found source file '$path'.");
         $srcFiles{$path} = newSrcFile($path, $dir, $file, $base, $ext);

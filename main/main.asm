@@ -110,9 +110,9 @@ EndProgram:
         call CloseReplayFile            ; close replay file and set header
 
 .no_rpl_save:
-        call SaveOptionsIfNeeded        ; save options
         call FinishMultiplayer          ; and get rid of network too
         call FinishMultiplayerGame      ; in case we were in a game
+        call SaveOptionsIfNeeded        ; save options, but only after they have been restored
 
         pop  eax
         test eax, eax

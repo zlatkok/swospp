@@ -85,6 +85,7 @@ extern byte seed asm ("seed");
 extern byte seed2 asm ("seed2");
 extern void (*Rand[])() asm ("Rand");
 extern void (*SaveOptions[])() asm ("SaveOptions");
+extern void (*RestoreOptions[])() asm ("RestoreOptions");
 extern void (*DrawMenuItem[])() asm ("DrawMenuItem");
 extern void (*ReadGamePort[])() asm ("ReadGamePort");
 extern char bigCharsTable[] asm ("bigCharsTable");

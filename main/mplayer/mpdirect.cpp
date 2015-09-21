@@ -202,9 +202,12 @@ static void ParseCommandLine()
     strupr(directGameNickname);
 
     WriteToLog("Command line is: \"%s\"", cmdLine);
-    WriteToLog("Direct connect mode: %d (%s), gameName: \"%s\"", directGameName[0] != '\0', directServerMode ? "server" : "client", directGameName);
-    WriteToLog("Nickname for direct connect: \"%s\", timeout = %d", directGameNickname, directConnectTimeout);
-    WriteToLog("Communication file: \"%s\"", commFile);
+
+    if (directGameName[0]) {
+        WriteToLog("Direct connect mode: %d (%s), gameName: \"%s\"", directGameName[0] != '\0', directServerMode ? "server" : "client", directGameName);
+        WriteToLog("Nickname for direct connect: \"%s\", timeout = %d", directGameNickname, directConnectTimeout);
+        WriteToLog("Communication file: \"%s\"", commFile);
+    }
 }
 
 
@@ -334,6 +337,7 @@ static void HideSearchDialog()
 extern "C" void UpdateGameSearch()
 {
     if (directGameIndex >= 0) {
+        WriteToLog("Direct connect game found! Trying to connect...");
         HideSearchDialog();
         JoinRemoteGame(directGameIndex);
     } else if (currentTick > connectingStartTick + directConnectTimeout)

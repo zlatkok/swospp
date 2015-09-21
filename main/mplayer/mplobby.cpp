@@ -19,12 +19,12 @@ dword currentTeamId = -1;                   /* id of current team            */
 
 static WaitingToJoinReport joinGamesState;
 static LobbyState *lobbyState;
-static byte weAreTheServer; /* WE ARE THE ROBOTS */
+static byte weAreTheServer;                 /* WE ARE THE ROBOTS */
 static byte connectionError;
 static byte joinId;
 static byte gameId;
 static byte syncDone;
-static byte inLobby;
+static byte inLobby;                        /* will be true while we're in game lobby */
 
 /* GUI callbacks */
 static SendWaitingToJoinReport waitingToJoinReportFunc;
@@ -46,14 +46,14 @@ typedef struct WaitingGame {
 
 static int numWaitingGames;
 static WaitingGame waitingGames[MAX_GAMES_WAITING];
-static int joiningGame; /* index of a game we're currently trying to join */
+static int joiningGame;                 /* index of a game we're currently trying to join */
 
 enum MP_States {
     ST_NONE = 0x1123,
     ST_WAITING_TO_JOIN,
-    ST_WAITING_TO_START,        /* state for server */
+    ST_WAITING_TO_START,                /* state for server */
     ST_TRYING_TO_JOIN_GAME,
-    ST_GAME_LOBBY,              /* state for client */
+    ST_GAME_LOBBY,                      /* state for client */
     ST_SYNC,
     ST_PL1_SETUP_TEAM,
     ST_PL2_SETUP_TEAM,
@@ -117,10 +117,10 @@ typedef struct NetPlayer {
     };
     Tactics *userTactics;   /* user tactics, allocated when/if necessary */
     IPX_Address address;
-    byte flags;         /* bit 0 - is watcher
-                           bit 1 - is ready
-                           bit 2 - is synced
-                           bit 3 - is player in hold of menu controls */
+    byte flags;             /* bit 0 - is watcher
+                               bit 1 - is ready
+                               bit 2 - is synced
+                               bit 3 - is player in hold of menu controls */
     word joinId;
     word lastPingTime;
 } NetPlayer;
@@ -199,7 +199,7 @@ dword GetControlsFromNetwork()
 /** SwitchToNextControllingState
 
     Called after a player finishes setting up team by pressing play match.
-    Return true if the game is starting.
+    Return true if the game is starting (after 2nd player finished setting up).
 */
 bool32 SwitchToNextControllingState()
 {
@@ -512,7 +512,7 @@ static bool ClientHandlePlayerLeftPacket(const char *packet, int length, const I
             WriteToLog("Client sent us PT_PLAYER_LEFT [%#.12s]", node);
             return true;
         }
-        /* "Don’t ask for whom the bell tolls, it tolls for thee..." */
+        /* "Don't ask for whom the bell tolls, it tolls for thee..." */
         if (playerIndex == ourPlayerIndex) {
             WriteToLog("Server has disconnected us.");
             DisconnectClient(0, true);
@@ -688,18 +688,26 @@ bool32 CanGameStart()
 }
 
 
+/** SetupTeams
+
+    Start game was pressed in game lobby. Commence synchronization process, where players exchange
+    their teams and custom tactics. Prerequisite of setup teams menu.
+*/
 void SetupTeams(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *))
 {
-    byte randomVariables[32];
-    int length, randVarsSize = sizeof(randomVariables);
+    WriteToLog("Synchronizing... modalSyncFunc = %#x, showTeamMenuFunc = %#x", modalSyncFunc, showTeamMenuFunc);
+
     const IPX_Address *addresses[MAX_PLAYERS - 1];
-    WriteToLog("Synchronizing... modalSyncFunc = %#x, showTeamMenuFunc = %#x",
-        modalSyncFunc, showTeamMenuFunc);
     for (int i = 1; i < numConnectedPlayers; i++)
         addresses[i - 1] = &connectedPlayers[i].address;
+
+    byte randomVariables[32];
+    int randVarsSize = sizeof(randomVariables);
     GetRandomVariables(randomVariables, &randVarsSize);
     assert(randVarsSize <= (int)sizeof(randomVariables));
     WriteToLog("Sending random variables: [%#.*s]", randVarsSize, randomVariables);
+
+    int length;
     char *packet = createSyncPacket(&length, addresses, numConnectedPlayers - 1, randomVariables, randVarsSize);
     for (int i = 1; i < numConnectedPlayers; i++)
         SendImportantPacket(addresses[i - 1], packet, length);
@@ -1034,6 +1042,7 @@ void GameFinished()
     byte gameStatus = GetGameStatus();
     if (gameStatus != GS_GAME_DISCONNECTED && gameStatus != GS_WATCHER_ABORTED) {
         GoBackToLobby();
+        assert(onGameEndFunction);
         onGameEndFunction();
     } else {
         DisbandGame();
@@ -1462,8 +1471,6 @@ void LeaveWaitingToJoinState()
 
     Called from GUI to notify us that the player wants to join the game with given index.
     Various callbacks are provided for GUI to be notified in various stages as the process proceeds.
-    Join game timeout is also present to allow controlling it from front-end. It is given
-    in ticks.
 */
 void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
     void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(), bool32 (*modalSyncFunc)(),
@@ -1747,20 +1754,32 @@ static bool32 JoiningGameOnIdle(LobbyState *lobbyState)
 ***/
 
 
+static void ResetSyncFlags()
+{
+    for (int i = 0; i < MAX_PLAYERS; i++)
+        connectedPlayers[i].flags &= ~(PL_IS_SYNCED | PL_IS_CONTROLLING);
+}
+
+
 static void EnterSyncingState(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *))
 {
     WriteToLog("Going into syncing state...");
+
     state = ST_SYNC;
     modalSyncFunction = modalSyncFunc;
     showTeamsMenuFunction = showTeamMenuFunc;
     lastRequestTick = currentTick;      /* reuse this */
     syncDone = false;
+
+    ResetSyncFlags();
+
     if (isPlayer(ourPlayerIndex)) {
         if (!connectedPlayers[ourPlayerIndex].userTactics)
             connectedPlayers[ourPlayerIndex].userTactics = (Tactics *)qAlloc(TACTIC_SIZE * 6);
         assert(connectedPlayers[ourPlayerIndex].userTactics);
         memcpy(connectedPlayers[ourPlayerIndex].userTactics, GetUserMpTactics(), sizeof(Tactics) * 6);
     }
+
     if (weAreTheServer && isPlayer(0)) {
         int i, length;
         char *packet = createTeamAndTacticsPacket(&length, &connectedPlayers[0].team, GetUserMpTactics());
@@ -1805,6 +1824,7 @@ static bool HandleTimeouts()
     if (UnAckPacket *timedOutPacket = ResendUnacknowledgedPackets()) {
         WriteToLog("Fatal network error, timed-out important packet [%#.12s], ticks = %hd, current ticks = %hd.",
         &timedOutPacket->address, timedOutPacket->time, currentTick);
+        HexDumpToLog(timedOutPacket->data, timedOutPacket->size, "timed out packet");
 
         /* network error */
         switch (state) {
