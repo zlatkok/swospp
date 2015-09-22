@@ -180,7 +180,7 @@ aGameLength
 aSubstitutes
 aFrom
 SaveOptions, function
-RestoreOptions
+RestoreOptions, function
 DrawMenuItem, function
 aOff
 aOn

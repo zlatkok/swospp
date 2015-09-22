@@ -1,5 +1,10 @@
 INTERNAL LIST OF STUFF DONE:
 2.0:
+- fixed bug when controls would lock up on 2nd entry into setup teams menu
+- created test.txt, which contains stuff that needs to be checked before
+  releasing a build (hopefully it would become at least partly automated)
+- direct connect mode implemented - game goes directly into multiplayer lobby
+  if requested from the command line
 - command line parameters implemented (for launcher)
 - tons of small bugs resulting from the port fixed
 - ported everything to GCC, C++11/14/17 here we come!
@@ -38,14 +43,13 @@ INTERNAL LIST OF STUFF DONE:
 - fixed (finally!) bug in recording friendly game replays - if players select
   replay after the game, recording would contain all games combined
 - patched: size mismatch - capital S!
-- sada se na pocetku vrsi testiranje brzine video memorije (kod iz install.exe)
-  pa kursor vise ne treperi kao blesav u menijima (to je takodje dobro ako se
-  pokrece igra iz dosbox-a i vmware-a naizmenicno iz istog direktorijuma, video
-  indeks ce imati razlicite vrednosti)
-- sad error-ok modalni dijalog ima malu animacijicu, igrac se kao pokunji ;)
-- ubacena "podrska" za DOSBox (za javni change log)
-- sredjen printf da podrzava %hhd/%hhx, pri tom ispravljen i bag -
-  specifikacija se nije resetovala izmedju polja
+- now video memory testing is done at startup (same algorithm as install.exe) so
+  cursor doesn't blink like crazy in menus (also useful when game is ran from
+  both DOSBox and VMWare from the same directory)
+- now error-ok modal dialog has small animation, player that gets sad ;)
+- added "support" for DOSBox (for public change log)
+- added support for %hhd/%hhx to printf, and on that note bug fixed - field
+  specification wasn't getting reset between fields
 - napravljen perl skript koji proverava da li ima nekoriscenih simbola iz
   filter.txt (putem jednostavne tekstualne pretrage), izbaceni suvisni
   zastareli simboli

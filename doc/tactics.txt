@@ -17,11 +17,13 @@ offset  length  description
  359      10    some table, unknown purpose, doesn't seem to be used
  369       1    index of a tactic that is applied when ball is out of play
 
-The pitch is divided into 35 quadrants, 5 rows and 7 columns. Player positions
-above are quadrants where player will be heading if the ball is in certain
-quadrant. Position 0 corresponds to lower right quadrant of the pitch, and
-position 34 corresponds to top left. Note that goalkeeper doesn't count, as he
-has special movement logic.
+The pitch is divided into 35 quadrants, 5 rows and 7 columns. Those are
+quadrants to track the ball position. Position 0 corresponds to lower right
+quadrant of the pitch, and position 34 corresponds to top left. Player positions
+in the tactics file are quadrants where player will be heading if the ball is in
+certain quadrant. For players, pitch is divided into 240 positions, 16 rows x 15
+columns. X quadrants increase from right to left, y from bottom to top. Note
+that goalkeeper doesn't count, as he has special movement logic.
 
 Tactics are always applied as if upper goal is ours, and we're attacking towards
 bottom goal. For 2nd player indices are reversed when indexing the positions.

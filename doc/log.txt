@@ -69,7 +69,7 @@
 - xml lexer passed tests
 01.10.2014.
 - buffered file tests passed, now the log will go through it, increasing
-  performances in debug version and hopefuly making it usable for game play
+  performances in debug version and hopefully making it usable for game play
 29.09.2014.
 - did a funny thing today - wrote a simple DOS file access to WinAPI layer to
   do a test of buffered files: it worked by replacing each file-related int 21h
@@ -89,17 +89,18 @@
   already caught some errors that have been sanitized; now SWOS++ might compile
   on modern Windows, I'll see if I can switch it at next opportunity
 01.09.2014.
-- jos jedan veseli bagitj resen: primetio sam da nije sljakala bss sekcija u
-  nekim slucajevima, naduvao se exe kada sam ubacio stack buffer u main.asm;
-  testirao sam i nasao sam da u c fajlovima radi, ali u asm ne, pa sam mislio
-  sam da je bag u alink-u, i to vezan za coff; medjutim sve je bilo ok, stvar
-  je bila u redosledu merg-ovanja sekcija - komanda za merge-ovanje .bss u
-  .data je bila ubacivana na pocetak liste, a kasnije smo imali jos merge-ova
-  u .data (npr. .strdata u .data) koji su se nadovezali i ponistili .bss
-  svojstvo... c fajlovi su stavljali u _BSS koja se merge-ovala kasnije i zato
-  su oni radili; sada alink automatsku koverziju .bss u .data vrsi nakon
-  korisnicki zadanih spajanja (osim ako korisnik ne zada eksplicitno .bss u
-  .data, onda postujemo korisnicki redosled)
+- another merry buggie solved: I've noticed that bss section wasn't working in
+  some cases, the exe file bloated after adding stack buffer to main.asm; after
+  some testing it was determined that in C files bss was working, but not in
+  asm.. that led me to believe the bug was in alink, and related to coff;
+  however everything was fine, the problem lied in section merging order -
+  command for merging .bss into .data was added to the beginning of the linked
+  list, and later we had more merging into .data (ie. .strdata to .data) which
+  had real data in them and cancelled bss property... C files were placing
+  variables to _BSS which got merged later and that's why they worked; so now
+  alink defers automatic .bss to .data conversion until user given merges have
+  been completed (unless user explicitly lists .bss to .data, then we respect
+  user given order)
 31.08.2014.
 - presli smo na sopstveni stek od 64kb, jednostavnim kopiranjem steka u
   staticki bafer i setovanjem esp-a :) (najbolje sto sam na kraju uspeo da

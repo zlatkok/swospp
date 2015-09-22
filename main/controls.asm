@@ -236,9 +236,7 @@ ControlsOnSelectCommon:
         mov  dword [A0], aSetup_dat
         mov  dword [A1], setupDatBuffer
         pop  dword [D1]
-WriteToLog "numLoopsJoy1 = %hd, numLoopsJoy2 = %hd", numLoopsJoy1, numLoopsJoy2
         calla WriteFile
-WriteToLog "numLoopsJoy1 = %hd, numLoopsJoy2 = %hd", numLoopsJoy1, numLoopsJoy2
         call SaveOptionsIfNeeded    ; save options if needed :)
 .out:
         xor  eax, eax
@@ -888,7 +886,9 @@ CalibrateJoypad:
         call ConvertJoystickButtons
         push edx
         push ecx
+        push esi
         calla FlipInMenu, edx
+        pop  esi
         pop  ecx
         pop  edx
         test al, al
@@ -989,6 +989,7 @@ DrawJoypadMenu:
         push ecx
         push ebx
         push edx
+        push esi
 
         add  cl, '1'
         mov  byte [joy_menu_title + 30], cl
@@ -1058,9 +1059,9 @@ DrawJoypadMenu:
         and  ebx, 0x7f          ; ebx = y
         and  ecx, 0xff          ; ecx = x
         shr  eax, 16            ; eax = read value
-        call int2str            ; convert to string
-        mov  [D1], ecx
+        mov  [D1], ecx          ; set D1 here since GCC will modify ecx
         mov  [D2], ebx
+        call int2str            ; convert to string
         mov  word [D3], 2
         mov  [A0], eax
         mov  dword [A1], smallCharsTable
@@ -1074,6 +1075,7 @@ DrawJoypadMenu:
         dec  ecx
         jnz  .joy_values_loop
 
+        pop  esi
         pop  edx
         pop  ebx
         pop  ecx
@@ -1158,11 +1160,15 @@ ClearJoystickButtons:
         mov  al, [joy_buttons]
         test al, al
         jz   .out_ok
+
         call MyReadGamePort
         jc   .out
+
         jmp  short ClearJoystickButtons
+
 .out_ok:
         clc
+
 .out:
         retn
 
@@ -1196,7 +1202,9 @@ ConvertJoystickButtons:
         push edx
         push ecx
         push ebx
+        push esi
         calla DrawMenuTextCentered
+        pop  esi
         pop  ebx
         pop  ecx
         pop  edx

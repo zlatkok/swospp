@@ -1,26 +1,28 @@
-Meni se cuva u obliku strukture. Prvo ide header, zatim stavke po 56
-bajtova.
+Standard SWOS menus
+-------------------
 
-Registri na ulazu u menu entry funkcije (before_draw, after_draw itd.) su:
-A5 - pointer na stavku koja dobija event
-A0 - pointer na samu funkciju (jer se i poziva indirektno preko A0)
+Menu is stored in form of a menu structure. First goes header comprising of 22
+bytes, and then entries follow, with 56 bytes each.
 
-Na ulazu u init i before_draw funkcije menija A6 ce pokazivati na meni
-strukturu.
+Parameters to menu entry functions (before draw, after draw, etc.) are in
+following registers:
+A5 - pointer to entry which is receiving an event
+A0 - pointer to function itself (since it's called indirectly through A0)
 
-Header (velicina 22 bajta):
+Upon entry to init and afterDraw function of the menu A6 will point to menu
+header.
 
-           +0  - init funkcija
-           +4  - after_draw funkcija
-           +8  - meni funkcija (ako je ima, inace NULL) (dword)
-                 nesto u fazonu on_draw
-           +12 - pointer na trenutno aktivnu stavku
-                 (prema najnovijim saznanjima, mozda i selektovanu)
-           +16 - broj stavki u meniju (mozda ima i jos jednu funkciju)
-           +18 - pointer na kraj menija (ukljucujuci i dodatne stdmenutext
-                 stringove)
+Header (size 22 bytes):
 
-Stavka menija, idu nakon headera:
+           +0  - init function
+           +4  - afterDraw function (invoked when returning to this menu)
+           +8  - onDraw function (invoked each frame)
+           +12 - pointer to currently selected entry
+           +16 - number of entries in menu (might have one more function)
+           +18 - pointer to the end of menu (including additional stdmenutext
+                 strings)
+
+Menu entries, following the header:
 
        0  ; da li je vec nacrtan? (word)
             0 - ne
@@ -765,3 +767,17 @@ else goto CallDrawMenuItem;
 
 @@out:
 retn
+
+
+Multiplayer
+-----------
+
+Menu order from main menu to multiplayer game usually goes like this:
+
+SWOS_MainMenu
+swosppMenu
+multiplayerMenu
+gameLobbyMenu
+playMatchMenu
+versusMenu
+stadiumMenu

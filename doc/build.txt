@@ -66,6 +66,8 @@ TEST  - creating testing build (to be implemented)
 Perl Makefile
 
 TODO
+Limitations:
+- asm and C++ files can not be named same, since they produce same obj file
 
 
 mapcvt, detaljni opis, kako se dodaju simboli

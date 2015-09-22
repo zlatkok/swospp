@@ -7,9 +7,9 @@ Mixing assembly code with Watcom
 Watcom by default uses Watcom calling convention, and that is what we
 exclusively use throughout the entire program. Parameters are passed in
 registers, in the following order: eax, edx, ebx, ecx. If there are more than 4
-parameters they are passed via stack, just like stdcall. Return value goes
-through eax. By default function names will have underscore appended to it
-(in contrast to variables which will have it prepended).
+parameters they are passed via stack, just like stdcall (right to left). Return
+value goes through eax. By default function names will have underscore appended
+to it (in contrast to variables which will have it prepended).
 As for the asm functions that get called from Watcom, they have to abide to the
 following:
 - all registers must be preserved unless they are used to transfer parameters
@@ -42,7 +42,7 @@ Intel x86 Stack
 Stack grows downwards, pointer is set to highest address, and approaches lowest
 as the stack gets more full.
 PUSH - decrease stack pointer, put operand on top of the stack
-POP - get operand from stack top, increase stack pointer
+POP  - get operand from stack top, increase stack pointer
 
 PUSHAD
 ------
@@ -70,7 +70,8 @@ some sort of converter that created Intel x86 executable code out of it. Then
 PC specific and performance sensitive routines where hand-crafted.
 68k CPU has 16 general purpose 32-bit registers, labeled D0-D7, A0-A7. All
 registers except A7 were mapped to 32-bit memory locations. A7 is stack
-pointer, and it was mapped directly to Intel ESP register.
+pointer, and it was mapped directly to Intel ESP register. A* registers are
+usually used for pointers.
 Parameters to SWOS subroutines seem to be passed almost exclusively in
 registers, and stack is only used for saving and restoring registers.
 Most integer variables are 2 bytes long, as it is optimal for 16-bit data bus.
@@ -191,7 +192,7 @@ idiom for copying zero-terminated string to fixed buffer:
     *strncpy(dst, src, dstSize - 1) = '\0';
 Note that this will work in any case: if the copy operation ran out of space,
 pointer to last character in dst will be returned - so the string gets
-terminating zero, and in case copy was successful terminating zero will get
+terminating zero, and in case copy was successful terminating zero will just get
 written once more.
 
 
@@ -252,6 +253,8 @@ sve hederima). Za bitne (important) paket se garantuje isporuka, i ako su
 previse veliki za jedan fizicki paket, bice izdeljeni u vise. Protokol kojim se
 garantuje isporuka je sledeci:
 TODO
+dword - packet id
+data...
 
 Integracija sa menijima je uradjena preko OnIdle f-je koju poziva menu loop.
 
@@ -386,6 +389,12 @@ Downside is that private symbols declared in file that has no public symbols
 search; example would be pdata.asm.
 If we need to find out offset in raw bin file, we need to add 48 to relative
 offset (ZKBF header size).
+Locating data items from SWOS++ requires subtracting section alignment; we need
+to take a look at map file, and see the length of code (for example 0x1c46c).
+Code starts at 0x401000, and ends at 0x41d46c (0x401000 + 0x1c46c). Let's say
+that .data section starts at 0x41e000. So the difference 0x41e000 - 0x41d46c =
+0xb94 needs to be added to every memory address in order to be able to precisely
+locate the symbol.
 
 
 Patch-ovanje relativnih poziva
@@ -411,8 +420,8 @@ Kada su smesteni u memoriji prvi word je razlomljeni deo, drugi word je celi
 deo (offset 2) - i uglavnom se u programu samo celi deo i koristi.
 
 
-Virtualizovane taktike
-----------------------
+Virtualized tactics
+-------------------
 Svaki od igraca ima sopstvenih 6 custom taktika.
 TODO :)
 
