@@ -21,16 +21,16 @@ extern InstallCrashLogger
 
 section .data
 pressAnyKeyStr:
-    db 13, 10, "<Press any key to terminate>", 13, 10
+        db 13, 10, "<Press any key to terminate>", 13, 10
 dosboxString:
-    db "DOSBox", 0
+        db "DOSBox", 0
 dosboxStringLen equ $ - dosboxString - 1
 detectedStr:
-    db " detected!", 13, 10, '$', 0
+        db " detected!", 13, 10, '$', 0
 
 %ifdef DEBUG
 verStrAddr:
-    db verStr, 0
+        db verStr, 0
 %endif
 
 section .text
@@ -254,6 +254,7 @@ patchCheckTable:
         db 0x0f, 0x84, 0xb5, 0x00, 0x00, 0x00
 
         dd 0
+
 
 ; DetectOriginalSWOS
 ;

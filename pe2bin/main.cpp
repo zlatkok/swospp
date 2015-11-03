@@ -47,37 +47,44 @@ static void push(dword *stack, int *stackptr, dword addr)
     stack[(*stackptr)++] = addr;
 }
 
-static void AddCodeSWOSCFixup(dword addr)
+
+static void addCodeSWOSCFixup(dword addr)
 {
     push(codeSWOSCodeFixup, &cscPtr, addr);
 }
 
-static void AddCodeSWOSDFixup(dword addr)
+
+static void addCodeSWOSDFixup(dword addr)
 {
     push(codeSWOSDataFixup, &csdPtr, addr);
 }
 
-static void AddCodeBaseFixup(dword addr)
+
+static void addCodeBaseFixup(dword addr)
 {
     push(codeBaseFixup, &cbPtr, addr);
 }
 
-static void AddPatchSWOSCFixup(dword addr)
+
+static void addPatchSWOSCFixup(dword addr)
 {
     push(patchSWOSCodeFixup, &pscPtr, addr);
 }
 
-static void AddPatchSWOSDFixup(dword addr)
+
+static void addPatchSWOSDFixup(dword addr)
 {
     push(patchSWOSDataFixup, &psdPtr, addr);
 }
 
-static void AddPatchBaseFixup(dword addr)
+
+static void addPatchBaseFixup(dword addr)
 {
     push(patchBaseFixup, &pbPtr, addr);
 }
 
-static int Checksum(dword c, int i, unsigned char *mem, int memSize)
+
+static int checksum(dword c, int i, unsigned char *mem, int memSize)
 {
     unsigned int t;
     for (int j = 0; j < memSize; mem++, j++, i++) {
@@ -90,9 +97,11 @@ static int Checksum(dword c, int i, unsigned char *mem, int memSize)
     return c;
 }
 
+
 enum RelocSections {
     CODE, DATA, RDATA, PATCH, SWOS, INVALID,
 };
+
 
 struct Section {
     const char *name;
@@ -110,6 +119,7 @@ struct Section {
     { ".ptdata", PATCH },
 };
 
+
 enum SectionsNeeded {
     SEC_TEXT,
     SEC_DATA,
@@ -119,11 +129,14 @@ enum SectionsNeeded {
     SEC_PTDATA
 };
 
+
 /* not so much strict ordering, all we need is to process rdata (exports) before ptdata */
 static int sectionOrder[] = { SEC_TEXT, SEC_DATA, SEC_RDATA, SEC_PTDATA, SEC_RELOC, SEC_SWOS };
 
+
 #define sizeofarray(x) (sizeof(x)/sizeof(x[0]))
 #define SECTS_NEEDED sizeofarray(sects)
+
 
 static void *xmalloc(size_t size)
 {
@@ -134,6 +147,7 @@ static void *xmalloc(size_t size)
     }
     return p;
 }
+
 
 static bool *getIgnoredSections(const SectionHeader *sectionHeaders, size_t numSections)
 {
@@ -160,6 +174,7 @@ static bool *getIgnoredSections(const SectionHeader *sectionHeaders, size_t numS
     return ignoredSections;
 }
 
+
 static bool isIgnoredSection(bool *ignoredSections, dword address, const SectionHeader *sectionHeaders, size_t numSections)
 {
     for (size_t i = 0; i < numSections; i++) {
@@ -169,6 +184,7 @@ static bool isIgnoredSection(bool *ignoredSections, dword address, const Section
     return false;
 }
 
+
 static int calculateChecksum(uint rdataOffset, uint rdataSize, uint patchOffset, uint patchSize)
 {
     /* relocations sections delimiter */
@@ -176,25 +192,26 @@ static int calculateChecksum(uint rdataOffset, uint rdataSize, uint patchOffset,
     int c, size;
 
     /* calculate checksum */
-    c = Checksum(0, size = 0, sects[SEC_TEXT].buffer, sects[SEC_TEXT].size);
-    c = Checksum(c, size += sects[SEC_TEXT].size, sects[SEC_DATA].buffer, sects[SEC_DATA].size);
-    c = Checksum(c, size += sects[SEC_DATA].size, sects[SEC_RDATA].buffer + rdataOffset, rdataSize);
-    c = Checksum(c, size += rdataSize, sects[SEC_PTDATA].buffer + patchOffset, patchSize);
-    c = Checksum(c, size += patchSize, (uchar *)codeSWOSCodeFixup, cscPtr * sizeof(dword));
-    c = Checksum(c, size += cscPtr * sizeof(dword), (uchar *)&minusOne, sizeof(dword));
-    c = Checksum(c, size += sizeof(dword), (uchar *)codeSWOSDataFixup, csdPtr * sizeof(dword));
-    c = Checksum(c, size += csdPtr * sizeof(dword), (uchar *)&minusOne, sizeof(dword));
-    c = Checksum(c, size += sizeof(dword), (uchar *)codeBaseFixup, cbPtr * sizeof(dword));
-    c = Checksum(c, size += cbPtr * sizeof(dword),(uchar *)&minusOne, sizeof(dword));
-    c = Checksum(c, size += sizeof(dword), (uchar *)patchSWOSCodeFixup, pscPtr * sizeof(dword));
-    c = Checksum(c, size += pscPtr * sizeof(dword), (uchar *)&minusOne,sizeof(dword));
-    c = Checksum(c, size += sizeof(dword), (uchar *)patchSWOSDataFixup, psdPtr * sizeof(dword));
-    c = Checksum(c, size += psdPtr * sizeof(dword), (uchar *)&minusOne,sizeof(dword));
-    c = Checksum(c, size += sizeof(dword), (uchar *)patchBaseFixup, pbPtr * sizeof(dword));
-    c = Checksum(c, size + pbPtr * sizeof(dword), (uchar *)&minusOne, sizeof(dword));
+    c = checksum(0, size = 0, sects[SEC_TEXT].buffer, sects[SEC_TEXT].size);
+    c = checksum(c, size += sects[SEC_TEXT].size, sects[SEC_DATA].buffer, sects[SEC_DATA].size);
+    c = checksum(c, size += sects[SEC_DATA].size, sects[SEC_RDATA].buffer + rdataOffset, rdataSize);
+    c = checksum(c, size += rdataSize, sects[SEC_PTDATA].buffer + patchOffset, patchSize);
+    c = checksum(c, size += patchSize, (uchar *)codeSWOSCodeFixup, cscPtr * sizeof(dword));
+    c = checksum(c, size += cscPtr * sizeof(dword), (uchar *)&minusOne, sizeof(dword));
+    c = checksum(c, size += sizeof(dword), (uchar *)codeSWOSDataFixup, csdPtr * sizeof(dword));
+    c = checksum(c, size += csdPtr * sizeof(dword), (uchar *)&minusOne, sizeof(dword));
+    c = checksum(c, size += sizeof(dword), (uchar *)codeBaseFixup, cbPtr * sizeof(dword));
+    c = checksum(c, size += cbPtr * sizeof(dword),(uchar *)&minusOne, sizeof(dword));
+    c = checksum(c, size += sizeof(dword), (uchar *)patchSWOSCodeFixup, pscPtr * sizeof(dword));
+    c = checksum(c, size += pscPtr * sizeof(dword), (uchar *)&minusOne,sizeof(dword));
+    c = checksum(c, size += sizeof(dword), (uchar *)patchSWOSDataFixup, psdPtr * sizeof(dword));
+    c = checksum(c, size += psdPtr * sizeof(dword), (uchar *)&minusOne,sizeof(dword));
+    c = checksum(c, size += sizeof(dword), (uchar *)patchBaseFixup, pbPtr * sizeof(dword));
+    c = checksum(c, size + pbPtr * sizeof(dword), (uchar *)&minusOne, sizeof(dword));
 
     return c;
 }
+
 
 static void safefread(void *buffer, size_t size, size_t count, FILE *stream)
 {
@@ -204,6 +221,7 @@ static void safefread(void *buffer, size_t size, size_t count, FILE *stream)
     }
 }
 
+
 static void safefwrite(const void *buffer, size_t size, size_t count, FILE *stream)
 {
     if (fwrite(buffer, size, count, stream) != count && size) {
@@ -212,6 +230,7 @@ static void safefwrite(const void *buffer, size_t size, size_t count, FILE *stre
     }
 }
 
+
 static void safefseek(FILE *stream, long offset, int origin)
 {
     if (fseek(stream, offset, origin)) {
@@ -219,6 +238,7 @@ static void safefseek(FILE *stream, long offset, int origin)
         exit(1);
     }
 }
+
 
 static void getDestinationFilename(const char *fileArg, char *dest, size_t destLen, const char *ext)
 {
@@ -238,6 +258,7 @@ static void getDestinationFilename(const char *fileArg, char *dest, size_t destL
         dest[destLen - 1] = '\0';
 }
 
+
 static const char *getSectionName(dword value, const SectionHeader *sectionHeaders, size_t numSections)
 {
     static char sectionName[9];
@@ -251,6 +272,7 @@ static const char *getSectionName(dword value, const SectionHeader *sectionHeade
     return "<unknown section>";
 }
 
+
 static int getRelocSectionFixupPointingTo(dword value)
 {
     for (size_t i = 0; i < SECTS_NEEDED; i++)
@@ -259,7 +281,8 @@ static int getRelocSectionFixupPointingTo(dword value)
     return -1;
 }
 
-static RelocSections DisplacementRelocFix(dword value, uchar *fromSectBuf, dword ofs, uint rdataOffset)
+
+static RelocSections displacementRelocFix(dword value, uchar *fromSectBuf, dword ofs, uint rdataOffset)
 {
     /** great troubles here: in MS VC++'s output() function, a table is accessed with 32 bytes
         negative displacement as a result of optimizations; we'll give this fixup to next section
@@ -284,11 +307,13 @@ static RelocSections DisplacementRelocFix(dword value, uchar *fromSectBuf, dword
     return INVALID;
 }
 
+
 static void reportInvalidFixup(const char *from, const char *to, dword offset)
 {
     fprintf(stderr, "Invalid fixup encountered, `%s' -> `%s', offset %u", from, to, offset);
     exit(1);
 }
+
 
 static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHeader *sectionHeaders,
     size_t numSections, int *warnings, uint bssOffset, uint rdataOffset, uint rdataSize, uint patchOffset, uint patchSize)
@@ -341,7 +366,7 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
                 int toSectionIndex = getRelocSectionFixupPointingTo(value);
                 RelocSections toSection = toSectionIndex >= 0 ? sects[toSectionIndex].relocIndex : INVALID;
 
-                if (toSection == INVALID && (toSection = DisplacementRelocFix(value, sects[i].buffer, ofs, rdataOffset)) == INVALID) {
+                if (toSection == INVALID && (toSection = displacementRelocFix(value, sects[i].buffer, ofs, rdataOffset)) == INVALID) {
                     fprintf(stderr, "Fixup record pointing to unknown or invalid section `%s' (from section `%s').\n", getSectionName(value, sectionHeaders, numSections), sects[j].name);
                     fprintf(stderr, "value: 0x%08x pageRVA: %08x offset: 0x%08x type = %d ordinal %d, total %d\n", value, pageRVA, ofs, type, j, numRelocs);
                     /* don't end program here; we issued a warning, image probably won't run, but maybe this is some kind of experiment */
@@ -405,10 +430,10 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
                     case DATA:
                         ofs += sects[SEC_TEXT].size;
                     case CODE:
-                        AddCodeBaseFixup(ofs);
+                        addCodeBaseFixup(ofs);
                         break;
                     case PATCH:
-                        AddPatchBaseFixup(ofs);
+                        addPatchBaseFixup(ofs);
                         break;
                     default:
                         reportInvalidFixup(sects[i].name, sects[toSectionIndex].name, ofs);
@@ -422,15 +447,15 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
                         ofs += sects[SEC_TEXT].size;
                     case CODE:
                         if (value < 0xb0000)
-                            AddCodeSWOSCFixup(ofs);
+                            addCodeSWOSCFixup(ofs);
                         else
-                            AddCodeSWOSDFixup(ofs);
+                            addCodeSWOSDFixup(ofs);
                         break;
                     case PATCH:
                         if (value < 0xb0000)
-                            AddPatchSWOSCFixup(ofs);
+                            addPatchSWOSCFixup(ofs);
                         else
-                            AddPatchSWOSDFixup(ofs);
+                            addPatchSWOSDFixup(ofs);
                         break;
                     default:
                         reportInvalidFixup(sects[i].name, sects[toSectionIndex].name, ofs);

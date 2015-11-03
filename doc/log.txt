@@ -1,3 +1,6 @@
+22.09.2015.
+- v1.9.1.6 released, possibly last version, as the work on win32 SWOS is in
+  progress; fixed TONS of stuff since last entry
 13.07.2015.
 - WriteToLog parameters finally enclosed in only one parentheses pair :)
 27.06.2015.
