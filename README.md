@@ -1,4 +1,4 @@
-SWOS++
+## SWOS++
 
 Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Features:
 - play games over the internet
@@ -11,7 +11,7 @@ Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Fea
 - ...and more...
 
 
-Hierarchy
+## Hierarchy
 
 bin    - binary files, SWOS++, loader, utility programs...
 dist   - this is where the dist archive will be created
@@ -28,7 +28,7 @@ pe2bin - source of converter from Win32 PE to custom executable format
 test   - unit tests for various components, and misc test code
 
 
-Software needed for full recompilation
+## Software needed for full recompilation
 
 - GNU make
 - subset of any working Unix environment (for shell, and some UNIX utilities)
@@ -41,7 +41,7 @@ Software needed for full recompilation
 - alink, my modified version (in /extra)
 
 
-Environment
+## Environment
 
 Few environment variables need to be set to build and use utility scripts:
 SWOS        - contains path where SWOS is installed
@@ -51,6 +51,6 @@ SWOS_DIRS   - additional SWOS directories for testing (separated with
 
 
 
-License
+## License
 
 MIT
