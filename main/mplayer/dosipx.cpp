@@ -125,10 +125,12 @@ static inline bool IsNetworkTimeoutInRange(word timeout)
 }
 
 
-void SetNetworkTimeout(word newTimeout)
+word SetNetworkTimeout(word newTimeout)
 {
     if (IsNetworkTimeoutInRange(newTimeout))
         timeout = newTimeout;
+
+    return timeout;
 }
 
 

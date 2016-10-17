@@ -492,7 +492,7 @@ int __cdecl main(int argc, char **argv)
     assert(sizeofarray(sects) == sizeofarray(sectionOrder));
 
     fputs("pe2bin v1.2 - converter from Win32 PE exe to Zlatko Karakas Binary Format\n"
-          "Copyright Zlatko Karakas 2003-2015.\n\n", stderr);
+          "Copyright Zlatko Karakas 2003-2016.\n\n", stderr);
 
     if (argc < 2) {
         fputs("Input filename missing.\n", stderr);

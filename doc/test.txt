@@ -8,7 +8,7 @@ Basic:
 - start multiplayer game
 - change multiplayer nickname and game name, verify that they get saved after game restart
   (as well as in multiplayer options)
-- change standard SWOS options, restart SWOS and verify that options get saved
+- change standard SWOS options, restart SWOS and verify that options get saved (especially skip frames and network timeout)
 - create multiplayer game and change MP options in lobby, restart SWOS and verify that options get saved
 - verify that changing multiplayer options doesn't affect normal options
 - change tactics in multiplayer options menu, make a custom tactics and save, verify that there are no errors and that they get saved properly

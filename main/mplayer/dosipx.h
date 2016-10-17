@@ -68,7 +68,7 @@ extern "C" const char *InitializeNetwork();
 extern "C" void ShutDownNetwork();
 
 word GetNetworkTimeout();
-void SetNetworkTimeout(word newTimeout);
+word SetNetworkTimeout(word newTimeout);
 void GetOurAddress(IPX_Address *dest);
 bool addressMatch(const IPX_Address *a, const IPX_Address *b);
 void copyAddress(IPX_Address *dest, const IPX_Address *source);

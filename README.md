@@ -39,8 +39,8 @@ Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Fea
   nowadays used for test programs only)
 - GCC 4.9.x (4.8.x might not work)
 - NASM 0.98.36 my patched version (in /extra)
-- Perl (any not-totally-ancient version will do), with Switch module
-- Python, same note
+- Perl, any not-totally-ancient version will do
+- Python 3, same note
 - alink, my modified version (in /extra)
 
 

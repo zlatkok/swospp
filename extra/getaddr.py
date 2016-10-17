@@ -26,7 +26,7 @@ def getBuild():
 
 def parseMapFile(build, address):
     addressRegex = re.compile(r'\s+(?P<address>[a-fA-F0-9]+)\s+(?P<function>\w+)\s+(?P<section>[\w\.]+)\s+(?P<objFile>[\w\.]+)')
-    with open(os.path.join(swosppDir, 'etc', 'swospp_' + build + '.map')) as mapFile:
+    with open(os.path.join(swosppDir, 'var', 'swospp_' + build + '.map')) as mapFile:
         prevAddress = 0
         prevFunction = ''
         prevFunctionObjFile = ''
@@ -59,7 +59,7 @@ funcRegex = re.compile(r'\s+\d+\s+(?P<functionName>[\w.]+):$')
 sectionRegex = re.compile(r'\s+\d+\s+\.?section\s+(?P<sectionName>[\w.]+),("[^"]+")?$')
 
 def pinpointFunction(delta, functionName, objFile):
-    lstFilename = os.path.join(swosppDir, 'etc', objFile.replace('.obj', '.lst'))
+    lstFilename = os.path.join(swosppDir, 'var', objFile.replace('.obj', '.lst'))
 
     if not os.path.isfile(lstFilename):
         return None
@@ -104,7 +104,7 @@ def pinpointFunction(delta, functionName, objFile):
 
 def findNegativeOffsetFunction(delta, functionName, functionAddress, objFile):
     symbolRegex = re.compile(r'\s+\d+\s+' + functionName + ':$')
-    lstFilename = os.path.join(swosppDir, 'etc', objFile.replace('.obj', '.lst'))
+    lstFilename = os.path.join(swosppDir, 'var', objFile.replace('.obj', '.lst'))
 
     if not os.path.isfile(lstFilename):
         return None

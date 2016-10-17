@@ -69,19 +69,24 @@ XmlNode *NewXmlNode(const char *name, int nameLen, XmlNodeType type, int length,
     assert(!name || strlen(name) == nameLen);
 
     XmlNode *x = (XmlNode *)xmlAlloc(sizeof(XmlNode) + (name && *name ? nameLen + 1 : 0));
-    if (name) {
+    if (name && *name) {
         x->name = (char *)x + sizeof(XmlNode);
         memcpy(x->name, name, nameLen);
         x->name[nameLen] = '\0';
         x->nameHash = simpleHash(name, nameLen);
+        x->savedValue.ptr = (char *)xmlAlloc(length);
+    } else {
+        /* anonymous node */
+        x->nameHash = 0;
+        x->name = nullptr;
+        x->savedValue.ptr = nullptr;
     }
     x->nameLength = nameLen;
     x->type = type;
     x->length = length;
-    x->savedValue.ptr = (char *)xmlAlloc(length);
     x->savedLength = length;
     x->value.ptr = alloc ? (char *)xmlAlloc(length) : nullptr;
-    assert(x->savedValue.ptr && (!alloc || x->value.ptr));
+    assert((XmlNodeIsAnonymous(x) == (x->savedValue.ptr == nullptr)) && (!alloc || x->value.ptr));
     x->children = x->nextChild = nullptr;
     x->attributes = nullptr;
     x->numAttributes = 0;
@@ -118,6 +123,10 @@ void RefreshFuncData(const XmlNode *node)
 static void snapshotNode(XmlNode *node)
 {
     assert(node);
+
+    if (XmlNodeIsAnonymous(node))
+        return;
+
     if (!node->savedValue.ptr && node->length)
         node->savedValue.ptr = (char *)xmlAlloc(node->length);
     switch (node->type) {
@@ -151,6 +160,10 @@ void XmlTreeSnapshot(XmlNode *root)
 static bool nodeUnmodified(const XmlNode *node)
 {
     assert(node);
+
+    if (XmlNodeIsAnonymous(node))
+        return true;
+
     switch (node->type) {
     case XML_CHAR:
     case XML_SHORT:
@@ -166,6 +179,7 @@ static bool nodeUnmodified(const XmlNode *node)
     default:
         assert_msg(0, "Unknown XML node type");
     }
+
     return false;
 }
 
@@ -236,6 +250,12 @@ static int convertStringToNumber(const char *src, int srcLen)
 static void mergeNodes(XmlNode *dstNode, const XmlNode *srcNode)
 {
     assert(dstNode && srcNode);
+    assert((XmlNodeGetName(srcNode) && XmlNodeGetName(dstNode)) || (!XmlNodeGetName(srcNode) && !XmlNodeGetName(dstNode)));
+
+    /* skip anonymous nodes */
+    if (XmlNodeIsAnonymous(srcNode))
+        return;
+
     if ((dstNode->type == srcNode->type) ||
         ((dstNode->type == XML_STRING) && (srcNode->type == XML_ARRAY)) ||
         ((dstNode->type == XML_ARRAY) && (srcNode->type == XML_STRING))) {
@@ -321,15 +341,18 @@ void XmlMergeTrees(XmlNode *destTree, const XmlNode *srcTree)
         return;
     while (destTree) {
         const XmlNode *srcNode = srcTree;
+
         while (srcNode) {
             if (nodesEqual(destTree, srcNode))
                 break;
             srcNode = srcNode->nextChild;
         }
+
         if (srcNode) {
             mergeNodes(destTree, srcNode);
             XmlMergeTrees(destTree->children, srcNode->children);
         }
+
         destTree = destTree->nextChild;
     }
 }

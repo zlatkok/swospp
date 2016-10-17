@@ -157,25 +157,29 @@ void SkipFramesBeforeDraw()
 
 void IncreaseNetworkTimeout()
 {
-    SetNetworkTimeout(GetNetworkTimeout() + 70);
+    auto timeout = SetNetworkTimeout(GetNetworkTimeout() + 70);
+    UpdateNetworkTimeout(timeout);
 }
 
 
 void DecreaseNetworkTimeout()
 {
-    SetNetworkTimeout(GetNetworkTimeout() - 70);
+    auto timeout = SetNetworkTimeout(GetNetworkTimeout() - 70);
+    UpdateNetworkTimeout(timeout);
 }
 
 
 void IncreaseSkipFrames()
 {
-    SetSkipFrames(GetSkipFrames() + 1);
+    auto frames =  SetSkipFrames(GetSkipFrames() + 1);
+    UpdateSkipFrames(frames);
 }
 
 
 void DecreaseSkipFrames()
 {
-    SetSkipFrames(GetSkipFrames() - 1);
+    auto frames = SetSkipFrames(GetSkipFrames() - 1);
+    UpdateSkipFrames(frames);
 }
 
 

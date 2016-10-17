@@ -20,11 +20,15 @@ static MP_Options *savedClientOptions;
 static byte numSubstitutes;
 static byte maxSubstitutes;
 
+static byte mpActive;
 
 const char *InitMultiplayer()
 {
     if (auto failureReason = InitializeNetwork())
         return failureReason;
+
+    if (mpActive)
+        return nullptr;
 
     calla_ebp_safe(SaveOptions);    /* save options here and not in menu to cover for alt-f1 exit */
     autoReplays = 0;                /* force auto-replays off */
@@ -42,16 +46,26 @@ const char *InitMultiplayer()
     InitPlayerNick();
     InitGameName();
 
+    /* assumes options have been loaded from the xml */
+    SetSkipFrames(mpOptions.skipFrames);
+    SetNetworkTimeout(mpOptions.networkTimeout);
+
+    mpActive = true;
+
     return nullptr;
 }
 
 
 void FinishMultiplayer()
 {
-    calla_ebp_safe(RestoreOptions);
-    FinishMultiplayerLobby();
-    ShutDownNetwork();
-    ReleaseClientMPOptions();
+    if (mpActive) {
+        calla_ebp_safe(RestoreOptions);
+        FinishMultiplayerLobby();
+        ShutDownNetwork();
+        ReleaseClientMPOptions();
+    }
+
+    mpActive = false;
 }
 
 
@@ -115,7 +129,7 @@ void registerMPOptions(RegisterOptionsFunc registerOptions)
     static_assert(sizeof(MP_Options) == 12, "Multi player options changed.");
     registerOptions("game", 4, "Default settings for multiplayer match", 38,
         "%n%c" "%2d/version" "%2d/gameLength" "%2d/pitchType" "%1d/numSubs" "%1d/maxSubs"
-        "%1d/skipFrames" "%1d/networkTimeout", GetMPOptionsPtr);
+        "%1d/skipFrames" "%1d" "%2d/networkTimeout", GetMPOptionsPtr);
 }
 
 
@@ -315,4 +329,16 @@ int GetMaxSubstitutes()
 int SetMaxSubstitutes(byte newMaxSubs)
 {
     return maxSubstitutes = newMaxSubs;
+}
+
+
+void UpdateSkipFrames(int frames)
+{
+    mpOptions.skipFrames = frames;
+}
+
+
+void UpdateNetworkTimeout(word networkTimeout)
+{
+    mpOptions.networkTimeout = networkTimeout;
 }

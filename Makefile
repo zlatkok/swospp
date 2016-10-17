@@ -1,4 +1,4 @@
-# TODO: dist da zavisi od rel-a, & clean
+# TODO: dist should depend on rel & clean
 
 # set default shell
 SHELL := sh.exe

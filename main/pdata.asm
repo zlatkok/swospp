@@ -34,7 +34,7 @@ swospp_str:  db "SWOS++", 0
 ; patch-specific code
 section .text
 
-extern replayStatus, SaveOptionsIfNeeded, EndProgram, SwitchToPrevVideoMode
+extern replayStatus, EndProgram, SwitchToPrevVideoMode
 extern ShutDownNetwork, qAllocFinish
 
 ; Hook ALT-F1 fast exit, as well as normal exit from menu.

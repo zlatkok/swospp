@@ -216,9 +216,16 @@ pip-log.txt
 .mr.developer.cfg
 
 # SWOS++
+*.exe
 bin/
+dist/
 etc/
 map/
+obj/
 out/
-test/xml/xml/lex-random.xml
-test/xml/xml/parse-random.xml
+test/map
+test/obj
+test/out
+var/
+test/xml/lex-random.xml
+test/xml/parse-random.xml

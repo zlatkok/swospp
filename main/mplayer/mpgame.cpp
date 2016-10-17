@@ -677,9 +677,9 @@ int GetSkipFrames()
 }
 
 
-void SetSkipFrames(int newSkipFrames)
+int SetSkipFrames(int newSkipFrames)
 {
-    skipFrames = max(0, min(newSkipFrames, MAX_SKIP_FRAMES));
+    return skipFrames = max(0, min(newSkipFrames, MAX_SKIP_FRAMES));
 }
 
 

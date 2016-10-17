@@ -614,6 +614,7 @@ static bool addXmlPartialContent(XmlNode *node, char *content, int size)
         elem->next = lastElem;
         node->value.ptr = (char *)elem;
     }
+
     return true;
 }
 
@@ -877,6 +878,7 @@ static bool writeNodeContent(BFile *file, const XmlNode *node, int indent)
     int val = 0;
     char *numStr;
     assert(file && node);
+
     switch (XmlNodeGetType(node)) {
     case XML_CHAR:
         val = *node->value.charVal;
@@ -897,6 +899,7 @@ static bool writeNodeContent(BFile *file, const XmlNode *node, int indent)
     default:
         assert_msg(0, "Don't know how to write this content type!");
     }
+
     numStr = int2str(val);
     return WriteBFile(file, numStr, strlen(numStr));
 }
@@ -909,10 +912,15 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
     static XmlAttributeInfo attributes[64];
     size_t numAttributes;
 
-    if (!root)
+    if (!root || XmlNodeIsAnonymous(root))
         return true;
 
     do {
+        if (XmlNodeIsAnonymous(root)) {
+            root = XmlNodeGetNextSibling(root);
+            continue;
+        }
+
         isNumericNode = XmlNodeIsNumeric(root);
         /* open tag and write name */
         INDENT(indent);
@@ -920,7 +928,7 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
         OUT_STR(XmlNodeGetName(root), XmlNodeGetNameLength(root));
 
         numAttributes = GetXmlNodeNumAttributes(root);
-        /* make sure to write type attribute even if it's not explicitely added, and in 1st spot */
+        /* make sure to write type attribute even if it's not explicitly added, and in 1st spot */
         if (!XmlNodeIsEmpty(root) && !XmlNodeIsFunc(root) && !GetXmlNodeAttribute(root, "type", 4, nullptr)) {
             size_t typeNameLen;
             const char *typeName = XmlNodeTypeToString(XmlNodeGetType(root), &typeNameLen);
@@ -931,21 +939,25 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
             OUT_STR(typeName, typeNameLen);
             OUT_CHAR('"');
         }
+
         /* write other attributes, if present */
         assert(numAttributes <= sizeofarray(attributes));
         GetXmlNodeAttributes(root, attributes);
+
         for (size_t i = 0; i < numAttributes; i++) {
             OUT_CHAR(' ');
             OUT_STR(attributes[i].name, attributes[i].nameLength);
             OUT_CHAR('=');
             OUT_STR(attributes[i].value, attributes[i].valueLength);
         }
+
         if (XmlNodeIsLeaf(root) && !XmlNodeHasContent(root)) {
             soloNode = true;
             OUT_CHAR(' ');
             OUT_CHAR('/');
         } else
             soloNode = false;
+
         OUT_CHAR('>');
 
         /* tag closed, write content, if present */
@@ -956,16 +968,20 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
             }
             if (!writeNodeContent(file, root, indent))
                 return false;
+
             if (!isNumericNode)
                 OUT_CHAR('\n');
         } else
             OUT_CHAR('\n');
+
         /* handle custom data nodes */
         if (XmlNodeIsFunc(root))
             RefreshFuncData(root);
+
         /* write subtree if present */
         if (!XmlNodeIsLeaf(root) && !writeTreeToFile(file, root->children, indent + (soloNode ? 0 : 4)))
             return false;
+
         if (!soloNode) {
             if (!isNumericNode)
                 INDENT(indent);
@@ -977,6 +993,7 @@ static bool writeTreeToFile(BFile *file, const XmlNode *root, int indent)
         }
         root = XmlNodeGetNextSibling(root);
     } while (root);
+
     return true;
 }
 

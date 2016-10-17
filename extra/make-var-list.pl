@@ -1,4 +1,4 @@
-# Create variable list for DOSBox debugger. Place it directly to SWOS game directory.
+# Create variable list for DOSBox debugger. Place it directly in SWOS game directory.
 
 $codeSWOS = 0x220000;
 $dataSWOS = 0x2c1000;
@@ -9,7 +9,7 @@ $SWOSPP = $ENV{'SWOSPP'} || 'f:\\swos';
 
 # input
 $mapSWOS = "$SWOS\\swos.map";
-$mapSWOSPP = "$SWOSPP\\etc\\swospp_dbg.map";
+$mapSWOSPP = "$SWOSPP\\var\\swospp_dbg.map";
 
 # output
 $varList = "$SWOS\\swospp.lst";

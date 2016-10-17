@@ -1,3 +1,14 @@
+01.05.2016.
+- v1.9.1.7 sent to Playaveli
+- fixed options not being saved to disk (skip frames and network timeout weren't
+  updated inside MP options, and standard SWOS options got overwritten with
+  default ones since FinishMultiplayer called RestoreOptions on exit even if we
+  weren't in multiplayer menu - boolean was introduced to prevent this from
+  happening, there might be a race condition but this is just a quick fix to
+  make SWOS++ more playable during wait for win32 port ;))
+- removed some unused variables from main.asm
+- renamed etc/ dir to var/
+- removed Switch module dependency from Makefile.pl
 22.09.2015.
 - v1.9.1.6 released, possibly last version, as the work on win32 SWOS is in
   progress; fixed TONS of stuff since last entry
@@ -10,7 +21,7 @@
   full double word - this is what asm code was expecting and it already caused
   few weird and hard to track bugs
 22.06.2015.
-- some small bugs fixed, artefacts of porting are still showing up; today was
+- some small bugs fixed, artifacts of porting are still showing up; today was
   forced to merge .rdata into .data despite having support for it in pe2bin -
   it seems executable was built in such a way that beginning of an array in bss
   section was before the end of data (despite alignment, probably to use space
@@ -33,7 +44,7 @@
   bindmp
 02.05.2014.
 - porting the source to GCC is under-way
-- fixed perl makefile to include it's own timestamp in rebuild calculation - now
+- fixed Perl makefile to include it's own timestamp in rebuild calculation - now
   everything rebuilds if script is changed (as it should)
 11.11.2014.
 - was well on my way implementing SWOS calls through dll import table, but
@@ -42,7 +53,7 @@
   and indirect call would take 6 bytes, so 10 bytes in total per call; current
   calla implementation only requires 7; we don't really need separate table for
   those function addresses, since they're actually known before hand - it's
-  enough to reference the symbol; entire problem comes from a fact that it's
+  enough to reference the symbol; entire problem stems from a fact that it's
   hard to instruct compiler to call functions in a specific way - normally
   they're just relative calls, or go through a pointer; we actually need
   absolute call to be generated (like calla does)
@@ -90,7 +101,7 @@
 14.09.2014.
 - source ported to OpenWatcom - he's complaining more than his daddy and has
   already caught some errors that have been sanitized; now SWOS++ might compile
-  on modern Windows, I'll see if I can switch it at next opportunity
+  on modern Windows, I'll see if I can switch to it at next opportunity
 01.09.2014.
 - another merry buggie solved: I've noticed that bss section wasn't working in
   some cases, the exe file bloated after adding stack buffer to main.asm; after
@@ -99,405 +110,415 @@
   however everything was fine, the problem lied in section merging order -
   command for merging .bss into .data was added to the beginning of the linked
   list, and later we had more merging into .data (ie. .strdata to .data) which
-  had real data in them and cancelled bss property... C files were placing
+  had real data in them and canceled bss property... C files were placing
   variables to _BSS which got merged later and that's why they worked; so now
   alink defers automatic .bss to .data conversion until user given merges have
   been completed (unless user explicitly lists .bss to .data, then we respect
   user given order)
 31.08.2014.
-- presli smo na sopstveni stek od 64kb, jednostavnim kopiranjem steka u
-  staticki bafer i setovanjem esp-a :) (najbolje sto sam na kraju uspeo da
-  smislim :P); i za divno cudo radi,  sada bar ima prostora da se dise, i mogu
-  compile-time da povecam ako bude potrebe
+- switched to our own 64kb stack, by simply copying stack to static buffer and
+  setting esp :) (best I could come up with in the end :P); it works
+  surprisingly well, now at least there's some breathing space, and I can
+  increase it compile-time if needed
 30.08.2014.
-- GNU make zadavljen u plitkoj bari - napisan Perl build skript (trebalo je
-  skoro nedelju dana); sada je build okruzenje daleko bolje - mogu proizvoljno
-  da prebacujem fajlove u poddirektorijume, ne moram da navodim
-  medjuzavisnosti - sve ce avtomacki :)
-  + radi nevidjeno brze, to nisam ni ocekivao, ali prihvatam oberucke ;)
-- ispravljen jedan bag u alink-u, mada nisam siguran koliko dobro - ima
-  probljem da premesti entry point ako se nalazi u sekciji koja se spaja
-  (pre se nije manifestovao jer je main.obj bio prvi u listi za linkovanje od
-  fajlova koji imaju .text sekciu, pa su se sve ostale sekcije njemu pripajale)
-  kad se uradi rewrite uveriti se da je to sredjeno kako treba
+- GNU make strangled in a shallow pond - Perl build script written (took about a
+  week); build environment is now far better - I can move files to
+  subdirectories as I see fit without updating paths and dependencies -
+  everything is done automagically :)
+  + it works way faster, I didn't even expect that but accepting it both
+  handedly :)
+- fixed a bug in alink, alto I'm not sure how well - there was a problem moving
+  entry point if it was located inside a section that's getting merged (it
+  didn't manifest before because main.obj used to be first in the link list
+  of files that contain .text section, so all others were merged into main's obj
+  file); once the rewrite is done make sure it's fixed properly
 23.08.2014.
-- uveo sam callCdecl makro koji generalno poziva cdecl f-je, i prebacio
-  WriteToLog na njega
-- test case-ovi uvedeni, za crash logger i qAlloc trenutno
-- crash handler zavrsen, i radi jako fino ;)
+- callCdecl macro introduced to invoke cdecl functions correctly and modified
+  WriteToLog to use it
+- test cases introduced, only for crash logger and qAlloc at the moment
+- crash handler finished, and working very nicely ;)
 17.08.2014.
-- djavolje custom taktike konacno prosle testove
-- svi hederi prebaceni na #pragma once
+- devilish custom tactics finally passed tests
+- all headers switched to #pragma once
 16.08.2014.
-- trajalo je neko vreme, ali sanirao sam bagljavi DOSBox debugger! sada fino
-  mogu da vidim promenljive, i da ih koristim u izrazima, kao i da postavim
-  breakpoint direktno na f-ju; daleko je lakse za dibagovanje sad
+- it took a while, but I finally fixed crippled DOSBox debugger! now I can view
+  variable contents, and use them in expressions, as well as set breakpoint
+  directly to function; debugging is way more comfortable now
 27.07.2014.
-- definisan predivan syntax highlithting za UltraEdit
-- konacno promenjeno TRUE na true :P
+- beautiful syntax highlighting for UltraEdit defined
+- finally changed TRUE to true :P
 13.07.2014.
-- dodato ispisivanje objektnog fajla iz kog je simbol potekao pre generisanju
-  map fajla - sada je lakse mapirati adresu nazad u simbol pri dibagovanju
+- added object file name from which the symbol originated to map file - now it's
+  much easier to map address back to symbol during debugging
 09.07.2014.
-- pronadjen je veliki nedostatak funkcionalnosti - timu sa igracima s brojevima
-  vecim od 16 uopste nije mogla da se edituje taktika, i niko to noje primetio
-  za sve ovo vreme; trebalo je i solidno vremena da se implementira
+- great lack of functionality discovered - tactics couldn't be edited for teams
+  containing players with numbers greater than 16, and no one noticed it for all
+  this time; took a while to implement it too
 07.07.2014.
-- pronadjen je bag - visoki brojevi igraca ne rade u edit tactics meniju; jedan
-  deo je ispravljen, ali je jos nesto ostalo
+- bug found - high player numbers aren't working in edit tactics menu; one part
+  is fixed, but more remains
 03.06.2014.
-- nadjoh da se mala nula kod brojeva igraca nije dobro klipovala.. izgubih
-  silno vreme na to, ali sad je presavijaTTo!
-- sad sam video (i ispravio) da se negativne koordinate nisu ispravno slale,
-  jer se znak gubio u konverziji
+- I found that little zero in player numbers wasn't clipped well... lost lot of
+  time on it, but it's now benT!
+- just seen (and fixed) improper sending of negative coordinates, sign got lost
+  in casting
 01.06.2014.
-- slabo nesto apdejtujem ovaj log, ali development ide lagano.. sad sam imao
-  jos jedan slucaj da sam pecovao pec :P dodao sam hook na flip i prepisao
-  stari koji je proveravao tastere za replay.. a takodje je ubilo ispis dump
-  promenljivih
+- wasn't updating this log much, but development is moving slowly... just had
+  another case of patching the patch :P added hook to flip but overwritten old
+  one that was checking keys for replays... and also killed output of dump
+  variables
 21.04.2014.
-- preciscen ovaj log file
+- cleansed this log file
 20.04.2014.
-- poboljsan parsemap.pl, sada mogu da se zadaju simboli i za C header putem
-  jednostavne sintakse
+- parsemap.pl improved, now symbols for C header can be defined using simple
+  syntax
 17.04.2014.
-- uh konacno sam sredio opak bag - desync prilikom druge utakmice za redom; to
-  je u stvari bila promenljiva frameCount koju sam VIDEO u diff-u memory
-  dump-ova, ali sam MISLIO DA JE IZ MENIJA (AAAAAAAAAAARGHHHH) dajte mi cekic
-  da se udaram u glavu... tako da sam presao na sledeci korak i logovao preko
-  DOSBox-ove logcpu komande sve izvrsene instrukcije na oba klijenta pre nego
-  sto pukne i to uporedjivao, pocevsi od OnGameLoopEnd(), od inkrementovanja
-  currentFrameNo - sve pre toga sam otfikario - i zatim ih propustio kroz perl
-  skript kome sam definisao memorijske opsege koje da skartira - da bih uklonio
-  interapte koji su tu na random uskakali, kao i nebitan kod i kod koji je
-  zaista drugaciji (i treba da bude drugaciji) na oba klijenta.. i eto tako,
-  propade dan-dva dibagovanja ali sam ipak vrlo zadovoljan sto sam to na kraju
-  razresio :P
+- ugh finally fixed that diabolic bug - desync during second game in a row; it
+  was in fact variable frameCount which I SAW in memory diff dumps, but I
+  THOUGHT IT BELONGED TO MENUS (AAAAAAAAAAARGHHHH)... get me a hammer to batter
+  my head... so I went further and used DOSBox logcpu command to log every
+  single instruction executed on both clients before the decync; then compared
+  log files, starting from OnGameLoopEnd(), from currentFrameNo increment -
+  chopped everything before that - and fed the result to a Perl script which had
+  defined memory ranges used to discard instructions - in order to remove
+  interrupts that were randomly popping in, as well as irrelevant code which
+  truly is (and should be) different on both clients.. so, day or two of
+  debugging went by, but I'm very satisfied to have solved it in the end :P
 15.04.2014.
-- ubacena in-game Sprite struktura, a stari Sprite preimenovan u SpriteGraphics
+- in-game Sprite structure added, and old Sprite renamed to SpriteGraphics
 12.04.2014.
-- evo nakon dosta truda konacno imam neku verziju koja se moze nazvati
-  upotrebljivom (nadam se!); poslao sam Davoru videcemo kako ce da ispadne :)
-  kontaktirao sam i Playavelija ali se jos uvek ne javlja
+- there, after lot of effort I finally have a version that can be called usable
+  (I hope!); sent it to Davor, let's see how this will turn out
+  contacted Playaveli too but he didn't respond yet
 01.04.2014.
-- zanimljiv bag popravljen slucajno, pri trazenju neceg drugog - imao sam
-  vrednost offset f-je + 48, gde je 48 trebalo da bude heksadekadno, ali je
-  bilo decimalno; ne bih ovo nikad primetio...
+- funny bug fixed accidentally, while looking for something else - value for
+  function offset was + 48 where 48 was supposed to be hexadecimal, but somehow
+  ended up being decimal; stuff like this is hell to find...
 18.03.2014.
-- ne znam kako je ovo pre radilo, ali u joy2Status je zaostajala vrednost
-  pucanja (iz menija) jer sam imao podeseno 2 igraca na tastaturi (a taj drugi
-  izigrava joypad), i to je prouzrokovalo desinhronizaciju, nisam mogao da
-  pronadjem sta je skoro mesec dana (iako nisam bas bio predan)... ima i dobra
-  strana, u potrazi sam otkrio i uklonio vise drugih bagova ;)
+- no idea how this could have worked at all before, but joy2Status wasn't
+  initialized and had left-over value from the menus because I had setup of 2
+  players on keyboard (and 2nd one masquerades as joypad); that was causing
+  desync, I couldn't find what was it for a month (even if I wasn't trying too
+  hard)... there is a good side to it, while investigating it I've found and
+  fixed bunch of other bugs ;)
 09.03.2014.
-- ladno je OpenLogFile bilo u main.asm umesto u debug.c - to je premesteno gde
-  treba, i sad je interfejs normalnijil ovo je takodje omogucilo da se izbaci
-  poveliki ifdef DEBUG iz main-a
+- don't know why was OpenLogFile() in main.asm instead of debug.c - moved it to
+  where it belongs, now the interface is more sane and this also allowed
+  removing big-ish #ifdef out of main
 31.01.2014.
-- konacno su svi slucajevi menija prosli - to mi je zadalo velike muke, uz
-  dosta prckanja po steku i swos internals (slucajevi kada klijent automatski
-  prelazi na naredni, ili se vraca na prethodni meni ne putem interakcije
-  korisnika vec eksterno - signalom sa mreze)
+- finally all of menu cases passed - it was giving me a lot of trouble, with a
+  lot of messing on the stack and SWOS internals (cases when client
+  automatically moves to next, or goes back to previous menu, not by user
+  interaction but externally - by signal from the network)
 29.01.2014.
-- ubacio sam dword alignment za menije, podaci nisu lepo poravnati (i to
-  poravnava sa 'z' :)); probao sam za prosli vikend online play s Dejom ali ne
-  radi kako treba, previse je usporeno, ubacicu skip frames
+- added dword alignment for menus, data wasn't aligned properly before (and the
+  alignment value is 'z' :)); tried online play last weekend against my friend
+  Deja but it's not playable, it's too slow, I must add skip frames
 08.01.2014.
-- napravljen dos.h header i tu prebacene DOS-related stvarcice iz swos.h
+- created dos.h header and moved DOS-related stuff out of swos.h into it
 02.01.2014.
-- Kakav glupav SWOS bag, koji me je kostao barem par dana; u ClearBackground
-  inicijalizuje dx sa mov dx, 384 i onda sub dx, ax; ali posle dodaje na edi
-  ceo edx - to je samo slucajno radilo jer se zadesilo da SWOS poziva f-ju sa
-  gornjim delom edx-a podesenim na nulu, cim sam ja pozvao iz Watcoma pukla je
-  f-ja (tj. napravila haos na ekranu)
+- what a silly SWOS bug, that cost me at least a couple days; ClearBackground
+  initializes dx with mov dx, 384 and then does sub dx, ax; but afterwards it
+  adds entire edx to edi - that worked only accidentally as it happened that
+  SWOS called function with upper part of edx clear; as soon as I called it from
+  Watcom it crashed (puked all over the screen to be more precise)
 26.12.2013.
-- neverovatno sta je pogresan opkod napravio, umesto eb otkucam ee (ni sam ne
-  znam kako), i onda je umesto skoka izvrsavao neke brljotine (in, out) i nekim
-  cudom naleteo na nekakav skok i _nekako_ nastavio sa priblizno ispravnom
-  egzekucijom... wtf... nasao sam tek kad sam uocio poziv koji tu ne pripada u
-  log fajlu, i ubacio int 1 i pogledao sta se desava na izlazu iz f-ju u
-  dibageru (follow up: izgleda sam obrnuo bajtove)
+- incredible what wrong opcode can cause, instead of eb I typed ee (no idea
+  how), so instead of jump some mess was executed (in, out and such) and by some
+  wonder some jump came in and _somehow_ continued with approximately correct
+  execution... wtf... found it only when I spotted out of place call in log
+  file, then placed int 1 and looked for myself what was happening at the
+  function exit in the debugger (follow up: seems I inverted bytes)
 25.11.2013.
-- juce sam resio problem sa sinhronizacijom; SWOS je koristio stoppageTimer
-  vrednost u kalkulisanju raznih stvari u endzinu (kao i currentTick na jednom
-  mestu kod otimanja lopte), a to se inkrementuje iz hardverskog interapt
-  hendlera i zavisno je od masine... nije bas kul za 2 simulacije koje treba da
-  budu uskladjene, tako da sam izbacio inkrement iz hendlera i ubacio inkrement
-  svaki frejm; mislim da ovo moze da utice na duzinu partije i mozda na jos
-  neke stvari, trebalo bi istestirati detaljno kasnije, ovako na prvo pogled
-  sve radi kul
+- yesterday I solved synchronization problem; SWOS was using stoppageTimer value
+  in various calculations around the engine (as well as currentTick in one place
+  when calculating which player takes the ball), and that gets incremented
+  inside hardware interrupt handler which is highly machine dependent... not too
+  cool for 2 simulations that are supposed to be synchronized, so I moved
+  increment code from handler and incremented it in each frame instead; I think
+  this might affect game length and maybe some other things, it should be tested
+  more thoroughly later, right now at first glance it seems to work well
 22.11.2013.
-- sredio sam simbol swos_data_base da radi kako treba; to se generise iz perl-a
-  prilicno kul da to i moze da se odradi kompajl-tajm :)
+- fixed swos_data_base symbol to have proper value; now Perl is generating it,
+  pretty cool how it's possible to do that compile time ;)
 23.10.2013.
-- danas sam ispravio interesantnu stvar, a nije mi jasno kako je uopste moglo
-  da radi; kada se vrsi un-patchovanje radi uklanjanja podrske za drugog igraca
-  na tastaturi upisivani su direktno originalni bajtovi iz Ide... pa zar tu ne
-  treba fixup? mozda je radilo jer se slucajno uvek na istu adresu ucitavao, ko
-  zna, uglavnom to sam sad prepravio [EDIT 25.11.2013.] ok je ako je call, ti
-  bajtovi su uvek isti (posto su pozivi relativni)
+- today I fixed interesting thing, and I'm not sure how it worked at all before;
+  when un-patching is done to remove support for 2nd player on keyboard original
+  bytes from IDA are written back... don't we need a fixup there? maybe it
+  worked since load address is always the same, who knows, anyway I fixed that
+  now [EDIT 25.11.2013.] it's ok if it's call, those bytes are always the same
+  (since calls are relative)
 13.10.2013.
-- ladno nije checksum radio... tj. radio je ali samo za prva 32 bajta (lol)
-  siftovanje je malo po malo izbijalo informacije o prvim bajtovima; zamenio
-  sam to sa rotiranjem i sad je ok (nije ni cudo sto sam naleteo na onog
-  poljaka sto je "krekovao", ja mislio covek pecovao checksum proveru kad
-  ono medjutim...)
+- unbelievable - checksum wasn't working... in fact it worked, but only for
+  first 32 bytes (lol); shifting kicked out informations about first bytes bit
+  by bit; replaced it with rotation and it's ok now (no wonder I found that some
+  Polish guy "cracked" SWOS++, I thought he patched the checksum routine, but
+  instead it was this...)
 11.10.2013.
-- konacno je zavrsen prvi, veliki deo, a to je game lobby :)))
+- finally first, big, part is finished, and that is game lobby :)))
   (mi iz veri hepi)
-- mplayer.c preimenovan u mplobby.c
+- mplayer.c renamed to mplobby.c
 28.09.2013.
-- danas sam naucio da izmedju extern char *x; i extern char x[]; postoji golema
-  razlika; ako bih stavljao * onda kompajler pokupi dword vrednost odatle, kao
-  da je promenljiva, i program trsne; kada stavim [] onda je sve ok, tretira ga
-  kao offset
+- today I learned just how big difference between extern char *x and extern
+  char x[] really is - if I put * compiler picks up dword value from there, as
+  if it was a variable, and program crashes; if I put [] then everything is
+  fine, since it gets treated as an offset
 22.09.2013.
-- napravljen perl skript koji proverava da li ima nekoriscenih simbola iz
-  filter.txt (putem jednostavne tekstualne pretrage), izbaceni suvisni
-  zastareli simboli
+- Perl script for finding unused symbols from filter.txt created (simple text
+  search), unneeded obsolete symbols removed
 21.09.2013.
-- ispravljen bag u printf - specifikacija se nije resetovala izmedju polja, i
-  dodata podrska za %hhd i %hhx
+- fixed a bug in printf - specification wasn't reinitialized between fields, and
+  added support for %hhd and %hhx
 18.09.2013.
-- izmenjeno ime create game meniju u game lobby menu (i svemu pridruzenome)
+- changed name of create game menu to game lobby menu and updated all references
 16.09.2013.
-- ispravljen bag u bindmp: petlja je isla od 16 pa >= 0, treba > 0 (ispisivao
-  je 17 bajtova po liniji)
-- ispravljen bag u pe2bin: value se nije dekrementovao kod odlucivanja da li
-  dodeliti fixup SWOS code ili data, tako da se pogresno dodeljivao data umesto
-  kod za f-je bliske 0xb0000 (ako su do velicine SWOS virtual size bliske to ce
-  se desiti), sto je naravno rezultovalo skrsivanjem (pre ili nisam koristio te
-  C f-je koje su pri vrhu, blizu data, ili je .swos sekcija bila na drugoj
-  poziciji, sa visom adresom)
-- izostavih swos_libc_ prefiks kod 2 nove f-je i trs... ubije i ceo windows :P
+- bug fixed in bindmp: loop went from 16 until >= 0, it needed to be > 0 (it was
+  writing 17 bytes per line)
+- bug fixed in pe2bin: value wasn't decremented when deciding whether to assign
+  fixup to SWOS code or data, so it was wrongly assigned to data instead of code
+  for functions close to 0xb0000 (if they're near SWOS virtual size it will
+  happen), which of course resulted in crashes (earlier I wasn't using those C
+  functions near the top, near data, or .swos section was in different position,
+  with higher address)
+- I omitted swos_libc_ prefix with 2 new functions and kaboom... killed entire
+  Windows as well :P
 13.09.2013.
-- Sada WriteToLog cuva i flegove (da, i to se desilo)
+- now WriteToLog preserves flags as well (yes, that happened too)
 12.09.2013.
-- Ok, mislim da je join game zavrsen (sem konektovanja na igru - to cu sad da
-  pokusam)
-- Apgrejdovao sam se na UltraEdit 13.10 btw ;)
-- Jebeni nop protracio skoro pola sata
+- ok, I think join game is finished (aside from connecting to the game - I'm
+  gonna give it a shot now)
+- upgraded to UltraEdit 13.10 btw ;)
+- fucking nop wasted almost half an hour
 11.09.2013.
-- Boze kako ruzan bag, nesto sam prepravljao i nekako ostane
-  sizeof(IPX_Address) umesto member_size(IPX_Address, node), tako da je fino
-  prepisivalo socket i source network address... Nije ni cudo sto nikako nije
-  uspevao da posalje reply
-- Menjam sistem pristupa C funkcijama unutar SWOS-a, sada im dajem prefiks
-  swos_libc_, a u util.c pravim C prototip koji poziva f-ju iz SWOS-a preko
-  pokazivaca; ovako se nece desiti da ih slucajno pozovem direktno
+- gosh what an ugly bug, I was refactoring and somehow left sizeof(IPX_Address)
+  instead of member_size(IPX_Address, node) so the program was merrily
+  overwriting socket and source network address... no wonder it kept failing to
+  send reply
+- I'm changing system of access to C functions inside SWOS, they will now have
+  prefix swos_libc_, and util.c will have C prototype that calls SWOS function
+  indirectly through pointer; this way they shouldn't accidentally be called
+  directly
 10.09.2013.
-- Log fajl sada ima vreme na svakoj liniji
-- Otkrio sam da imamo jako jako malo stack memorije (3.7kb na pocetku), nakon
-  cestog pucanja programa uzrokovanog stack overflow-om; sada je dosta bafera
-  prebaceno sa steka na bss
-- Odusevljen sam koliko brze sada radi build
-- Ladno sam nasao bag u memset... Ko zna na cemu sam bio kad sam to pisao,
-  iskoristicu onu iz SWOSa
+- log file now has time-stamp on each line
+- after investigating frequent crashes due to stack overflow I've discovered
+  that stack memory is very limited (3.7kb at startup); moved lot of buffers
+  from stack to bss
+- I'm amazed how fast build works now
+- wow I found bug in memset... who knows what I was thinking when I was writing
+  that, just gonna use the one from SWOS
 09.09.2013.
-- Konacno finisiran rad na alink-u, i RADIIIIIIIIIIIII!!!!! Milenijumski bag je
-  resen, MS Link je izsutiran! Mrss! Mrsss! Mamu ti jebem!!!
-- Jedino sto se swopp.bin povecao za 3kb, sigurno usled nekog algnment-a, odoh
-  da vidim za to...
-- Nije ni cudo sto je manji fajl, govedo pola stvari nije linkovalo u fajl..
-  Binarni fajl je sada per-fektan! :)
+- no wonder file was smaller, bastard wasn't linking half of stuff...
+  binary file is now per-fect!
+- only thing swospp.bin has increased by 3kb, must be due to some alignment, off
+  to see about that...
+- work on alink is finally done, and it WORKKKKSSSSSSS!!! millennium bug is
+  solved and MS link kicked out! FUCK YOU MS LINK! GTFO!
 06.09.2013.
-- Haha u starom Ultra Edit-u po default-u ne koristi Unix style regularne
-  izraze, mora da se ukljuci, mislio sam da je bagovit i instalirao noviju
-  verziju
-- Usled nezadrzive lavine napretka, iako se verovalo da to vise nije moguce,
-  cudesni sistem meni makroa biva pojacan naprednim state-of-the-art makroima
-  opremljenim mogucnoscu definisanja simbola sa rednim brojevima zeljenih
-  stavki
+- haha old UltraEdit by default doesn't use Unix style regular expressions -
+  those have to be turned on, but I thought it was buggy and installed new
+  version
+- due to unstoppable avalanche of progress, even if nobody believed it was
+  possible anymore, miraculous menu macro system got further enhanced by
+  advanced state-of-the-art macros equipped by functionality for defining
+  symbols having menu item ordinals as values
 05.09.2013.
-- Konacno sam resio zasto nece da prima paket, bio je problem sa FP_SEG i
-  FP_OFF makroima, nisu vrsili translaciju na nacin koji je meni trebao (mozda
-  bi funckionisali da sam alocirao memoriju preko onog drugog int-a?), i to je
-  naravno bilo jebeno poslednje mesto koje sam pogledao, nakon sto sam isprobao
-  boga oca stvari...
-- Ispravio bag u vsprintf, nije radilo kako treba za %c (i ladno je bibliotecka
-  funkcija bila bagovita - tj. moj prepev verovatno)
-- Logo bitmap data izsutiran iz direktorijuma za sors + napravljeno fino
-  pravilo da se mejkuje. Da ne zagadjuje kad hocu da pogledam velicinu koda :P
+- I finally solved why it wouldn't receive a packet, problem was in FP_SEG and
+  FP_OFF macros, they simply didn't perform translation in a way I needed
+  (perhaps they would work if I allocated memory via that other interrupt?), and
+  of course that was fucking last place I looked at, after trying out shit load
+  of other things...
+- fixed bug in vsprintf, it wasn't working properly for %c (surprisingly library
+  function had that bug - more likely my adaptation of it)
+- logo bitmap kicked out of source directory + make rule made; I don't want it
+  polluting the source tree when I wanna check the size :P
 03.09.2013.
-- Ladno sam ispravio deo koda i dokumentaciju menija (inace vrlo dobro
-  izucenih), vezano za retko korisceno "preskakanje" stavki (kada je stavka na
-  koju korisnik zeli da ide iskljucena ili nevidljiva, pa se odlucuje koja ce
-  stavka naredna biti selektovana)
+- fixed part of code and documentation pertaining to menus (kinda surprising,
+  since it's otherwise very well explored), it was in connection to rarely used
+  "skipping" of items feature (when the item user tries to go to is disabled or
+  invisible, decision is made which item to go to instead)
 31.08.2013.
-- Sjajan bag ispravljen. Najobicnija nepaznja i prepisivanje memorije, ali sta
-  sam sve pokusao u tih par sati... Bar sam namestio kljakavi DOSBox dibager :)
+- amazing bug fixed; ordinary lack of attention and memory overwrite, but the
+  things I tried in those few hours... at least I set up shaky DOSBox debugger
+  :)
 29.08.2013.
-- Izgleda sam resio jednu od misterija koje su me mucile. Naime, ponekad bi se
-  desavalo da kombinacija asembler+linker naizlged izgenerise pogresan poziv.
-  Jednostavno call xxxxx instrukcija bi umesto gde treba skocila
-  pitaj-boga-gde, i program bi padao. Secam se koliko me je to samo uzasno
-  nerviralo. Ali evo danas sam bio iznenadjujuce miran, i za nesto vise od pola
-  dana sam nasao razlog :) Ne tacan, ali barem priblizan :P - problem je bio
-  sto sam pisao kod u .data sekciji. Sta tacno ne valja ne znam, ali vrlo
-  verovatno je alignment sjeban + imam i ono spajanje sekcija pa ko zna sta od
-  toga na kraju ispada. Kad se kod stavi u .text sekciju kao sto bog zapoveda
-  onda sve radi kako treba.
-  I pazi kad sam ladno predvideo string menu entries. Svaka cast. Meni.
+- seems I've solved one of mysteries that have been tormenting me; sometimes the
+  assembler+linker combination seemed to generate invalid call; call xxxxx
+  instruction would jump god-knows-where and program would crash; I remember how
+  frustrating that was; but today I was surprisingly calm and in a bit over half
+  day found a reason :) not exact, but at least approximate :P - problem was in
+  having code in data section; I don't know exactly what went wrong but most
+  likely the alignment got messed up + sections get merged so who knows what
+  becomes of it in the end; once the code goes to .text section (as it should)
+  everything works out just fine
+  and it seem I've predicted string menu entries. Kudos. To me.
 07.01.2005.
-- GoalScored raskantano!
-- ShowResult raskantano!
-  Imam imena svih sprajtova, osim jednog koji je izgleda mrtva promenljiva.
-  Sada cu popuniti ono sto ranije nisam mogao u vezi sprajtova.
-- game_state 22 provaljeno
+- GoalScored disintegrated!
+- ShowResult disintegrated!
+  I have all the sprite names except for one which seems to be dead variable;
+  gonna fill in now what I couldn't before about the sprites
+- game_state 22 figured out
 06.01.2005.
-- nastavljeno od juce... one promenljive za penale su stvarno izvukle stvari...
-  Provaljeno polje 40 u ingame team strukturi - broj auto golova.
+- continued work from yesterday... those penalty variables really pulled things
+  through... figured out field 40 in ingame team structure - it's number of own
+  goals
 05.01.2005.
-- posle dosta vremena, konacno nekakav napredak; game_state skoro sasvim
-  provaljen; provaljeno dosta promenljivih vezanih za izvodjenje jedanesteraca
-  posle utakmice, i jos neke stvari provaljene... eto, u jeku Clan Lord-a,
-  cekajuci na Holandjanina...
+- after quite a while, finally some sort of progress; game_state almost entirely
+  figured out; figured out lot of variables related to penalties after the game,
+  and some more stuff... in the prime of Clan Lord, waiting for the Dutchman...
 19.07.2004.
-- verzija 1.4 je objavljena
-- Watcom/M$ link kombinacija pravi _uzasne_ probleme; nakon odredjene
-  kombinacije static i non-static varijabli/funkcija, kompajler (ili linker)
-  odlepi - pristupa promenljivama sa nekim random offsetom, skace u neki random
-  deo koda...
+- version 1.4 published
+- Watcom/M$ link combination is making _horrible_ problems; after certain
+  combination of static and non-static variables/functions, compiler (and/or
+  linker) freaks out - it accesses variables with random offsets, jumps into
+  random parts of code...
 15.07.2004.
-- podrucje baga je definitivno precizirano na klupu - svaki kvarni snimak puca
-  nakon pozivanja klupe
-- problem je u tome sto kada se vraca sa klupe u igru poziva se funkcija koja
-  brise sadrzaj trenutnog hil bafera, i resetuje pointer na pocetak; bag se
-  desava u sledecoj situaciji:
-  - sadrzaj bafera je snimljen, predzadnji i zadnji dword su koordinate kamere
-    i golovi, pointer se resetovao na pocetak i tu su upisani flegovi
-  - bafer dalje se i dalje puni, recimo do pola
-  - poziva se klupa, i tu se ostaje do recimo 3/4 bafera
-  - odlazi se sa klupe, bafer se brise, pointer resetuje, i tu se brisu
-    nesnimljeni flegovi (ouch)
-  - nastavlja se upis u bafer, pocevsi od kamera, golovi, flegovi
-  - tako dobijamo situaciju koja se pojavljuje u kvarnim .rpl fajlovima:
-    kamera, golovi, [fale flegovi!!!], kamera, golovi, flegovi...
-- smisljam kako da resim problem: najbolje bi bilo sacekati da kamera ode do
-  klupe, snimiti jedan frejm, i onda zabraniti dalje snimanje dok kamera opet
-  ne krene ka terenu; trenutno sam namestio da se sve snima
+- area of bug definitely narrowed to bench - each corrupted recording crashes
+  after bench is shown
+- problem was in a function that gets called when returning from bench to game;
+  this function deletes contents of current hil buffer, and resets pointer to
+  the beginning; bug happens in the following situation:
+  - contents of the buffer are saved, last and one before last dword are camera
+    coordinates and goals, pointer was reset to the beginning and flags were
+    written there
+  - buffer continues to fill up, let's say until half full
+  - bench is called, and there we stay until say 3/4 of the buffer
+  - bench is left, buffer is emptied, pointer is reset and unsaved flags get
+    deleted (ouch)
+  - writing to buffer is resumed, starting with camera, goals, flags...
+  - so we get situation that happens in corrupted .rpl files:
+    camera, goals, [flags are missing!!!], camera, goals, flags...
+- thinking about how to solve the problem: perhaps best thing to do is to wait
+  until camera goes to the bench, save one frame, turn off recording until
+  camera starts going back to the field; currently it's set up to record
+  everything
 14.07.2004.
-- u log fajl se na startup-u upisuju adrese ucitavanja SWOS-a i SWOS++-a kako
-  bi se u slucaju pucanja mogla utvrditi tacna instrukcija
-- prckano oko snimanja replay-a; moguce je da se bag pojavljuje ako neka
-  funkcija dira goal_base_ptr koji se koristi za snimanje i podesi ga malo
-  ispred baznog bafera
-- vratio sam pravljenje listinga za .asm fajlove - samo je za nijansu sporije
-- bag nije zbog goal_base_ptr-a - on je uvek konstantan
+- load addresses of SWOS and SWOS++ logged at startup so we can find exact
+  instruction in case of crash
+- investigated replay saving - it's possible that bug is showing up if some
+  function is changing goal_base_ptr (which is used for saving) and sets it
+  slightly in front of base buffer
+- returned listing creating for .asm files - it's only a notch slower
+- bug is not because of goal_base_ptr - it remains constant
 08.07.2004.
-- ispravio kod u pe2bin za zaokruzivanje na 4, x += 4 - x % 4 ne valja, u
-  slucaju kada je x deljivo sa 4
+- fixed rounding to 4 code inside pe2bin, x += 4 - x % 4 is not good, in case of
+  x divisible by 4 (d-oooh)
 18.06.2004.
-- veoma bitne stvari se kriju u UpdateBall - cak mislim celokupna fizika lopte
-  i njena interakcija sa terenom u zavisnosti od uslova
+- very important things are hidden inside UpdateBall - I believe it could even
+  be entire ball physics and its interaction with the pitch depending on weather
+  conditions
 15.06.2004.
-- SWOS2004 preliminarna verzija poslata
+- SWOS2004 preliminary version shipped
 02.06.2004.
-- i pitanje dana ostaje: Where's The Walrus?
+- and the question of the day remains: Where's The Walrus?
 01.06.2004.
-- veliki dogadjaj, otkrivena je (zasigurno) prva AI rutina; bavi se izvodjenjem
-  auta, a mozda je i opstija
+- big event, discovered (for sure) first AI routine; it handles throw-ins, but
+  it could be more general
 30.05.2004.
-- provera sredjena, i radi dobro, valjda nema neku rupu (testira se da li je
-  "prava" DOS verzija manja od 6.0, i onda se izdaje upozorenje - int 0x2f ne
-  radi na dve'iljadarci)
-- izbacen SWOS++ 1.3 i SWPE 0.8
+- version check fixed, and it works well, I hope it doesn't have any holes (it
+  tests if "real" DOS is less than 6.0, and then displays a warning - int 0x2f
+  doesn't work on win2k)
+- released SWOS++ 1.3 and SWPE 0.8
 22.05.2004.
-- velicina tekst sekcije je zaokruzena na 4 bajta da bi data sekcija bila
-  dword poravnata
-- uradjena provera verzije Windows-a (ali netestirano na w2000)
+- size of code section rounded to 4 bytes so the data section would be dword
+  aligned
+- Windows version check added (but not tested under Windows 2000)
 21.05.2004.
-- Aminta je nasao bag: izgleda kada se menjaju kontrole timova, i uradi se
-  save, postoji neki memory overwrite u tom timu sto prouzrokuje krshenje
-  SWOS-a kada taj tim kasnije treba da igra utakmicu
-- bag je nadjen i ispravljen: problem je bio u tome sto kada snimam diy pozivam
-  SWOSovu funkciju koja u sebi ima poziv CommonMenuExit - koja ocekuje da bude
-  pozvana u kontekstu glavnog menija. Tako ona lepo uzme pointer na deseti
-  entry koji je titl, formira ime takmicenja i upise ga u taj entry. Posto je
-  aktivan moj meni i taj entry pokazuje na ime nekog tima, to ime ce biti
-  prepisano, kao i neki bitni podaci kasnije. Ja kad sam testirao izgleda nisam
-  koristio duga imena pa je sve radilo (a na ime tima nisam obracao paznju).
-  Sredio sam tako sto sam poziv PrepareMenu odozdo prebacio ispred if-a.
-- podesio sam cp kod make store da cuva originalne datume fajlova
-- iskljucio sam pravljenje listinga pri asemblovanju - testiracu da vidim da li
-  radi brze
+- Aminta found a bug: seems when team controls are changed, and game is saved,
+  there is some memory overwrite inside the team which causes SWOS to crash when
+  that team later plays a game
+- bug was found and fixed: problem was that when saving diy SWOS function is
+  called that contains call to CommonMenuExit - it expects to be called in
+  context of main menu; so it happily takes pointer to tenth entry (which is
+  title), forms competition name and writes it to the pointer; since my menu is
+  active and the entry in question points to name of the team, that name will be
+  overwritten, as well as some important data that follows it; seems when I
+  tested I wasn't using long names so everything worked fine (and I wasn't
+  paying attention to the team name); fixed it by moving top PrepareMenu call
+  below if
+- configured cp in make store to preserve original file dates
+- turned off listing creating during assembly - will test to see if it's working
+  any faster now
 20.05.2004.
-- diy meni je izmenjen da radi kao load
+- diy menu modified to work same as load menu
 19.05.2004.
-- ta da!!! zavrsen je j*beni diy edit meni i radi!!!! 12 je i 10 (am); sacu da
-  posaljem Aminti, nek se on bahce sa time (objavicu kasnije)
+- ta da!!! finished f*cking duy edit menu and it works!!! it's 12:10 am; gonna
+  send this to Aminta, and let him deal with it (will publish later)
 17.05.2004.
-- meniji oko biranja timova imaju pogresna (preusko postavljena) imena;
-  provaljena jedna od najvecih tajni u vezi menija gde se biraju timovi;
-  takodje provaljeno dinamicko podesavanje stavki (laganica)
+- choose team menus have wrong names (too narrow); figured out one of greatest
+  secrets about choose team menus; also figured out dynamic menu item resizing
+  (easy peasy)
 16.05.2004.
-- uspeo sam da izbacim vsprintf iz release-a: dosetio sam se da upotrebim
-  SWOSovski PrimitivePrintf - primitivno, ali za moje trenutne potrebe dovoljno
-- proslo 12 bre... nesto sam mnogo umoran, a sutra se rano dizem... treba
-  pronaci tacnu lokaciju menija koji prikazuje selektovane timove u diy
-  takmicenju i radi dinamicko podesavanje velicine stavki na osnovu broja
-  timova (i da maznem taj kod, bwahahaha...)
+- managed to remove vsprintf from release: remembered that I could use SWOS'
+  PrimitivePrintf - primitive but enough for my current needs
+- it's past 12... sooo tired and getting up early tomorrow... need to find exact
+  location of menu that displays selected teams in diy competition and does
+  dynamic adjustment of entry size based on number of teams (and snatch that
+  code, bwahahaha...)
 15.05.2004.
-- evo radi se na tom meniju
-- nazalost, prebacih vsprintf.c u release verziju (zbog sprintf-a koji se za
-  sada koristi samo na jednom mestu - mozda kasnije izbaciti), i naduva se...
+- work on the menu is underway
+- unfortunately, I had to bring vsprintf.c back to release version (because of
+  sprintf which is currently only used in one place - maybe remove that later),
+  and the binary file bloated...
 14.05.2004.
-- pocetak rada na novoj verziji - krecem sa ubacivanjem nove stavke menija
+- begun working on new version - started with inserting new menu entry
 03.05.2004.
-- pustena verzija 1.2.3 sa _kompletno_ ispravljenim bagovima koji se ticu
-  prikaza brojeva vecih od 16
-- upravo sam primetio da SWOS++ blokira normalan rad highlights-a: samo prvi
-  highlight je snimljen u fajl
+- version 1.2.3 released with _completely_ fixed bugs regarding display of
+  player numbers greater than 16
+- I just noticed that SWOS++ blocks normal functioning of highlights: only first
+  highlight gets saved to file
 02.05.2004.
-- upravo sam otkrio da SWOS++ nije kompatibilan sa EGA grafikom - kad krene
-  utakmica vide se samo brlje, i posle nekog vremena pukne
-- EGA grafika ubivena
-- sredjeni brojevi igraca kada dobijaju neki karton
-- EGA grafika ubivena samo u debug modu (izgleda da se kolje sa debug sistemom)
+- I just found out that SWOS++ isn't compatible with EGA graphics - once the
+  game starts all there is on the screen are some blotches dancing around, and
+  after a while it crashes
+- EGA graphics murdered entirely
+- fixed player numbers while they're getting booked
+- EGA graphics turned off in debug mode only (seems it's in conflict with debug
+  system)
 27.04.2004.
-- dosta uradjeno
+- lot of stuff done
 26.04.2004.
-- izuzetan uspeh, velika kolicina podataka pridobijena i dosta gresaka u
-  dokumentaciji ispravljeno
-- dodat novi tip za dump: 'p' = pointer, samo ispis vrednosti kao dword
+- great success, large amount of data obtained, and lot of mistakes in the
+  documentation fixed
+- added new type for dump: 'p' = pointer, just write its value as dword
 25.04.2004.
-- velicina release swospp.bin-a skresana za kilobajt - PrintString() i pratece
-  stvarcice su otisle pod jedan #ifdef DEBUG
-- provaljeno dosta zanimljivih stvari preko dump-var debug sistema (ziv bio)
-- potvrdjeno da su x, y i z koordinate sprajtova pocinju na +30 (a ne na +32
-  kako je ranije stajalo)
-- verzija 1.2.2 objavljena, a verzije 1.2.1 i 1.2 sam izbacio sa download
-  strane da ih ne bi ljudi skidali (bagovite su)
+- size of release swospp.bin chopped down by a kilobyte - PrintString() and
+  associated stuff went under #ifdef DEBUG
+- lot of interesting things found using dump-var debug system (long live)
+- confirmed that x, y and z coordinates of sprites begin at +30 (and not at +32
+  as it was written in the docs earlier)
+- version 1.2.2 published, took down versions 1.2.1 and 1.2 from the download
+  page so people wouldn't download them (they're buggy)
 23.04.2004.
-- sredjeni i brojevi igraca na klupi (ubijena procedura koja ih setuje)
+- fixed bench player numbers (disabled the procedure that sets them)
 22.04.2004.
-- nova verzija, 1.2.1, i ispravljena je link strana da otvara linkove u novom
-  prozoru umesto u frejmu
-- sada se poceci sekcija u swospp.bin align-uju na 4 bajta
+- released new version, 1.2.1, and fixed link page to open links in new window
+  instead of frame
+- beginnings of sections in swospp.bin are now aligned to 4 bytes
 21.04.2004.
-- sredjen bug u substitutes meniju kada se prikazuje djubre umesto brojeva
-  vecih od 16, i meni je malo rasiren i imena i pozicije pomerene kako bi sve
-  to lepo stalo
+- fixed bug in substitutes menu when garbage was showing up instead of player
+  numbers greater than 16; menu was extended a bit and names and positions moved
+  so everything could fit nicely
 20.04.2004.
-- dependencies u makefile-u sredjene - stavljao sam da .c i .asm fajlovi zavise
-  od include-ova (umesto .obj) - doh! (thanks Dule)
+- dependencies in make files fixed - I was listing include files as dependencies
+  of c and .asm files (instead they should be .obj files dependencies) - d-oh!
+  (thanks Dule)
 17.04.2004.
-- brojevi igraca zavrseni - uradjeno centriranje i specijalno tretiranje
-  slucaja kada idu dve jedinice jedna za drugom, tu ih priljubljujemo za jedan
-  piksel - izgleda mnogo lepse
-- dodato je i trece ime executable u patcher, za underdogs SWOS, i size
-  mismatch vise nije fatalna greska vec samo upozorenje da bi cela stvar radila
-  sa Amintinom patchovanom verzijom SWOSa
-- za default zip paker vracen winzip, zbog dugih imena (tj. zbog case-a)
-- izbacujem rar verzije arhiva sa sajta
-- sve to upakovano i izbacena nova verzija 1.2
+- all this packed up and new version 1.2 released
+- rar archives removed from the site
+- winzip reinstated as default packer, because of long file names (and case)
+- added third executable name to patcher, for underdogs SWOS; size mismatch is
+  not fatal error anymore but only a warning so the entire thing can work with
+  Aminta's patched version of SWOS
+- player numbers finished - centering implemented and added special treatment
+  for the case when two ones go one after another, in this case we tuck them
+  closer together by one pixel - it looks much nicer
 15.04.2004.
-- zapocet ovaj log fajl
-- izolovan random crash bug kod ispisa brojeva igraca vecih od 16:
-  pri ispisu male nule, u VerLine, tacno na mestu pristupa memoriji
-  (kod instrukcije mov [esi], al)
-- i evo, u 20:46 pisem ispravku koda; u pitanju je bila negativna vrednost
-  ipsilona (-1) koja je sve vreme pravila probleme
-- i sredjeno... bar bi trebalo, odigrao sam celu utakmicu i pogledao replay
-  bez problema, jedino sto se iznad sudije pojavio neki brljavi S sprajt kada
-  je davao zuti karton
+- aaand fixed... at least it should be, I played entire game and watched replay
+  without problems, only thing I saw was messed up S sprite over the referee
+  while he was booking a player
+- so, at 20:46 I'm writing a fix; it was negative value of y (-1) that was
+  causing the problems all this time
+- isolated random crash bug with drawing player numbers higher than 16: when
+  drawing small zero, in VerLine, exactly at the place of memory access
+  (near the mov [esi], al instruction)
+- started this log file

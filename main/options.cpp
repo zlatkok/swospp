@@ -27,11 +27,13 @@ void SaveOptionsIfNeeded()
 {
     dword file;
     bool checkIfModified = false;
+
     /* if file is missing create it anyway */
     if ((file = OpenFile(F_READ_ONLY, "swospp.xml") != INVALID_HANDLE)) {
         CloseFile(file);
         checkIfModified = true;
     }
+
     SaveXmlFile(rootNode, "swospp.xml", checkIfModified);
 }
 
@@ -83,7 +85,7 @@ static const char *getXmlNodeName(const char *p, char *nameBuff, int maxSize, in
     Format:
     (%[<length>]<type>/?<name>)+
 
-    <lenght> - integer determining length of the following type, optional
+    <length> - integer determining length of the following type, optional
                if * length will be given in parameters
     <type>   - type of the option, can be:
                d - integer
@@ -171,11 +173,12 @@ void __cdecl RegisterOptions(const char *section, int sectionLen, const char *de
             assert_msg(0, "Invalid code in option stream.");
             return;
         }
+
         /* we have type here, get name */
         p += *p == '/';
         nameBuff[sizeof(nameBuff) - 1] = '\0';
         p = getXmlNodeName(p, nameBuff, sizeof(nameBuff) - 1, &nameLength);
-        assert(nameLength > 0 && nameBuff[0]);
+        assert((nameLength != 0) == (nameBuff[0] != '\0'));
         assert(*p == '%' || !*p);
         AddXmlNode(sectionNode, newNode = NewXmlNode(nameBuff, nameLength, type, length, false));
         if (!gotFunc)
@@ -215,10 +218,13 @@ void InitializeOptions()
     RegisterUserTactics(RegisterOptions);
     ReverseChildren(rootNode);
     XmlTreeSnapshot(rootNode);      /* default options */
+
     if (LoadXmlFile(&fileRoot, "swospp.xml")) {
+        calla_ebp_safe(SaveOptions);    /* save options immediately so that restore won't reset them */
         XmlMergeTrees(rootNode, fileRoot);
-        XmlTreeSnapshot(rootNode);  /* options loaded from the file */
+        XmlTreeSnapshot(rootNode);      /* options loaded from the file */
     }
+
     XmlDeallocateTree(fileRoot);
     if (!ValidateUserMpTactics())
         XmlTreeSnapshot(rootNode);  /* additional fixes to default or file options */

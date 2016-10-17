@@ -9,7 +9,7 @@ TODO:
 - regression testing - test changing teams when already in game lobby
 - close room (multiplayer)
 - za sada namestiti replay/continue da radi nakon partije
-- test build process on clean structure (no dirs, especially 'etc') - might fail
+- test build process on clean structure (no dirs, especially 'var') - might fail
 - implementirati bezbedni vsnprintf
 - napisati test programcic za IPX stek
 - za opcije: dopusti golmanima da budu izvodjaci penala ON/OFF

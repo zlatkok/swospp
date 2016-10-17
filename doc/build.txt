@@ -3,14 +3,15 @@ what goes where...
 
 Programs needed for full recompilation:
 - GNU make
-- subset of any working Unix environment (for shell, and some UNIX utilities)
+- subset of any working Unix environment (win-bash, GNU make, some UNIX
+  utilities: cp, mv...)
 - Open Watcom C Compiler (main program used to be compiled with it, but
   nowadays used for test programs only)
-- GCC 4.9.x (4.8.x might not work)
+- GCC 4.9.x or better (4.8.x might not work)
 - NASM 0.98.36 my patched version (because they broke some macros... see if we
   can fix this) (in /extra)
-- Perl (any not-totally-ancient version will do), with Switch module
-- Python, same note
+- Perl, any not-totally-ancient version will do
+- Python 3, same note
 - alink, my modified version (in /extra)
 - go32, my util [OBSOLETE - not needed with new Perl build script]
 - winzip, for dist package packing [not used atm, see if we can use it again or
@@ -20,8 +21,6 @@ Programs needed for full recompilation:
 bin    - binary files, SWOS++, loader, utility programs...
 dist   - this is where the dist archive will be created
 doc    - various documentation, both internal and published
-etc    - various files that don't belong anywhere else, listings, lib files,
-         etc.
 extra  - additional scripts and executables needed for build
 loader - loader source
 main   - SWOS++ source
@@ -30,7 +29,10 @@ obj    - object files, as well as executables
 other  - other sources not belonging to the project
 patch  - patcher source
 pe2bin - source of converter from Win32 PE to custom executable format
-test   - unit tests for various components, and misc test code
+test   - unit tests for various components, and misc test code [currently
+         broken, needs to be ported to DJGPP]
+var    - various files that don't belong anywhere else, listings, lib files,
+         etc.
 
 
 Environment
@@ -65,21 +67,30 @@ TEST  - creating testing build (to be implemented)
 
 Perl Makefile
 
-TODO
+TODO - describe
+Source files will be discovered automatically, and dependencies will be
+determined.
+Debug directory is compiled/assembled only when building debug version.
+
 Limitations:
 - asm and C++ files can not be named same, since they produce same obj file
 
 
-mapcvt, detaljni opis, kako se dodaju simboli
+mapcvt, detailed description, how to add symbols
 
 Describe, TODO :)
 
 
-bin file construction process
+Build process
 
-TODO - translate & expand
-Najpre se kompajliraju i asembluju osnovni fajlovi projekta. Dobija se win32 pe
-executable, pomalo specifican, sa odredjenim potrebnim sekcijama i
-eksportovanim simbolima. Zatim se to salje konvertoru koji konvertuje exe u
-binarni fajl koji SWOS++ loader moze da ucita i startuje.
-Iz map fajla se kreira master include fajl koji koriste gotovo svi asm fajlovi.
+First step is to compile pe2bin - it will be used later to convert SWOS++ from
+win32 PE to format loader can load into running SWOS. Next step is to create
+header and include files from SWOS map file - build system will enable us to use
+SWOS variables practically as our own. Patcher is then assembled - it's a small
+.com program used to patch SWOS to load SWOS++; it's barely used anymore, but in
+the old days it was the patcher of choice ;). Then loader is created - this is
+small program that patcher will embed into SWOS, its task is to load main binary
+file into SWOS address space and patch everything up. After all these
+prerequisites, main code is built - it actually builds as an ordinary win32 PE
+application which is passed through pe2bin converter before arriving at
+something loader understands.

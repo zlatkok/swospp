@@ -125,8 +125,10 @@ void UserExceptionHandler()
         "End of the road\r\n"
         "===============\r\n"
         "How misfortunate. Seems we have crash landed.\r\n"
+#ifdef DEBUG
         "If you know someone who can do something about it, you might\r\n"
         "as well find the log file (SWOSPP.LOG) and send it to them.\r\n\n"
+#endif
         "Detailed information:\r\n"
         "Exception: %d - %s\r\n"
         "Address: %04x:%08x\r\n"

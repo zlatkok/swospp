@@ -1,16 +1,16 @@
-format team fajla (team.* u \data direktorijumu):
+Format of the team file (team.* in \data directory):
 
-Velicina celog tima je 684 bajta. Maksimalna velicina team fajla je 64000
-bajtova, tolika je velicina fiksnog bafera i sve preko toga prouzrokovace
-momentalan izlazak iz SWOS-a. Unutar team fajlova timovi su izgleda poredjani
-abecedno.
+Size of whole team is 684 bytes. Maximum size of team file is 64000 bytes, as
+that is the size of the fixed buffer SWOS uses, anything above that will cause
+immediate SWOS termination. Inside the team files team seem to be sorted
+alphabetically.
 
-Prvo ide word, big endian - broj timova u fajlu,
-zatim header tima, 76 bajtova
-nakon toga, ide 16 struktura koje predstavljaju igraca,
-velicina 38 bajtova
+First we have a word, big endian - number of teams in file,
+then there is team header, 76 bytes
+header is followed by 16 structure that represent players,
+size is 38 bytes
 
-header tima:
+team header:
 ------------
 offset:  size:  desc.
 -------  -----  -----

@@ -38,7 +38,7 @@ section .text
 ; start
 ;
 ; in:
-;      eax = starting address, fixed up
+;      eax = start routine address, fixed up
 ;      ebx = code & data base address
 ;      ecx = code & data size (+bss)
 ;      edx = code & data memory handle
@@ -48,10 +48,6 @@ section .text
 ; Note that SWOS Initialization() hasn't run yet.
 ;
 start:
-        mov  [codeSize], ecx
-        mov  [codeHandle], edx
-        mov  ax, ds
-        mov  [dataSeg], ax
 %ifdef DEBUG
         mov  [codeBase], ebx
 %endif
@@ -81,6 +77,7 @@ start:
         WriteToLog "Video memory index = %hd", eax
         mov  [videoSpeedIndex], ax
         call EnableShiftSupport
+
 .out:
         WriteToLog "Returning control to SWOS..."
         retn
@@ -105,8 +102,7 @@ EndProgram:
         jz   .no_rpl_save
 
         calla SetHilFileHeader
-        xor  eax, eax
-        inc  eax                        ; set eax to true to mark normal call
+        or   eax, 1                     ; set eax to true to mark normal call
         call CloseReplayFile            ; close replay file and set header
 
 .no_rpl_save:
@@ -417,12 +413,14 @@ Write16BytesToVideoMemory:
         mov  edi, 0xa0000
         push byte 15
         pop  ecx
+
 .video_mem_write_loop:
         mov  eax, ecx
         mov  [edi], eax
         cmp  eax, 1
         jmp  short $+2
         loop .video_mem_write_loop
+
         inc  eax
         push eax
         pop  eax
@@ -649,10 +647,8 @@ badOS:
 ; bss section
 section .bss
 newStack:       resb 64 * 1024  ; increase stack so we can go wild with recursion ;)
-newStackTop:
-codeSize:       resd 1
-codeHandle:     resd 1
-dataSeg:        resw 1
+newStackTop:                    ; this is address of new stack top (growing downwards)
+
 %ifdef DEBUG
 codeBase:       resd 1
 %endif

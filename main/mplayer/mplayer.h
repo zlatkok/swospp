@@ -1,12 +1,12 @@
 #pragma once
 
-#define NETWORK_VERSION     1   /* increase this for incompatible changes      */
+#define NETWORK_VERSION     1   /* increase this for incompatible changes */
 #define NETWORK_SUBVERSION  1
 
-#define REFRESH_INTERVAL    70  /* ping new games after this many ticks        */
+#define REFRESH_INTERVAL    70  /* ping new games after this many ticks */
 
-#define MAX_PLAYERS     8   /* maximum number of players in multi-player game  */
-#define NICKNAME_LEN    20  /* maximum multiplayer nickname length             */
+#define MAX_PLAYERS     8       /* maximum number of players in multi-player game */
+#define NICKNAME_LEN    20      /* maximum multiplayer nickname length */
 #define GAME_NAME_LENGTH NICKNAME_LEN + 10
 #define MAX_GAMES_WAITING       10
 #define MAX_CHAT_LINES           9
@@ -87,6 +87,8 @@ extern "C" {
     int SetNumSubstitutes(byte newNumSubs);
     int GetMaxSubstitutes();
     int SetMaxSubstitutes(byte newMaxSubs);
+    void UpdateSkipFrames(int frames);
+    void UpdateNetworkTimeout(word networkTimeout);
 
     /* Game Lobby menu */
     void InitMultiplayerLobby();
@@ -150,7 +152,7 @@ extern "C" {
     void OnGameLoopEnd();
     byte GetGameStatus();
     int GetSkipFrames();
-    void SetSkipFrames(int newSkipFrames);
+    int SetSkipFrames(int newSkipFrames);
 }
 
 /* User tactics bookkeeping */

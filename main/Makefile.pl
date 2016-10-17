@@ -2,7 +2,6 @@ use strict;
 use warnings FATAL => "all";
 
 use Cwd;
-use Switch;
 use File::Find;
 use File::Basename;
 use File::Path qw/make_path mkpath rmtree/;
@@ -21,7 +20,7 @@ my $BASE_FNAME  = 'swospp';
 my %IGNORE_SRCS = map { $_ => 1 } qw//;
 
 my $CC          = 'g++';
-my $AS          = 'nasm';
+my $AS          = '..\extra\nasm';
 my $DIS         = '';       # no need for wdis anymore, gcc can generate listings directly
 my $LINK        = 'alink';
 
@@ -47,8 +46,8 @@ EOF
 
 my $OBJ_DIR = '../obj';
 my $BIN_DIR = '../bin';
-my $ETC_DIR = '../etc';
-my $LST_DIR = '../etc';
+my $VAR_DIR = '../var';
+my $LST_DIR = '../var';
 my $BMP_DIR = '../bitmap';
 
 # directories to copy final binary to
@@ -271,6 +270,7 @@ sub getDependencies
     } elsif ($parent && exists($includes{$file}) && $includes{$file}{'depsScanned'}) {
         return $includes{$file}{'dependencies'};
     }
+
     # form dependency file name taking care of directories
     my $depFile = formDepFileName($dir, $file);
     my $timestamp;
@@ -376,43 +376,65 @@ sub assignTarget
 }
 
 
+sub getScriptInfo
+{
+    return 'SWOS++ build script v1.0 by Zlatko Karakas';
+}
+
+
+sub printVersionInfo
+{
+    print getScriptInfo(), "\n";
+}
+
+
+sub printHelp
+{
+    print getScriptInfo(),
+        "\nTargets:\n",
+        "clean   - remove all files from previous build\n",
+        "rebuild_dbg - rebuild debug version\n",
+        "rebuild_rel - rebuild release version\n",
+        "all     - build both debug and release version\n",
+        "dbg     - build debug version\n",
+        "rel     - build release version\n",
+        "dist    - build version for distribution\n",
+        "Switches:\n",
+        "-d      - do not build, just print commands and debug info\n",
+        "-p      - print commands before execution\n",
+        "-e      - redirect stderr to stdout\n",
+        "-v      - show version and quit\n",
+        "-h      - show help and exit";
+}
+
 sub parseCommandLine
 {
-    my $scriptInfo = 'SWOS++ build script v1.0 by Zlatko Karakas';
+    my ($arg) = @_;
+    my %switches = (
+        'clean' => sub { assignTarget('clean', 'clean'); $CLEAN = 1; },
+        'all'   => sub { assignTarget('dbg', 'all'); },
+        'dbg'   => sub { assignTarget('dbg', 'dbg'); },
+        'rel'   => sub { assignTarget('rel', 'rel'); },
+        'dist'  => sub { die("Target 'dist' not supported yet.\n"); },
+        '-d'    => sub { $DEBUG = 1; },
+        '-p'    => sub { $PARAMS{'verbose'} = 1; },
+        '-e'    => sub { open(STDERR, ">&STDOUT"); },
+        'rebuild_dbg'   => sub { assignTarget('dbg', 'rebuild_dbg'); $REBUILD = 1; },
+        'rebuild_rel'   => sub { assignTarget('rel', 'rebuild_rel'); $REBUILD = 1; },
+        '-h'    => sub { printHelp(); exit(0); },
+        '-v'    => sub { printVersionInfo(); exit(0); },
+        '--help'    => sub { printHelp(); exit(0); },
+        '--version' => sub { printVersionInfo(); exit(0); },
+    );
+
     foreach my $arg (@ARGV) {
-        switch ($arg) {
-        case 'clean'    { assignTarget('clean', 'clean'); $CLEAN = 1; }
-        case 'rebuild_dbg' { assignTarget('dbg', 'rebuild_dbg'); $REBUILD = 1; }
-        case 'rebuild_rel' { assignTarget('rel', 'rebuild_rel'); $REBUILD = 1; }
-        case 'all'      { assignTarget('dbg', 'all'); }
-        case 'dbg'      { assignTarget('dbg', 'dbg'); }
-        case 'rel'      { assignTarget('rel', 'rel'); }
-        case 'dist'     { die("Target 'dist' not supported yet.\n"); }
-        case '-d'       { $DEBUG = 1; }
-        case /-h|--help/  {
-            print "$scriptInfo\n",
-                  "Targets:\n",
-                  "clean   - remove all files from previous build\n",
-                  "rebuild_dbg - rebuild debug version\n",
-                  "rebuild_rel - rebuild release version\n",
-                  "all     - build both debug and release version\n",
-                  "dbg     - build debug version\n",
-                  "rel     - build release version\n",
-                  "dist    - build version for distribution\n",
-                  "Switches:\n",
-                  "-d      - do not build, just print commands and debug info\n",
-                  "-p      - print commands before execution\n",
-                  "-e      - redirect stderr to stdout\n",
-                  "-v      - show version and quit\n",
-                  "-h      - show help and exit";
-            exit(0);
-        }
-        case '-v'       { print "$scriptInfo\n"; exit(0); }
-        case '-p'       { $PARAMS{'verbose'} = 1; }
-        case '-e'       { open(STDERR, ">&STDOUT"); }
-        default         { die "Unrecognized command: $arg\n"; }
+        if ($switches{$arg}) {
+            $switches{$arg}->();
+        } else {
+            die "Unrecognized command: $arg\n";
         }
     }
+
     # build debug by default
     $PARAMS{'target'} ||= 'dbg';
     $TARGET ||= 'dbg';
@@ -433,11 +455,11 @@ sub clean
     if ($DEBUG) {
         print join(' ', glob(catdir($BMP_DIR, '*.bp'))), "\n";
         print "rmtree($OBJ_DIR, { keep_root => 1});\n";
-        print "rmtree($ETC_DIR, { keep_root => 1});\n";
+        print "rmtree($VAR_DIR, { keep_root => 1});\n";
     } else {
         unlink glob(catdir($BMP_DIR, '*.bp'));
         rmtree($OBJ_DIR, { keep_root => 1});
-        rmtree($ETC_DIR, { keep_root => 1});
+        rmtree($VAR_DIR, { keep_root => 1});
     }
 }
 
@@ -601,7 +623,7 @@ sub linkFiles
     print "Linking...\n";
     runCommand($LINK, '@' . $lnkFile);
     my $srcMap = catdir($OBJ_DIR, $BASE_FNAME . '.map');
-    my $dstMap = catdir($ETC_DIR, "${BASE_FNAME}_$TARGET.map");
+    my $dstMap = catdir($VAR_DIR, "${BASE_FNAME}_$TARGET.map");
     if ($DEBUG) {
         print "MOVE: $srcMap -> $dstMap\n";
     } else {

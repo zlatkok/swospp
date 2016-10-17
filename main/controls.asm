@@ -171,7 +171,7 @@ ControlsInit:
 
 ; ControlsOnSelectCommon
 ;
-; Called when some entry is selected. Does all work with controls changing and
+; Called when some entry is selected. Does all the work with controls changing and
 ; calibrating.
 ;
 ControlsOnSelectCommon:
@@ -216,6 +216,7 @@ ControlsOnSelectCommon:
         call RedefineKeys       ; keyboard
         test edi, edi
         jz   .keyboard1
+
         push eax
         or   eax, -1            ; patch code for second keyboard player
         call SetSecondPlayerOnKeyboard
@@ -441,7 +442,7 @@ RedefineKeys:
         add  edi, byte 70       ; edi = 70 + 10 * edi
         mov  word [D0], 44
         mov  word [D1], 135
-        mov  [D2], edi       ; y = edi
+        mov  [D2], edi          ; y = edi
         pushad
         calla SWOS_DrawSprite   ; draw block
         popad

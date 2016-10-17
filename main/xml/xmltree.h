@@ -64,12 +64,14 @@ typedef struct XmlAttributeInfo {
 #define XmlNodeGetFunc(node)    (assert(node && node->type == XML_FUNC), (node)->value.func)
 #define XmlNodeGetString(node)  (assert(node && node->type == XML_STRING), (node)->value.ptr)
 
+#define XmlNodeIsAnonymous(node)    (assert(node), !(node)->name || !(node)->name[0])
 #define XmlNodeIsLeaf(node)     (assert(node), !(node)->children)
 #define XmlNodeIsString(node)   (assert(node), (node)->type == XML_STRING)
 #define XmlNodeIsNumeric(node)  (assert(node), (node)->type == XML_CHAR || (node)->type == XML_SHORT || (node)->type == XML_INT)
 #define XmlNodeIsEmpty(node)    (assert(node), (node)->type == XML_EMPTY)
 #define XmlNodeIsFunc(node)     (assert(node), (node)->type == XML_FUNC)
-#define XmlNodeHasContent(node) (assert(node), (node)->type != XML_EMPTY && (node)->type != XML_FUNC && \
+#define XmlNodeHasContent(node) (assert(node), (node)->name && (node)->name[0] && \
+    (node)->type != XML_EMPTY && (node)->type != XML_FUNC && \
     (node)->value.ptr != nullptr && (!XmlNodeIsString(node) || XmlNodeGetString(node)[0]))
 
 #define XmlNodeSetCharValue(node, val)  (assert(node), (node)->value.charVal = (val))
