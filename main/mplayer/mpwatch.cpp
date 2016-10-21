@@ -797,7 +797,7 @@ static int getIndex(const TeamGame *team, int shirtNumber)
 }
 
 
-/* Render recieved scorer list into scorer sprites (per team function). */
+/* Render received scorer list into scorer sprites (per team function). */
 static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Sprite *scorerSprites)
 {
     int i, x, goalTypesSize;
@@ -853,6 +853,7 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
         scorers = (byte *)goalTimes;
         scorerSprites++;
     }
+
     /* goals shouldn't dissapear, but make those sprites invisible just in case */
     for (; i < (int)MAX_SCORERS; i++, scorerSprites++)
         scorerSprites->visible = scorerSprites->pictureIndex != (word)-1;

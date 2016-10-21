@@ -259,7 +259,7 @@ extern "C" void DIYTeamsListInit()
     byte *teams, modLimit, lastAdd;
     MenuEntry *m, *mExit;
 
-    D0 = 0;                      /* get first entry                       */
+    D0 = 0;                         /* get first entry                       */
     calla(CalcMenuEntryAddress);
     m = (MenuEntry *)A0;
 

@@ -178,9 +178,9 @@ static void dumpSavedStates()
 }
 
 
-/* [DEBUG]
+/** [DEBUG]
 
-   Do sanity checks on received packet, abort game and dump data if anything invalid is detected.
+    Do sanity checks on received packet, abort game and dump data if anything invalid is detected.
 */
 static void verifyReceivedPacket(const char *packet, int frameIndex, int frameNo)
 {
@@ -818,7 +818,7 @@ void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inN
     /* This is a big synchronization problem, stoppageTimer is incremented from interrupt handler
        that is hardware triggered, and value is later used in lot of calculations about the ball
        and stuff. That has an effect that value changes in a kind of unpredictable way. What we're
-       gonna do here is patching interrupt handler to prevent increasing it, then bump it manually
+       gonna do here is patch interrupt handler to prevent increasing it, then bump it manually
        each frame. Game frames and timer are approximately equal, and what consequences this will
        have on the game itself remains to be seen. */
     *(word *)((char *)TimerProc + 0x24) = 0x05eb;
