@@ -10,9 +10,11 @@
   ucitava vrednost petlje, ali se prvo dekrementuje pa proverava - medjutim
   loop koristi citav ecx pa ukoliko je nula sledi zakucavanje (kompletan 2^32
   loop sa iskljucenim interaptima)
-- ne inicijalizuju kompletno sve promenljive pred partiju, ali se to nije
-  manifestovalo pre multiplayer-a (npr. razlomljeni deo koordinata lopte ostaje
-  od prethodne partije, pa se nakupi vremenom i predje jedan)
+- not all variables are completely initialized before the game, but that didn't
+  manifest before multiplayer games (for example fractional part of the ball
+  coordinate remains intact from the previous game, so in time it accumulates
+  over 1)
 - SaveRandState overwrites first byte of big_S_Sprite. That byte is part of
   first word - team number which is not used anyway. But still it remains
   unknown whether this is intentional or not.
+- DoUnchainSpriteInMenus starts with mov cx, word [D1] but uses full ecx later

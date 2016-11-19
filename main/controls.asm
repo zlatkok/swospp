@@ -339,9 +339,9 @@ SetSecondPlayerOnKeyboard:
         push ecx
 
         mov  ecx, eax
-        mov  edx, DummyInt9     ; install dummy int9 handler, to exclude
-        or   eax, byte -1       ; possibility of keyboard handler running
-        call InstallKeyboardHandler ; while we are changing it
+        mov  edx, DummyInt9             ; install dummy int9 handler, to exclude possibility
+        or   eax, byte -1               ; of keyboard handler running while we are changing it
+        call InstallKeyboardHandler
         mov  esi, PatchSetControlWord
         mov  edi, SetControlWord + 6
 
@@ -1395,18 +1395,18 @@ PatchFilterKeys:
 global EnableAdditionalInputKeys
 EnableAdditionalInputKeys:
         mov  esi, FilterKeysPatch
-        mov  byte [convert_keys_table + 0x0c], "-"
-        mov  word [convert_keys_table + 0x27], ";'"     ; patch conversion table too
-        mov  dword [convert_keys_table + 0x33], ',' | '.' << 8 | '/' << 16 | 0x16 << 24
+        mov  byte [convertKeysTable + 0x0c], "-"
+        mov  word [convertKeysTable + 0x27], ";'"     ; patch conversion table too
+        mov  dword [convertKeysTable + 0x33], ',' | '.' << 8 | '/' << 16 | 0x16 << 24
         jmp  PatchFilterKeys
 
 
 global DisableAdditionalInputKeys
 DisableAdditionalInputKeys:
         mov  esi, FilterKeysOrigBytes
-        mov  byte [convert_keys_table + 0x0c], 0
-        mov  word [convert_keys_table + 0x27], 0
-        mov  dword [convert_keys_table + 0x33], 0x16 << 24
+        mov  byte [convertKeysTable + 0x0c], 0
+        mov  word [convertKeysTable + 0x27], 0
+        mov  dword [convertKeysTable + 0x33], 0x16 << 24
         jmp  PatchFilterKeys
 
 

@@ -49,13 +49,13 @@ while (<FILT>) {
             $type = ('pointer', 'array')[$1 eq 'array'];
             !$symbols{$tokens[0]}->{'array_type'} or die "Duplicate $type found at line $line.\n";
             length $3 or die "Missing $type type at line $line.\n";
-            if ($tokens[$i] =~ /^(array|pointer|ptr)\s+([^[]+)(\[(\w*)\])?$/) {
+            if ($tokens[$i] =~ /^(array|pointer|ptr)\s+([^[]+)(\[(.*)\])?$/) {
                 $2 ne '[]' or die "Empty array dimension at line $line.\n";
                 $symbols{$tokens[0]}->{'array_size'} = $4;
                 $symbols{$tokens[0]}->{'array_type'} = $2;
             } else {
                 # shouldn't execute
-                $symbols{$tokens[0]}->{'array_type'} = $tokens[$i];
+                die("Syntax error at line $line\n");
             }
         } else {    # assume it's a type
             $symbols{$tokens[0]}->{'type'} = $tokens[$i];
@@ -93,6 +93,9 @@ print SWOS_INC <<EOF;
 
 ; size of tactics structure
 %define TACTICS_SIZE 370
+
+; size of SWOS main menu
+%define SWOS_MAIN_MENU_SIZE 480
 
 ; Declare and put string into destination.
 ; %1 - destination, %2 - string
@@ -300,7 +303,7 @@ print SWOSSYM_H "\n}\n";
 
 # complain about symbols present in filter but not in map file
 if ($numPresent != keys %symbols) {
-    print 'Unused symbol' . ($numPresent > 1 ? 's' : '') . " found:\n";
+    print 'Orphaned symbol' . ($numPresent > 1 ? 's' : '') . " found:\n";
     while (($name, $data) = each %symbols) {
         if (!$data->{'present'}) {
             print "$name, at line $data->{'line'}\n";
@@ -312,3 +315,6 @@ close IN;
 close SWOS_ASM;
 close SWOS_INC;
 close SWOSSYM_H;
+
+# halt the build process if something ain't right
+$numPresent == keys %symbols or exit(1);

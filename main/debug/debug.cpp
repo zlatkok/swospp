@@ -35,13 +35,16 @@ extern "C" __attribute((noreturn)) void AssertFailedMsg(const char *file, int li
     asm("int 1");
     char msgBuf[128];
     int msgLen;
+
     if (msg) {
         msgLen = strncpy(msgBuf, msg, sizeof(msgBuf) - 1) - msgBuf;
         msgBuf[min(msgLen, (int)sizeof(msgBuf) - 1)] = '\0';
     } else
-        msgLen = sprintf(msgBuf, "Assertation failed at %s(%d).", file, line);
+        msgLen = sprintf(msgBuf, "Assertion failed at %s(%d).", file, line);
+
     SwitchToPrevVideoMode();
     WriteToLog("Assertion failed! At %s:%d", file, line);
+
     if (msg)
         WriteToLog("%s", msg);
     if (msgLen > 0)
@@ -62,8 +65,6 @@ extern "C" __attribute((noreturn)) void AssertFailed(const char *file, int line)
 */
 extern "C" void StartLogFile()
 {
-    time_t rawTime;
-    char *timeStr;
 
     /* little hackie - plant 1 to file handle so any asserts during file creation will write to stdout */
     logFile.handle = 1;
@@ -71,8 +72,10 @@ extern "C" void StartLogFile()
         "Failed to create debug log file.");
     WriteToLog("*** SWOS++ DEBUG VERSION ***");
     WriteToLog("Starting log file...");
+
+    time_t rawTime;
     time(&rawTime);
-    timeStr = ctime(&rawTime);
+    char *timeStr = ctime(&rawTime);
     timeStr[strlen(timeStr) - 1] = '\0';
     WriteToLog("The current local time is: %s", timeStr);
 }
@@ -151,6 +154,7 @@ static void WriteToLogFuncV(const char *fmt, va_list args)
     int length = sprintf(logBuf, "[%02hu:%02hu:%02hu:%02hu] ", hour, minute, second, hundred);
     length += vsprintf(logBuf + length, fmt, args);
 
+    assert_msg(logFile.handle, "Trying to log without initializing log file.");
     WriteBFile(&logFile, logBuf, length);
     PutCharBFile(&logFile, '\n');
 #ifdef FLUSH_LOG_FILE

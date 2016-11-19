@@ -1746,7 +1746,7 @@ UnpatchAfterSettingTeams:
         mov  dword [esi + Menu.onDraw], 0
         mov  byte [disabledInputCycles], 0
         mov  word [player2ClearFlag], 0
-        mov  word [key_count], 0
+        mov  word [keyCount], 0
         retn
 
 

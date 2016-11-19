@@ -91,6 +91,10 @@ global WriteFile
 times 0xa155-($-$$) resb 1
 WriteFile:
 
+global LoadFile
+times 0xa1a8-($-$$) resb 1
+LoadFile:
+
 global FlipInMenu
 times 0xa250-($-$$) resb 1
 FlipInMenu:
@@ -126,6 +130,18 @@ CDROM_StopAudio:
 global SWOS_Text2Sprite
 times 0xbc61-($-$$) resb 1
 SWOS_Text2Sprite:
+
+global ConvertSpriteColors
+times 0xc137-($-$$) resb 1
+ConvertSpriteColors:
+
+global UnchainSpriteInMenus
+times 0xc3d2-($-$$) resb 1
+UnchainSpriteInMenus:
+
+global DoUnchainSpriteInMenus
+times 0xc3fe-($-$$) resb 1
+DoUnchainSpriteInMenus:
 
 global CopySprite
 times 0xc68b-($-$$) resb 1
@@ -319,10 +335,6 @@ global LoadDIYFile
 times 0x2333f-($-$$) resb 1
 LoadDIYFile:
 
-global SetName
-times 0x24187-($-$$) resb 1
-SetName:
-
 global PlayMatchAfterDraw
 times 0x2f71f-($-$$) resb 1
 PlayMatchAfterDraw:
@@ -359,6 +371,10 @@ global DrawLittlePlayersAndBall
 times 0x411cf-($-$$) resb 1
 DrawLittlePlayersAndBall:
 
+global CalculateDeltaXAndY
+times 0x41c52-($-$$) resb 1
+CalculateDeltaXAndY:
+
 global InitLittlePlayerSprites
 times 0x420fc-($-$$) resb 1
 InitLittlePlayerSprites:
@@ -366,6 +382,14 @@ InitLittlePlayerSprites:
 global SetBenchPlayersNumbers
 times 0x42528-($-$$) resb 1
 SetBenchPlayersNumbers:
+
+global ExitEuropeanChampionshipMenu
+times 0x5269c-($-$$) resb 1
+ExitEuropeanChampionshipMenu:
+
+global FillSkinColorConversionTable
+times 0x52d3c-($-$$) resb 1
+FillSkinColorConversionTable:
 
 global DrawAnimatedPatterns
 times 0x53018-($-$$) resb 1
@@ -463,6 +487,18 @@ global TeamsControlsCheck
 times 0x62abb-($-$$) resb 1
 TeamsControlsCheck:
 
+global SetNextPlayerFrame
+times 0x64c5e-($-$$) resb 1
+SetNextPlayerFrame:
+
+global MovePlayer
+times 0x64e8f-($-$$) resb 1
+MovePlayer:
+
+global SetAnimationTable
+times 0x664a2-($-$$) resb 1
+SetAnimationTable:
+
 global CalculateIfPlayerWinsBall
 times 0x6a14a-($-$$) resb 1
 CalculateIfPlayerWinsBall:
@@ -498,10 +534,6 @@ StopAIL:
 global AIL_stop_play
 times 0x8b1b7-($-$$) resb 1
 AIL_stop_play:
-
-global swos_start
-times 0x8ca5c-($-$$) resb 1
-swos_start:
 
 global swos_libc_strcmp_
 times 0x92f80-($-$$) resb 1
@@ -575,30 +607,6 @@ aCoach_3:
 global aHigh
 times 0xb2895-($-$$) resb 1
 aHigh:
-
-global aUSER_A
-times 0xb3098-($-$$) resb 1
-aUSER_A:
-
-global aUSER_B
-times 0xb309f-($-$$) resb 1
-aUSER_B:
-
-global aUSER_C
-times 0xb30a6-($-$$) resb 1
-aUSER_C:
-
-global aUSER_D
-times 0xb30ad-($-$$) resb 1
-aUSER_D:
-
-global aUSER_E
-times 0xb30b4-($-$$) resb 1
-aUSER_E:
-
-global aUSER_F
-times 0xb30bb-($-$$) resb 1
-aUSER_F:
 
 global aReplay
 times 0xb45fe-($-$$) resb 1
@@ -944,9 +952,9 @@ global lin_adr_384k
 times 0xee152-($-$$) resb 1
 lin_adr_384k:
 
-global key_count
+global keyCount
 times 0xeea98-($-$$) resb 1
-key_count:
+keyCount:
 
 global scanCode
 times 0xeeaa6-($-$$) resb 1
@@ -1152,17 +1160,21 @@ global contAbortResult
 times 0x104bde-($-$$) resb 1
 contAbortResult:
 
+global aTeam2_dat
+times 0x105199-($-$$) resb 1
+aTeam2_dat:
+
 global aSetup_dat
 times 0x1051ad-($-$$) resb 1
 aSetup_dat:
 
-global convert_keys_table
+global convertKeysTable
 times 0x1052c8-($-$$) resb 1
-convert_keys_table:
+convertKeysTable:
 
-global pitch_dat_buffer
+global pitchDatBuffer
 times 0x10535e-($-$$) resb 1
-pitch_dat_buffer:
+pitchDatBuffer:
 
 global currentMenu
 times 0x107a8e-($-$$) resb 1
@@ -1187,6 +1199,10 @@ chooseTacticsTeamPtr:
 global editTacticsCurrentTactics
 times 0x10f5e0-($-$$) resb 1
 editTacticsCurrentTactics:
+
+global editTeamsSaveVarsArea
+times 0x11ae08-($-$$) resb 1
+editTeamsSaveVarsArea:
 
 global left_team_coach_no
 times 0x1208e2-($-$$) resb 1
@@ -1244,6 +1260,14 @@ global team2Scorers
 times 0x120d4d-($-$$) resb 1
 team2Scorers:
 
+global playerRunningAnimTable
+times 0x121cde-($-$$) resb 1
+playerRunningAnimTable:
+
+global playerNormalStandingAnimTable
+times 0x121d60-($-$$) resb 1
+playerNormalStandingAnimTable:
+
 global goal_base_ptr
 times 0x1227e2-($-$$) resb 1
 goal_base_ptr:
@@ -1287,6 +1311,10 @@ screenWidth:
 global stateGoal
 times 0x1588c2-($-$$) resb 1
 stateGoal:
+
+global goalScored
+times 0x158de1-($-$$) resb 1
+goalScored:
 
 global spritesIndex
 times 0x158def-($-$$) resb 1
@@ -1408,6 +1436,10 @@ global continueAbortMenu
 times 0x16608c-($-$$) resb 1
 continueAbortMenu:
 
+global angleCoeficients
+times 0x168ebc-($-$$) resb 1
+angleCoeficients:
+
 global sineCosineTable
 times 0x1696bc-($-$$) resb 1
 sineCosineTable:
@@ -1487,6 +1519,14 @@ halfNumber:
 global teamPlayingUp
 times 0x16dd60-($-$$) resb 1
 teamPlayingUp:
+
+global defaultPlayerDestinations
+times 0x16ddf4-($-$$) resb 1
+defaultPlayerDestinations:
+
+global playerSpeedsGameInProgress
+times 0x16e326-($-$$) resb 1
+playerSpeedsGameInProgress:
 
 global _STACKLOW
 times 0x1732fc-($-$$) resb 1

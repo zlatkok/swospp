@@ -694,8 +694,8 @@ static void ResetSprites()
         Sprite *s = *currentSprite;
         if (s->shirtNumber) {
             /* fraction part needs to be initialized to zero, or it will have a leftover value from previous game */
-            *(word *)&s->x = 0;
-            *(word *)&s->y = 0;
+            s->x.setFraction(0);
+            s->y.setFraction(0);
             s->ballDistance = 0;
             s->deltaX = s->deltaY = s->deltaZ;
             s->playerDirection = 0;

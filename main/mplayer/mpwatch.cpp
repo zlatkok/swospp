@@ -1,4 +1,5 @@
-/*
+/** mpwatch.cpp
+
     Watchers support implementation. Watcher packets will not be synchronized in any way,
     watchers will simply show latest packet they received each frame.
 */
@@ -252,8 +253,8 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
             /* note that the pointer will be invalid for custom player numbers, but don't access it in that case */
             SpriteGraphics *sg = spritesIndex[s->pictureIndex];
             /* must send transformed coordinates, and don't forget to preserve sign */
-            int x = ((int)s->x >> 16) - cameraX;
-            int y = ((int)s->y >> 16) - cameraY - ((int)s->z >> 16);
+            int x = s->x - cameraX;
+            int y = s->y - cameraY - s->z;
             assert(s->pictureIndex < 1334 || (s->pictureIndex >= 4187 && s->pictureIndex <= 4442));
             /* don't subtract center coordinates for custom draw player numbers */
             if (s->pictureIndex < SPR_MAX) {
@@ -487,7 +488,7 @@ static void packAdData(WatcherPacket *wp)
 {
     assert(sizeofarray(adSpriteIndices) == sizeofarray(adDataPointers));
     for (size_t i = 0; i < sizeofarray(adSpriteIndices); i++) {
-        wp->adOffsets[i] = GetSprite(adSpriteIndices[i])->sprData - (char *)adDataPointers[i][0];
+        wp->adOffsets[i] = GetSprite(adSpriteIndices[i])->data - (char *)adDataPointers[i][0];
         WriteToLog(LM_WATCHER, "Ad %d offset = %d", i, wp->adOffsets[i]);
         assert((short)wp->adOffsets[i] >= 0);
     }
@@ -501,7 +502,7 @@ static void applyAdData(const WatcherPacket *wp)
         WriteToLog(LM_WATCHER, "ad %d offset = %d", i, wp->adOffsets[i]);
         for (size_t j = 0; j < sizeofarray(advert1Pointers); j++) {
             SpriteGraphics *spr = GetSprite(adSpriteIndices[i] + j);
-            spr->sprData = (char *)adDataPointers[i][j] + wp->adOffsets[i];
+            spr->data = (char *)adDataPointers[i][j] + wp->adOffsets[i];
             /* important - fix advert sprites height */
             spr->nlines = 6;
         }
@@ -823,8 +824,8 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
         scorerTeam = (teamNumber - 1) ^ ((goalTypes >> 2 * (numGoals - 1) & 3) != 2) ? leftTeamPtr : rightTeamPtr;
         WriteToLog(LM_WATCHER, "Scorer %d, index = %d, name = '%s', goals scored = %d",
             i, index, getSurname(scorerTeam, index), numGoals);
-        assert(numGoals <= 10 && scorerSprites->pictureIndex != (word)-1);
-        if (scorerSprites->pictureIndex == (word)-1) {
+        assert(numGoals <= 10 && scorerSprites->pictureIndex != -1);
+        if (scorerSprites->pictureIndex == -1) {
             WriteToLog(LM_WATCHER, "Found scorer sprite with -1 picture index! index %d", i);
             continue;
         }
@@ -856,7 +857,7 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
 
     /* goals shouldn't dissapear, but make those sprites invisible just in case */
     for (; i < (int)MAX_SCORERS; i++, scorerSprites++)
-        scorerSprites->visible = scorerSprites->pictureIndex != (word)-1;
+        scorerSprites->visible = scorerSprites->pictureIndex != -1;
     return scorers;
 }
 

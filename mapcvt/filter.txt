@@ -7,7 +7,6 @@
 # Optional part following will also add the symbol to C header file, with
 # specified type. Symbols without type will not go into C header file.
 
-start, prefix swos_
 scanCode
 prevVideoMode, byte
 StopAIL
@@ -56,8 +55,8 @@ Joy2SetStatus, function
 Player1StatusProc, function
 Player2StatusProc, function
 smallCharsTable, pointer char
-DrawMenuText
-DrawSprite, prefix SWOS_
+DrawMenuText, function
+DrawSprite, prefix SWOS_, function
 FlipInMenu
 DrawMenuTextCentered
 lin_adr_384k, char *
@@ -148,7 +147,7 @@ gameType, word
 aComputer
 aPlayerCoach_0
 aCoach_3
-pitch_dat_buffer, array byte
+pitchDatBuffer, array char
 DoContinueAbortMenu
 aContinue
 aAbort
@@ -165,7 +164,6 @@ lastKey, word
 DumpScreen
 VerifyJoypadControls, function
 aAsave_256
-SetName
 currentTick, volatile ushort
 seed, byte
 seed2, byte
@@ -202,7 +200,7 @@ fire
 videoSpeedIndex
 menuCycleTimer
 final_controls_status
-key_count
+keyCount
 short_fire
 GetKey, function
 aDataTeam_nnn, array char
@@ -210,7 +208,7 @@ aCustoms_edt, array char
 aReplay
 FilterKeys
 Int9KeyboardHandler
-convert_keys_table
+convertKeysTable
 inputing_text_ok
 
 ### custom tactics
@@ -372,14 +370,26 @@ continueMenu, array char
 FadeOut
 LoadFillAndSwtitle
 screenWidth
-aUSER_A, array char
-aUSER_B, array char
-aUSER_C, array char
-aUSER_D, array char
-aUSER_E, array char
-aUSER_F, array char
 _STACKTOP
 _STACKLOW
+ExitEuropeanChampionshipMenu
+aTeam2_dat, array const char
+LoadFile, function
+UnchainSpriteInMenus, function
+FillSkinColorConversionTable, function
+ConvertSpriteColors, function
+editTeamsSaveVarsArea, array char
+DoUnchainSpriteInMenus, function
+angleCoeficients, array const short[32][32]
+defaultPlayerDestinations, array const short[8][2]
+MovePlayer, function
+playerRunningAnimTable, array const char
+SetAnimationTable, function
+CalculateDeltaXAndY, function
+SetNextPlayerFrame, function
+playerSpeedsGameInProgress, array const word[8]
+goalScored, word
+playerNormalStandingAnimTable, array const char
 
 
 ### Watcom C library

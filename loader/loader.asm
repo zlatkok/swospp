@@ -4,7 +4,7 @@
 ; Karakas Zlatko
 ;
 
-; pitch_dat_buffer is our base
+; pitchDatBuffer is our base
 %define BASE 0x5535e
 
 ; ZK Binary Format structure

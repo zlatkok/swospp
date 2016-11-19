@@ -24,6 +24,8 @@ extern void (*Joy2SetStatus[])() asm ("Joy2SetStatus");
 extern void (*Player1StatusProc[])() asm ("Player1StatusProc");
 extern void (*Player2StatusProc[])() asm ("Player2StatusProc");
 extern char smallCharsTable[] asm ("smallCharsTable");
+extern void (*DrawMenuText[])() asm ("DrawMenuText");
+extern void (*SWOS_DrawSprite[])() asm ("SWOS_DrawSprite");
 extern char *lin_adr_384k asm ("lin_adr_384k");
 extern void (*ShowErrorMenu[])() asm ("ShowErrorMenu");
 extern char aExit[] asm ("aExit");
@@ -75,7 +77,7 @@ extern void (*PrimitivePrintf[])() asm ("PrimitivePrintf");
 extern word numSelectedTeams asm ("numSelectedTeams");
 extern byte selectedTeamsBuffer[] asm ("selectedTeamsBuffer");
 extern word gameType asm ("gameType");
-extern byte pitch_dat_buffer[] asm ("pitch_dat_buffer");
+extern char pitchDatBuffer[] asm ("pitchDatBuffer");
 extern word inSubstitutesMenu asm ("inSubstitutesMenu");
 extern void (*MainKeysCheck[])() asm ("MainKeysCheck");
 extern word lastKey asm ("lastKey");
@@ -230,12 +232,23 @@ extern void (*InitializeTacticsPositions[])() asm ("InitializeTacticsPositions")
 extern void (*InitMainMenuStuff[])() asm ("InitMainMenuStuff");
 extern const char hexDigits[] asm ("hexDigits");
 extern char continueMenu[] asm ("continueMenu");
-extern char aUSER_A[] asm ("aUSER_A");
-extern char aUSER_B[] asm ("aUSER_B");
-extern char aUSER_C[] asm ("aUSER_C");
-extern char aUSER_D[] asm ("aUSER_D");
-extern char aUSER_E[] asm ("aUSER_E");
-extern char aUSER_F[] asm ("aUSER_F");
+extern const char aTeam2_dat[] asm ("aTeam2_dat");
+extern void (*LoadFile[])() asm ("LoadFile");
+extern void (*UnchainSpriteInMenus[])() asm ("UnchainSpriteInMenus");
+extern void (*FillSkinColorConversionTable[])() asm ("FillSkinColorConversionTable");
+extern void (*ConvertSpriteColors[])() asm ("ConvertSpriteColors");
+extern char editTeamsSaveVarsArea[] asm ("editTeamsSaveVarsArea");
+extern void (*DoUnchainSpriteInMenus[])() asm ("DoUnchainSpriteInMenus");
+extern const short angleCoeficients[32][32] asm ("angleCoeficients");
+extern const short defaultPlayerDestinations[8][2] asm ("defaultPlayerDestinations");
+extern void (*MovePlayer[])() asm ("MovePlayer");
+extern const char playerRunningAnimTable[] asm ("playerRunningAnimTable");
+extern void (*SetAnimationTable[])() asm ("SetAnimationTable");
+extern void (*CalculateDeltaXAndY[])() asm ("CalculateDeltaXAndY");
+extern void (*SetNextPlayerFrame[])() asm ("SetNextPlayerFrame");
+extern const word playerSpeedsGameInProgress[8] asm ("playerSpeedsGameInProgress");
+extern word goalScored asm ("goalScored");
+extern const char playerNormalStandingAnimTable[] asm ("playerNormalStandingAnimTable");
 /*
     Watcom C library
 */

@@ -18,6 +18,9 @@ extern StartLogFile
 extern qAllocInit
 extern EnableShiftSupport
 extern InstallCrashLogger
+%ifdef SWOS_16_17
+extern SetupSWOSAnniversaryMenu
+%endif
 
 section .data
 pressAnyKeyStr:
@@ -44,10 +47,12 @@ section .text
 ;      edx = code & data memory handle
 ;      ebp = SWOS code base
 ;
-; Main init routine - perform entire program initialization. Loader will call us, right before SWOS proc.
+; Main initialization routine - performs entire program initialization.
+; Loader will call us, right before SWOS procedure.
 ; Note that SWOS Initialization() hasn't run yet.
 ;
 start:
+
 %ifdef DEBUG
         mov  [codeBase], ebx
 %endif
@@ -55,6 +60,9 @@ start:
         call FixSWOSIntro
         call CheckWindowsVersion
         call DexorAbout
+%ifdef SWOS_16_17
+        call SetupSWOSAnniversaryMenu
+%endif
 %ifdef DEBUG
         pushfd
         call UpdatePrevVideoMode

@@ -1,4 +1,4 @@
-//#include <string.h>
+#include <cstdint>
 #include <stdarg.h>
 #include "swos.h"
 #include "util.h"
@@ -42,7 +42,7 @@ static void SetZeroPad(Specification *spec);
 static void ResetSpecification(Specification *);
 static const char *GetSpecification(const char *, Specification *, va_list *);
 static char *FormString(Specification *, va_list *, char *);
-static void FixedPointFormat(char *buf, long value, Specification *specs);
+static void FixedPointFormat(char *buf, int value, Specification *specs);
 static void FloatFormat(char *buf, va_list *args, Specification *spec);
 
 int __cdecl vsprintf(char *buf, const char *fmt, va_list args);
@@ -279,11 +279,9 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
     switch (spec->type) {
     case 'f':
     case 'F':
-        if (spec->is_short) {
-            long_value = va_arg(*args, long);
-            FixedPointFormat(buffer, long_value, spec);
-            spec->length = strlen(buffer);
-        }
+        int_value = va_arg(*args, long);
+        FixedPointFormat(buffer, int_value, spec);
+        spec->length = strlen(buffer);
         break;
     case 'g':
     case 'G':
@@ -386,7 +384,29 @@ static void SetZeroPad(Specification *spec)
     }
 }
 
-static void FixedPointFormat(char *, long, Specification *) {}
+static void FixedPointFormat(char *buffer, int value, Specification *spec)
+{
+    FixedPoint f{ value };
+    auto p = int2str(f.whole());
+    p = strcpy(buffer, p);
+    *p++ = '.';
+    *p = '\0';
+
+    // divide fraction with 2^16 to get the real value
+    const int kMaxDigits = 16;
+    const int64_t kQuant = 152587890625;
+
+    int fraction = (f.fraction() * kQuant) >> 32;
+    auto q = int2str(fraction < 0 ? -fraction : fraction);
+    auto len = strlen(q);
+
+    while (len++ < kMaxDigits)
+        *p++ = '0';
+    strcpy(p, q);
+
+    spec->n1 = strlen(buffer);
+}
+
 static void FloatFormat(char *, va_list *, Specification *) {}
 
 /* helper convert routines */

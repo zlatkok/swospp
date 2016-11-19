@@ -33,8 +33,8 @@ enum debugMessageClasses {
 #pragma pack(push, 1) /* must pack them for file and SWOS memory access */
 
 /* sprite structure - from dat files */
-typedef struct SpriteGraphics {
-    char  *sprData;      /* ptr to actual graphics                           */
+struct SpriteGraphics {
+    char  *data;         /* pointer to actual graphics                       */
     char  unk1[6];       /* unknown                                          */
     short width;         /* width                                            */
     short nlines;        /* height                                           */
@@ -44,23 +44,50 @@ typedef struct SpriteGraphics {
     uchar unk2;          /* unknown                                          */
     uchar nlines_div4;   /* nlines / 4                                       */
     short ordinal;       /* ordinal number in sprite.dat                     */
-} SpriteGraphics;
 
-union FixedPoint {
-    struct {
-        word wholePart;
-        word fraction;
-    };
-    dword data;
-    FixedPoint& operator=(dword num) {
-        data = num;
-        return *this;
+    int size() const {
+        return sizeof(SpriteGraphics) + nlines * wquads * 8;
     }
-    operator int() const { return static_cast<int>(data); }
+
+    SpriteGraphics *next() const {
+        return (SpriteGraphics *)((char *)this + size());
+    }
 };
 
-/* sprite structure used during the game */
-typedef struct Sprite {
+class FixedPoint {
+    int data;
+
+public:
+    FixedPoint() = default;
+    FixedPoint(int val): data(val) {}
+    int whole() const { return data >> 16; }
+    int fraction() const { return (data << 16) >> 16; }
+    void setWhole(short val) { data = (data & 0xffff) | (val << 16); }
+    void setFraction(short val) { data = val | (data & 0xffff0000); }
+
+    int operator=(dword val) { data = static_cast<int>(val); return whole(); }
+    int operator=(int val) { data = val; return whole(); }
+    int operator=(short val) { data = val; data <<= 16; return val; }
+
+    friend short operator+(FixedPoint lhs, const short num) { return lhs.whole() + num; }
+    friend short operator+(const short num, FixedPoint lhs) { return num + lhs.whole(); }
+    friend int operator+(FixedPoint lhs, const int num) { return lhs.whole() + num; }
+    friend int operator+(const int num, FixedPoint lhs) { return num + lhs.whole(); }
+    friend short operator-(FixedPoint lhs, const short num) { return lhs.whole() - num; }
+    friend short operator-(const short num, FixedPoint lhs) { return num - lhs.whole(); }
+    friend int operator-(FixedPoint lhs, const int num) { return lhs.whole() - num; }
+    friend int operator-(const int num, FixedPoint lhs) { return num - lhs.whole(); }
+
+    operator int() const { return whole(); }
+    operator int() { return whole(); }
+    operator short() const { return whole(); }
+    operator short() { return whole(); }
+    operator dword() const { return static_cast<dword>(data); }
+    operator dword() { return static_cast<dword>(data); }
+};
+
+/* Player structure used during the game */
+typedef struct Player {
     word teamNumber;     /* 1 or 2 for player controls, 0 for CPU            */
     word shirtNumber;    /* 1-11 for players, 0 for other sprites            */
     word frameOffset;
@@ -78,16 +105,16 @@ typedef struct Sprite {
     FixedPoint x;       /* fixed point, 16.16, signed, whole part high word  */
     FixedPoint y;
     FixedPoint z;
-    word direction;
-    word speed;
-    dword deltaX;
-    dword deltaY;
-    dword deltaZ;
-    word destX;
-    word destY;
+    short direction;
+    short speed;
+    FixedPoint deltaX;
+    FixedPoint deltaY;
+    FixedPoint deltaZ;
+    short destX;
+    short destY;
     byte unk003[6];
     word visible;       /* skip it when rendering if false                   */
-    word pictureIndex;  /* -1 if none                                        */
+    short pictureIndex; /* -1 if none                                        */
     word saveSprite;
     dword ballDistance;
     word unk004;
@@ -188,6 +215,32 @@ typedef struct TeamFile {
     byte playerNumbers[16];
 } TeamFile;
 
+enum TeamColor {
+    /* team colors using game palette */
+    TEAM_COLOR_GRAY = 0,
+    TEAM_COLOR_WHITE = 1,
+    TEAM_COLOR_BLACK = 2,
+    TEAM_COLOR_ORANGE = 3,
+    TEAM_COLOR_RED = 4,
+    TEAM_COLOR_BLUE = 5,
+    TEAM_COLOR_BROWN = 6,
+    TEAM_COLOR_LIGHT_BLUE = 7,
+    TEAM_COLOR_GREEN = 8,
+    TEAM_COLOR_YELLOW = 9,
+
+    /* team colors using menus palette */
+    MENU_TEAM_COLOR_GRAY = 1,
+    MENU_TEAM_COLOR_WHITE = 2,
+    MENU_TEAM_COLOR_BLACK = 3,
+    MENU_TEAM_COLOR_ORANGE = 6,
+    MENU_TEAM_COLOR_RED = 10,
+    MENU_TEAM_COLOR_BLUE = 11,
+    MENU_TEAM_COLOR_BROWN = 4,
+    MENU_TEAM_COLOR_LIGHT_BLUE = 13,
+    MENU_TEAM_COLOR_GREEN = 14,
+    MENU_TEAM_COLOR_YELLOW = 15,
+};
+
 
 typedef struct TeamStatsData {
     word ballPossession;
@@ -226,6 +279,12 @@ typedef struct PlayerGame {
     byte face2;
     char fullName[23];
 } PlayerGame;
+
+enum PlayerFace {
+    PL_FACE_WHITE = 0,
+    PL_FACE_GINGER = 1,
+    PL_FACE_BLACK = 2,
+};
 
 typedef struct TeamGame {
     word prShirtType;

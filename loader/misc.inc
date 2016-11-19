@@ -44,9 +44,9 @@ EndProgram2 equ 0x9923  ; code
 %define @F ..@UNNAMED_LOCAL_LABEL%{1}
 %endmacro
 
-%define @@ @@ UNNAMED_LOCAL_LABEL
+%define @@ @@_ UNNAMED_LOCAL_LABEL
 
-%macro @@ 1
+%macro @@_ 1
 ..@UNNAMED_LOCAL_LABEL%{1}:
 %define @B ..@UNNAMED_LOCAL_LABEL%{1}
 %assign UNNAMED_LOCAL_LABEL UNNAMED_LOCAL_LABEL+1

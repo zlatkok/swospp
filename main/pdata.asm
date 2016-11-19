@@ -23,12 +23,15 @@ extern EndLogFile
 
 ; patch specific data
 section .data
-new_message: db "Sensible World Of Soccer V2.0 ", 13, 10
-             db "SWOS++ v"
-             db verStr
-             db 13, 10, "$"
-swospp_str:  db "SWOS++", 0
 
+new_message:
+    db "Sensible World Of Soccer V2.0 ", 13, 10
+    db "SWOS++ v"
+    db verStr
+    db 13, 10, "$"
+
+swospp_str:
+    db "SWOS++", 0
 
 
 ; patch-specific code
@@ -44,7 +47,7 @@ HookTermination:
         xor  eax, eax
         jmp  EndProgram
 
-; We are overwritting unused invisible entry in main menu, so have to show it explicitely.
+; We are overwriting unused invisible entry in main menu, so have to show it explicitly.
 MakeSWOSPPVisible:
         mov  word [currentTeamNumber], -1
 SWOSMainMenuAfterDraw:
@@ -316,7 +319,7 @@ CheckInputDisabledTimer:
 
 .no_key:
         mov  word [lastKey], 0
-        mov  word [key_count], 0
+        mov  word [keyCount], 0
         mov  word [final_controls_status], -1
         mov  byte [convertedKey], 0
         mov  word [fire], 0
@@ -472,7 +475,7 @@ PatchStart:
         db -1    ; up - nothing
         db 5     ; down - goto "FRIENDLY"
         dw 4     ; type 4 - background color
-        dw 1     ; pink to brown
+        dw 14    ; green
         dw 8     ; type 8 - string
         dw 16    ; string flags
         dd swospp_str
@@ -703,6 +706,11 @@ PatchStart:
 
     ; kill this bastard
     PatchByte SetDefaultOptions, 0xc3
+
+    ; make DoUnchainSpriteInMenus use entire D1 (and not just lo word with hi word undefined)
+    StartRecord DoUnchainSpriteInMenus
+        nop
+    EndRecord
 
 %ifdef DEBUG
     ; don't waste time on opening animations in debug version

@@ -214,6 +214,9 @@ pip-log.txt
 .mr.developer.cfg
 
 # SWOS++
+main/swos.asm
+main/swos.inc
+main/swossym.h
 *.exe
 bin/
 dist/

@@ -7,15 +7,16 @@ extern dword teamListMenu asm("teamListMenu");
 
 #define MAX_DIY_FILES 45   /* keep in byte */
 
-typedef struct DIY_file {  /* info about diy file found in game directory    */
+typedef struct DIY_File {  /* info about diy file found in game directory    */
     char fileName[9];
     char longName[23];
-} DIY_file;
+} DIY_File;
 
-/* we'll use famous pitch dat buffer to save bss memory */
-static DIY_file *DIY_files = (DIY_file *)pitch_dat_buffer;
-static byte *sortedFiles = pitch_dat_buffer + MAX_DIY_FILES * sizeof(DIY_file);
-static byte *sortedTeams = pitch_dat_buffer + MAX_DIY_FILES * (sizeof(DIY_file) + 1);
+/* we'll use famous pitch.dat buffer to save bss memory,
+   keep it the only reference in initialization to avoid GCC emitting additional sections */
+static DIY_File *diyFiles = (DIY_File *)pitchDatBuffer;
+static byte *sortedFiles = (byte *)pitchDatBuffer + MAX_DIY_FILES * sizeof(DIY_File);
+static byte *sortedTeams = (byte *)pitchDatBuffer + MAX_DIY_FILES * (sizeof(DIY_File) + 1);
 static int totalFiles;
 static byte readFiles;
 static byte lineOffset, showEntries;
@@ -24,7 +25,7 @@ static const char diyExt[] = "*.DIY";
 
 /** GetDIYFilenames
 
-    Reads diy file names from game directory and fills DIY_files array of
+    Reads diy file names from game directory and fills diyFiles array of
     structures. Sets variable totalFiles to total number of files read, and
     readFiles to actual number of files read. Does simple diy file validity
     test by checking if name of competition in file is ASCII.
@@ -46,7 +47,7 @@ void GetDIYFilenames()
 
         totalFiles++;
         p = dta.fileName;
-        q = DIY_files[i].fileName;
+        q = diyFiles[i].fileName;
         do {
             if (*p == '.') {
                 *q = '\0';
@@ -67,11 +68,11 @@ void GetDIYFilenames()
             /* seek to offset 4 - name of diy competition */
             if (SeekFile(handle, SEEK_START, 0, 4) < 0)
                 break;
-            if (ReadFile(handle, DIY_files[i].longName, 23) != 23)
+            if (ReadFile(handle, diyFiles[i].longName, 23) != 23)
                 break;
             /* check for presence of non-ascii characters */
-            DIY_files[i].longName[22] = '\0';
-            for (p = DIY_files[i].longName; *p; p++)
+            diyFiles[i].longName[22] = '\0';
+            for (p = diyFiles[i].longName; *p; p++)
                 if (!isalpha(*p) && *p != ' ')
                     break;
             if (*p)
@@ -112,7 +113,7 @@ extern "C" void EditDIYFile()
     do {
         sortFlag = false;
         for (i = 0, last = readFiles - 1; i < last; i++) {
-            if (stricmp(DIY_files[sortedFiles[i]].fileName, DIY_files[sortedFiles[i + 1]].fileName) > 0) {
+            if (stricmp(diyFiles[sortedFiles[i]].fileName, diyFiles[sortedFiles[i + 1]].fileName) > 0) {
                 int tmp = sortedFiles[i];
                 sortedFiles[i] = sortedFiles[i + 1];
                 sortedFiles[i + 1] = tmp;
@@ -155,8 +156,8 @@ extern "C" void DIYUpdateList()
     }
     /* fill entries with filenames and set next entries */
     for (i = lineOffset, m = (MenuEntry *)A0, y = 42; i < showEntries + lineOffset; i++, m++, y += 9) {
-        m->u2.string = DIY_files[sortedFiles[i]].fileName;
-        (m + MAX_DIY_FILES)->u2.string = DIY_files[sortedFiles[i]].longName;
+        m->u2.string = diyFiles[sortedFiles[i]].fileName;
+        (m + MAX_DIY_FILES)->u2.string = diyFiles[sortedFiles[i]].longName;
         m->invisible = false;
         (m + MAX_DIY_FILES)->invisible = false;
         m->rightEntry = -1;
@@ -197,7 +198,7 @@ extern "C" void DIYFileSelected()
     int i, sortFlag, ord = m->ordinal - 4;
     char fname[13], *teams;
 
-    strcpy(strcpy(fname, DIY_files[sortedFiles[ord]].fileName), diyExt + 1);
+    strcpy(strcpy(fname, diyFiles[sortedFiles[ord]].fileName), diyExt + 1);
     A0 = (dword)fname;
     calla(LoadDIYFile);
 
@@ -374,12 +375,17 @@ extern "C" void DIYTeamsExit()
             break;
 
     /* important: make it look like everything is called from SWOS main menu */
+#ifdef SWOS_16_17
+    extern char newMainMenu[] asm ("newMainMenu");
+    A6 = (dword)newMainMenu;
+#else
     A6 = (dword)SWOS_MainMenu;
+#endif
     calla(PrepareMenu);
 
     /* set fileName for save and title */
-    strcpy(strcpy(saveFileName, DIY_files[fileLoaded].fileName), diyExt + 1);
-    strcpy(saveFileTitle, DIY_files[fileLoaded].longName);
+    strcpy(strcpy(saveFileName, diyFiles[fileLoaded].fileName), diyExt + 1);
+    strcpy(saveFileTitle, diyFiles[fileLoaded].longName);
 
     if (i < numSelectedTeams)
         calla(SaveCareerSelected);

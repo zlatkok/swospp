@@ -109,8 +109,10 @@ static const char *getExceptionName(int exceptionNo)
         "unknown exception",
         "coprocessor error",
     };
+
     if (exceptionNo > (int)sizeofarray(exceptionNames))
         return "unknown exception";
+
     return exceptionNames[exceptionNo];
 }
 
@@ -120,7 +122,7 @@ static const char *getExceptionName(int exceptionNo)
 */
 void UserExceptionHandler()
 {
-    char *buf = (char *)pitch_dat_buffer;   /* he won't need it anymore... */
+    auto buf = pitchDatBuffer;      /* he won't need it anymore... */
     int charCount = sprintf(buf,
         "End of the road\r\n"
         "===============\r\n"

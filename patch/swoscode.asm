@@ -1,14 +1,14 @@
 ; fiktivni fajl - ovo je citljiva verzija koda koji se ubacuje u SWOS
-; ukratko - ucitati loader.bin u pitch_dat_buffer i pozvati ga
+; ukratko - ucitati loader.bin u pitchDatBuffer i pozvati ga
 ; vrlo cudno - ako pridodam data sekciji atribut executable (sto mi se cini
-; logicnim da bih mogao da izvrsim svoj kod koji ucitavam u pitch_dat_buffer)
+; logicnim da bih mogao da izvrsim svoj kod koji ucitavam u pitchDatBuffer)
 ; SWOS puca pri pristupu alociranoj memoriji. Cini mi se da je to bag glupog
 ; DOS4GW extendera, a kod se izvrsava u data segmentu bez ikakvih problema (i
 ; bez executable atributa)
 
 bits 32
 
-pitch_dat_buffer equ 0x5535e
+pitchDatBuffer   equ 0x5535e
 LoadFile         equ 0xa1a8
 SWOS             equ 0x5758
 stack_top        equ 0xb16eb
@@ -53,14 +53,14 @@ start:
     push dword [ebx + tmp10]        ; koriscene pseudo-registre
     lea  eax, [ebx + filename]
     mov  [ebx + tmp09], eax         ; tmp09 -> filename
-    lea  eax, [ebx + pitch_dat_buffer]
-    mov  [ebx + tmp10], eax         ; tmp10 -> buffer (pitch_dat_buffer)
-                                    ; pitch_dat_buffer je odabran jer se
+    lea  eax, [ebx + pitchDatBuffer]
+    mov  [ebx + tmp10], eax         ; tmp10 -> buffer (pitchDatBuffer)
+                                    ; pitchDatBuffer je odabran jer se
                                     ; inicijalizuje na nulu pre svake partije
     call LoadFile                   ; ukoliko ne nadje fajl, funkcija prekida
                                     ; program
     mov  eax, [ebx + tmp02]         ; tmp02 = duzina fajla
-    cmp  eax, 10032                 ; velicina pitch_dat_buffer-a
+    cmp  eax, 10032                 ; velicina pitchDatBuffer-a
     jbe  .size_ok
 .endless_loop:
     int  3
@@ -69,7 +69,7 @@ start:
     mov  ecx, ebx
     mov  eax, ebx                   ; eax = bazna relokacija podataka
     mov  ebx, code_base             ; ebx = bazna relokacija koda
-    add  ecx, pitch_dat_buffer
+    add  ecx, pitchDatBuffer
     ;int  1                          ; za debug
     nop
     nop

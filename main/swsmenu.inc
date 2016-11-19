@@ -292,7 +292,7 @@ endstruc
 ;      bit 13   = blinking text
 ;      bit 14   = alignment right
 ;      bit 15   = alignment left
-; %2 - string list ptr, points to a word (no. lines), followed by that many
+; %2 - string list ptr, points to a byte (no. lines), followed by that many
 ;      zero terminated strings (each will be drawn on separate line)
 ;      (note - strings themselves, not pointers)
 

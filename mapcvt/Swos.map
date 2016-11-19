@@ -221,8 +221,8 @@
  0001:0000BF38       AdjustFansColor
  0001:0000BF68       EGAAdjustFansColor
  0001:0000C137       ConvertSpriteColors
- 0001:0000C3D2       ChainCharacter
- 0001:0000C3FE       _ChainCharacter
+ 0001:0000C3D2       UnchainSpriteInMenus
+ 0001:0000C3FE       DoUnchainSpriteInMenus
  0001:0000C5B4       DrawEmptyMenuItem
  0001:0000C68B       CopySprite
  0001:0000C76D       DrawSpriteCentered
@@ -309,7 +309,7 @@
  0001:00010372       number
  0001:000103C3       sprite_copy
  0001:00010401       InitMenuEntry
- 0001:00010467       menu_types_jump_table
+ 0001:00010467       menuTypesJumpTable
  0001:000104BF       Int2Ascii
  0001:00010620       DrawOuterFrame
  0001:00010829       CheckControls
@@ -332,7 +332,7 @@
  0001:0001183F       ChangeGameLength
  0001:0001185F       ChangeAutoReplays
  0001:0001186C       ChangeAllPlTeamsEqual
- 0001:00011879       ChangeAutoSaveHl
+ 0001:00011879       ChangeAutoSaveHighlights
  0001:00011886       ChangeMenuMusic
  0001:00011898       ChangeCommentary
  0001:000118A5       ChangeChairmanScenes
@@ -347,7 +347,7 @@
  0001:00011CE8       DrawMenuBackFrame_w150h20
  0001:00011FDF       DrawQuitToDosShiningFrame
  0001:00012204       SWOSMainMenuInit
- 0001:00012219       out
+ 0001:00012219       globalRetn
  0001:0001221A       CommonMenuExit
  0001:0001240B       FriendlyMenu
  0001:00012421       DIYCompetitionMenu
@@ -410,7 +410,7 @@
  0001:0001DBB9       WriteAccountBalance
  0001:0001DC10       nullsub_12
  0001:0001DC11       Int2StrWithCommas
- 0001:0001DD7E       CallInt2AsciiSavetmp01
+ 0001:0001DD7E       CallInt2AsciiSaveD0
  0001:0001DD90       PlayGame
  0001:0001F43E       InitIngameTeamStructure
  0001:0001F799       SetPlayerNameAndFace
@@ -701,14 +701,14 @@
  0001:0003DE2B       User_F_Tactics
  0001:0003DE39       ExitChooseTacticsMenu
  0001:0003DE47       EditTacticsInit
- 0001:0003DED3       EditTacticsFinish
+ 0001:0003DED3       EditTacticsAfterDraw
  0001:0003DEE8       EditTacticsCommon
  0001:0003E236       out3
  0001:0003E237       EditTacticsPlayerNamesCommon
  0001:0003E57D       SelectCopyTactics
  0001:0003E58C       UndoTactics
  0001:0003E5DC       AbortEditTactics
- 0001:0003E62A       ExitEditTactics
+ 0001:0003E62A       SaveAndExitEditTactics
  0001:0003E7E3       ImportTactics
  0001:0003E8C5       FlipOnOff
  0001:0003E8DC       EnableOrDisablePlayerFacesItems
@@ -723,19 +723,23 @@
  0001:0003F868       DrawPlayerNamesAndFaces
  0001:0003F932       EditTacticsMenuSavePlayerPositions
  0001:0003FAEA       SetBigCheckSprite
- 0001:0003FBB5       InitializeCurrentTacticsToEdit
+ 0001:0003FBB5       ApplyCurrentEditedTactics
  0001:0003FD3B       SaveCurrentTactics
  0001:0003FD7E       RestoreTactics
  0001:0003FE8B       GetPlayerQuadrant
  0001:0003FF7D       GetBallXYPositionFromQuadrant
  0001:00040008       GetBallQuadrant
+ 0001:00040460       DrawEditTacticsPitchAndPlayers
+ 0001:000408E5       EditTacticsReadControls
  0001:00040BF5       HandlePlayersOrBallInEditTactics
  0001:00041052       EditTacticsDrawCursor
  0001:00041102       GetPlayerXYPositionFromQuadrant
  0001:000411CF       DrawLittlePlayersAndBall
  0001:00041962       SortPlayerAreasByY
  0001:00041A38       player_areas
+ 0001:00041A7E       DrawPlayerDirections
  0001:00041C52       CalculateDeltaXAndY
+ 0001:00041F5B       WriteTacticsFile
  0001:00041F76       nullsub_18
  0001:00041F77       ImportTacticsSelectTactics
  0001:00041FC4       ExitImportTactics
@@ -886,7 +890,7 @@
  0001:000526AB       ShowStadiumInit
  0001:00052BA6       StadiumBeforeDrawLeftTeam
  0001:00052BCA       StadiumBeforeDrawRightTeam
- 0001:00052D3C       FillConvertTable
+ 0001:00052D3C       FillSkinColorConversionTable
  0001:00052DB6       VersusInit
  0001:00053018       DrawAnimatedPatterns
  0001:0005368C       SwapTwoRandomIndicesFromAnimPatternsTable
@@ -1084,7 +1088,6 @@
  0001:0007668C       SelectFilesOnSelect48
  0001:00076796       SelFilesOnSelectCommon
  0001:000769D0       CopyFilenameAndExtension
- 0001:000769E9       search_dot_loop
  0001:00076ADF       SelectFileToSaveDialog
  0001:00076CF8       HighlightsMenuInit
  0001:00076CFA       HighlightsMenuFinish
@@ -1147,8 +1150,8 @@
  0001:00087AD6       EGA_DrawSprite
  0001:00088CED       UnchainSprites
  0001:00088D82       UnchainSpritesTilZero
- 0001:00088DE1       UnchainSpriteWrapper
- 0001:00088E04       UnchainSprite
+ 0001:00088DE1       UnchainSprite
+ 0001:00088E04       DoUnchainSprite
  0001:00088F43       benc_2
  0001:00088FE7       EGACopySprite
  0001:0008913E       EGAFillRectangle
@@ -1399,7 +1402,7 @@
  0001:0009B95E       __parse_tz_
  0001:0009BCB4       __brktime_
  0001:0009BDC9       _gmtime_
- 0001:0009BDE7       gmtime_
+ 0001:0009BDE7       gmtime
  0001:0009BDF4       __leapyear_
  0001:0009BF48       __isindst_
  0001:0009C241       __flush_
@@ -3205,7 +3208,7 @@
  0002:00020913       new_random_seed_copy
  0002:00020914       random_seed
  0002:00020928       selTeamsPtr
- 0002:00020937       in_edit_tactics
+ 0002:00020937       inEditTactics
  0002:00020939       training_game_copy
  0002:0002093B       numSelectedTeams
  0002:0002093D       selectedTeamsBuffer
@@ -3230,8 +3233,8 @@
  0002:000314BD       menu_music_ptr
  0002:000314C9       EGA_graphics
  0002:000314CB       setupDatBuffer
- 0002:000314CD       connected_with_chairman_scenes
- 0002:000314CF       sound_off
+ 0002:000314CD       soundOff
+ 0002:000314CF       musicOff
  0002:000314D1       joyKbdWord
  0002:000314D7       videoSpeedIndex
  0002:000314DF       joy1_X_value
@@ -3278,7 +3281,7 @@
  0002:0003153A       mem_408k_ofs_60c00h
  0002:0003154A       mem_408k_ofs_4fc00h
  0002:00031552       mem_408k_ofs_30000h
- 0002:0003156A       poolplyr_dat_buffer
+ 0002:0003156A       poolplyrDatBuffer
  0002:0003E152       lin_adr_384k
  0002:0003E156       handle_384k
  0002:0003E15A       lin_adr_120k
@@ -3291,7 +3294,7 @@
  0002:0003E492       palette_2
  0002:0003E792       nullPalette
  0002:0003EA92       asave_256_handle
- 0002:0003EA98       key_count
+ 0002:0003EA98       keyCount
  0002:0003EA9A       key_buffer
  0002:0003EAA6       scanCode
  0002:0003EAB4       int_9_ofs
@@ -3324,7 +3327,7 @@
  0002:0003ED08       menuFade
  0002:0003ED0A       controls_status
  0002:0003ED0C       blink_counter
- 0002:0003ED10       char_tables
+ 0002:0003ED10       charTables
  0002:0003ED20       numbers_buffer
  0002:0003ED28       shirt_col_table
  0002:0003ED32       aDataTeam_nnn
@@ -3344,14 +3347,14 @@
  0002:0004E790       twoPlayers
  0002:0004E792       player1ClearFlag
  0002:0004E794       player2ClearFlag
- 0002:0004E79A       size_of_team_file
- 0002:0004E79E       team_filename_buffer
- 0002:0004E7D0       number_of_teams
+ 0002:0004E79A       sizeOfTeamFile
+ 0002:0004E79E       teamFilenameBuffer
+ 0002:0004E7D0       numberOfTeams
  0002:0004E7D2       last_loaded_ext_number
  0002:0004E7D4       funds_buffer
  0002:0004E7D5       result_string
  0002:0004E81C       saveFileName
- 0002:0004E82A       imp_tact_filename
+ 0002:0004E82A       impTactFilename
  0002:0004E838       hil_filename
  0002:0004E988       highest_scorers_table
  0002:0004E9E4       inmenu_keyboard_buffer
@@ -3377,7 +3380,7 @@
  0002:0004F5DC       left_team_saved
  0002:0004FC84       right_team_saved
  0002:0005032C       numSpritesToRender
- 0002:0005032E       teams_loaded
+ 0002:0005032E       teamsLoaded
  0002:00050330       poolplyr_loaded
  0002:00050332       lastKey
  0002:00050334       frameCount
@@ -3599,7 +3602,7 @@
  0002:00053838       aLoadLiverpool
  0002:00053847       aError
  0002:0005384E       positionsTable
- 0002:00053896       default_positions
+ 0002:00053896       defaultPositions
  0002:000538A1       positions_5_4_1
  0002:000538AC       positions_4_5_1
  0002:000538B7       positions_5_3_2
@@ -3617,7 +3620,7 @@
  0002:00053A62       tacticsStringTable
  0002:00053ABA       avg_team_value_bases
  0002:00053B84       avg_team_values
- 0002:00053C18       team_filenames_table
+ 0002:00053C18       teamFilenamesTable
  0002:00053C38       ingameTeamPlayerOffsets
  0002:00053C58       color_table_shine
  0002:00053C68       view_teams_column1
@@ -3646,14 +3649,14 @@
  0002:00054B70       pmSelectedPlayerEntry
  0002:00054B74       play_match_control_flags
  0002:00054B76       player_started
- 0002:00054B78       tmp03_param
+ 0002:00054B78       D2_param
  0002:00054B7E       diy_selected
  0002:00054BC8       error_text
  0002:00054BCC       prompt_header
  0002:00054BD0       what_is_changing
  0002:00054BD4       continue_text
  0002:00054BD8       abort_text
- 0002:00054BDC       cont_abort_default
+ 0002:00054BDC       contAbortDefault
  0002:00054BDE       contAbortResult
  0002:00054C20       diy_tournament_look_only
  0002:00054C22       diy_tournament_select_teams
@@ -3755,10 +3758,10 @@
  0002:0005525F       aErrorInsufficientBaseMemory_
  0002:00055283       aErrorInsufficientXmsMemory_
  0002:000552A6       aErrorErrorInitializingXms_
- 0002:000552C8       convert_keys_table
- 0002:00055336       frame_colors_table
+ 0002:000552C8       convertKeysTable
+ 0002:00055336       frameColorsTable
  0002:00055356       next_entry_direction_offsets
- 0002:0005535E       pitch_dat_buffer
+ 0002:0005535E       pitchDatBuffer
  0002:00057A8E       currentMenu
  0002:000593F2       leagues_table_copy
  0002:0005C682       skillsPerQuadrant
@@ -3819,7 +3822,7 @@
  0002:0005F5D0       team2SelectedPlayerIndex
  0002:0005F5D2       ball_row
  0002:0005F5D4       ball_column
- 0002:0005F5D6       ball_location
+ 0002:0005F5D6       editTacticsBallLocation
  0002:0005F5D8       chooseTacticsTeamPtr
  0002:0005F5DC       editTacticsPlayerNumbers
  0002:0005F5E0       editTacticsCurrentTactics
@@ -3840,15 +3843,15 @@
  0002:0005F9F6       diy_right_team_result
  0002:0005F9FA       randomTable
  0002:0005FDAE       edit_teams_team
- 0002:00060306       edit_teams_buffer
- 0002:0006AE08       edit_teams_save_vars_area
+ 0002:00060306       editTeamsBuffer
+ 0002:0006AE08       editTeamsSaveVarsArea
  0002:000708DE       pl1_coach
  0002:000708E0       pl2_coach
  0002:000708E2       left_team_coach_no
  0002:000708E4       right_team_coach_no
  0002:000708E6       left_team_player_no
  0002:000708E8       right_team_player_no
- 0002:000708EA       plg_tmp01_param
+ 0002:000708EA       plg_D0_param
  0002:000708EC       isGameFriendly
  0002:000708F0       second_leg
  0002:000708F2       save_pitch_type_or_season
@@ -3866,15 +3869,15 @@
  0002:0007090C       team2_goals_first_leg
  0002:0007090E       team1_penalty_goals
  0002:00070910       team2_penalty_goals
- 0002:00070912       plg_tmp04_param
+ 0002:00070912       plg_D3_param
  0002:00070914       hil_started
  0002:00070916       team1_allow_red_cards
  0002:00070918       team2_allow_red_cards
- 0002:00070AA5       cvt_table_01
- 0002:00070ABF       cvt_table_02
- 0002:00070AD9       cvt_table_03
- 0002:00070AF3       convert_tables
- 0002:00070AFF       pitch_number
+ 0002:00070AA5       whiteGuyConvertTable
+ 0002:00070ABF       gingerGuyConvertTable
+ 0002:00070AD9       blackGuyConvertTable
+ 0002:00070AF3       skinAndHairColorConversionTable
+ 0002:00070AFF       pitchNumber
  0002:00070B01       leftTeamPtr
  0002:00070B05       rightTeamPtr
  0002:00070B09       team1_num_subs
@@ -3893,20 +3896,29 @@
  0002:00070F6D       team2ScorerSpritesWidths
  0002:00070F7D       resultTimer
  0002:00070F7F       time_var
+ 0002:00070F81       deadTimer01
  0002:00070FA3       playerNumberZOffset
  0002:00070FB3       next_camera_positions
  0002:00070FF3       camera_x_velocity
  0002:00070FF5       camera_y_velocity
  0002:00070FF7       hideBallShadow
  0002:00070FFB       player_turn_flags_copy
- 0002:000710AE       sprite_standing_facing_up
- 0002:000710B2       sprite_standing_facing_bottom
- 0002:000710B6       sprite_standing_facing_right
- 0002:000710BA       sprite_standing_facing_left
- 0002:000710BE       sprite_standing_facing_up_right
- 0002:000710C2       sprite_standing_facing_top_left
- 0002:000710C6       sprite_standing_facing_bottom_right
- 0002:000710CA       sprite_standing_facing_bottom_left
+ 0002:0007105E       playerRunningTop
+ 0002:00071068       playerRunningBottom
+ 0002:00071072       playerRunningRight
+ 0002:0007107C       playerRunningLeft
+ 0002:00071086       playerRunningTopRight
+ 0002:00071090       playerRunningTopLeft
+ 0002:0007109A       playerRunningBottomRight
+ 0002:000710A4       playerRunningBottomLeft
+ 0002:000710AE       spriteStandingFacingUp
+ 0002:000710B2       spriteStandingFacingBottom
+ 0002:000710B6       spriteStandingFacingRight
+ 0002:000710BA       spriteStandingFacingLeft
+ 0002:000710BE       spriteStandingFacingUpRight
+ 0002:000710C2       spriteStandingFacingTopLeft
+ 0002:000710C6       spriteStandingFacingBottomRight
+ 0002:000710CA       spriteStandingFacingBottomLeft
  0002:0007124E       team1_injured_player_top_right_table
  0002:00071258       team1_injured_player_top_left_table
  0002:0007147E       team2_injured_player_top_right_table
@@ -3917,8 +3929,8 @@
  0002:00071B58       static_heading_anim_table
  0002:00071BDA       player_lost_anim_table
  0002:00071C5C       player_won_anim_table
- 0002:00071CDE       pl_normal_running_table
- 0002:00071D60       pl_normal_standing_table
+ 0002:00071CDE       playerRunningAnimTable
+ 0002:00071D60       playerNormalStandingAnimTable
  0002:00071DE2       pl_tackling_anim_table
  0002:00071EB6       player_tackled_anim_table
  0002:00071F08       goalie_catching_ball_anim_table
@@ -3931,6 +3943,7 @@
  0002:0007239A       right_goalie_jumping_low_anim_table
  0002:00072520       pl_getting_yellow_card_anim_table
  0002:000725A2       pl_getting_red_card_anim_table
+ 0002:00072624       playerGettingBookedAnimTable
  0002:000726A6       pl_injured_anim_table
  0002:00072728       ref_coming_anim_table
  0002:0007274A       ref_waiting_anim_table
@@ -3962,7 +3975,7 @@
  0002:0007809A       hil_pitch_number
  0002:0007809C       hilMaxSubstitutes
  0002:0007809E       hil_start_of_goals_buffer
- 0002:0007CAD6       ingame_hil_buffer
+ 0002:0007CAD6       ingameHilBuffer
  0002:000A66CE       num_replays_in_hil_file
  0002:000A66D0       scene_number
  0002:000A66D2       some_flip_flag
@@ -4032,10 +4045,10 @@
  0002:000A8A81       nat_teams_rand_limit1
  0002:000A8A83       num_national_teams
  0002:000A8A87       national_teams
- 0002:000A8DE1       goal_scored
+ 0002:000A8DE1       goalScored
  0002:000A8DE3       run_slower
- 0002:000A8DE5       player_scored_ptr
- 0002:000A8DE9       last_team_scored_num
+ 0002:000A8DE5       playerScoredPtr
+ 0002:000A8DE9       lastTeamScoredNumber
  0002:000A8DEB       nobodys_ball_timer
  0002:000A8DED       write_only_var_04
  0002:000A8DEF       spritesIndex
@@ -4069,7 +4082,7 @@
  0002:000AFE40       aFill_256
  0002:000AFE4E       menu_cursor_frame
  0002:000AFE50       inputing_text_ok
- 0002:000AFE56       game_sound_off
+ 0002:000AFE56       gameCommentaries
  0002:000AFE58       skipIntro
  0002:000AFE5A       aSfxEnglishEc
  0002:000AFE6B       a_raw
@@ -4104,7 +4117,7 @@
  0002:000AFEBE       playing_good_pass_sample
  0002:000AFEC0       deleted_sample
  0002:000AFEC4       performing_penalty
- 0002:000AFEC6       N_switch
+ 0002:000AFEC6       lowOnMemory
  0002:000AFEC8       sound_effects_table
  0002:000AFEF8       sfx_lower_quality_table
  0002:000AFF28       intro_team_cheers_table
@@ -4457,7 +4470,7 @@
  0002:000B289C       max_substitutes
  0002:000B28F6       aDemo_dat
  0002:000B2A38       teams_country_numbers
- 0002:000B2C58       skip_league_numbers
+ 0002:000B2C58       skipLeagueNumbers
  0002:000B2C9C       competition_stats_menu
  0002:000B2D4C       null_menu
  0002:000B2D70       competition_top_goal_scorers_menu
@@ -4514,27 +4527,29 @@
  0002:000B8944       choose_teams_friendly_menu
  0002:000B8E04       diy_competition_menu
  0002:000B8EB4       tactic_cursor_frames
- 0002:000B8EBC       angle_coeficients
+ 0002:000B8EBC       angleCoeficients
  0002:000B96BC       sineCosineTable
  0002:000B98BC       sel_tactics
- 0002:000B98BE       edit_tactics_contry_buffer
+ 0002:000B98BE       editTacticsCountryBuffer
  0002:000B9948       edit_tactics_num_players
  0002:000B9954       some_menu_entry_ptr
  0002:000B9958       ball_x_quadrant_coordinates
  0002:000B9962       ball_y_quadrant_coordinates
  0002:000B9970       x_quadrant_to_coordinates
  0002:000B998E       y_quadrant_to_coordinates
+ 0002:000B99AE       arrowSpritesOffsets
  0002:000B99BE       little_players_cvt_table
  0002:000B99DE       editTacticsPlayerPositions
  0002:000B99F6       prev_game_time
  0002:000B99F8       marked_player_number
- 0002:000B99FA       edit_tactics_pitch_status
+ 0002:000B99FA       editTacticsPitchStatus
  0002:000B99FC       chosenTactics
+ 0002:000B9A00       editTacticsPlayerX
  0002:000B9A02       editTacticsBallRow
  0002:000B9A04       editTacticsBallColumn
- 0002:000B9A06       last_ball_location
+ 0002:000B9A06       editTacticsLastBallLocation
  0002:000B9A0A       flip_on_off
- 0002:000B9A0C       tactics_changed_flag
+ 0002:000B9A0C       tacticsChangedFlag
  0002:000B9A10       chooseTacticsMenu
  0002:000B9B26       import_tactics_menu
  0002:000B9D66       editTacticsMenu
@@ -4687,7 +4702,7 @@
  0002:000BDD3C       stoppage_timer
  0002:000BDD3E       gameStatePl
  0002:000BDD40       gameState
- 0002:000BDD42       break_camera_mode
+ 0002:000BDD42       breakCameraMode
  0002:000BDD44       eventTimer
  0002:000BDD46       foul_x_coordinate
  0002:000BDD48       foul_y_coordinate
@@ -4712,7 +4727,7 @@
  0002:000BDD6E       team2_penalty_shooter_index
  0002:000BDD70       penalty_shooter_sprite
  0002:000BDD74       ball_friction
- 0002:000BDDF4       default_ball_dest_offsets
+ 0002:000BDDF4       defaultPlayerDestinations
  0002:000BDE14       left_throw_in_ball_factor
  0002:000BDE34       right_throw_in_ball_factor
  0002:000BDE54       penalty_ball_factor
@@ -4797,9 +4812,9 @@
  0002:000BE300       tackle_values_injured
  0002:000BE306       player_tackling_down_time
  0002:000BE316       computer_tackling_down_time
- 0002:000BE326       player_speeds_game_in_progress
+ 0002:000BE326       playerSpeedsGameInProgress
  0002:000BE336       player_speeds_game_stopped
- 0002:000BE346       teams_starting_coordinates
+ 0002:000BE346       teamsStartingCoordinates
  0002:000BE39E       goalie_something_table
  0002:000BE3BE       injuries_speed_penalty
  0002:000BE3CE       playerWithBallOffsets

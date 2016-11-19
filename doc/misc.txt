@@ -115,8 +115,8 @@ Startup
 -------
 When SWOS++ is loaded successfully, initialization function will be called by
 the loader. That is actually entry point of the win32 PE executable that pe2bin
-converts. Currently that's start function in main.asm. On entry it is guaranteed
-that direction flag will be zero. Initial register values are:
+converts. Currently that's start function in main.asm. On entry it is
+guaranteed that direction flag will be zero. Initial register values are:
 
 eax - init routine address, fixed up
 ebx - starting address of SWOS++ in memory
@@ -141,21 +141,21 @@ Debugging
 ---------
 Logging routine WriteToLog is at our disposal, available both from C and
 assembly. Parameters are printf-style. Output is saved to swospp.log file. In
-release version calls are eliminated. There is an overload that takes additional
-parameter - message class, so by changing output message bit mask entire message
-classes can be selectively logged or eliminated.
+release version calls are eliminated. There is an overload that takes
+additional parameter - message class, so by changing output message bit mask
+entire message classes can be selectively logged or eliminated.
 WriteToLog is also available in assembly code, in the form of macro. Registers
 and flags are preserved, so it can be called from any place. Macro also takes
 care of parameters and stack balancing, so the user can just relax and focus on
 debugging. ;)
 assert() is also available, in more-less standard form. Output goes to both
 screen and swospp.log. Version with custom message is available, assert_msg().
-Variables can be dumped to screen real time while the game is running. Addresses
-and formats of variables to be dumped are written to dumpvars.asm. Details about
-it to be added later.
-Routine HexDumpToLog takes care of creation of hex dumps. Based on parameters it
-will save hex dump of specified memory region to log file. It's only compiled in
-debug version.
+Variables can be dumped to screen real time while the game is running.
+Addresses and formats of variables to be dumped are written to dumpvars.asm.
+Details about it to be added later.
+Routine HexDumpToLog takes care of creation of hex dumps. Based on parameters
+it will save hex dump of specified memory region to log file. It's only
+compiled in debug version.
 Listings of all object files are available in var/ directory, as well as map
 file.
 Recently I patched DOSBox debugger, so it can load and show symbols. There is a
@@ -179,9 +179,9 @@ sprintf() is present and it's basically Open Watcom rip off. :P  It's mostly
 used for log file parameters formatting. Implementation isn't complete, but the
 most important things are there with few additions:
 - support for %hhd and %hhx was added (8-bit value is printed)
-- %#s combination is treated as hex string: bytes from the string are printed as
-  hex values, and if precision is added e.g. %#12s exactly 12 characters will be
-  printed whether they contain nul-terminator or not
+- %#s combination is treated as hex string: bytes from the string are printed
+  as hex values, and if precision is added e.g. %#12s exactly 12 characters
+  will be printed whether they contain null-terminator or not
 
 
 strcpy()
@@ -201,8 +201,8 @@ idiom for copying zero-terminated string to fixed buffer:
     *strncpy(dst, src, dstSize - 1) = '\0';
 Note that this will work in any case: if the copy operation ran out of space,
 pointer to last character in dst will be returned - so the string gets
-terminating zero, and in case copy was successful terminating zero will just get
-written once more.
+terminating zero, and in case copy was successful terminating zero will just
+get written once more.
 
 
 Buffer size
@@ -235,9 +235,10 @@ In latest version section do not have to be laid out in strict order.
 Data/Code Layout
 ----------------
 TODO
-Code section contains merged sections from the PE, in the following order: code,
-data, rdata, bss (infered). After code comes patch data section - it contains
-patch records and is processed after loading, and before start up code runs.
+Code section contains merged sections from the PE, in the following order:
+code, data, rdata, bss (infered). After code comes patch data section - it
+contains patch records and is processed after loading, and before start up code
+runs.
 
 
 Alink
@@ -245,24 +246,24 @@ Alink
 Alink is a simple open-source linker I ran into on the Internet. It turned out
 that it has quite solid OMF support, and I managed to change it enough to be
 able to produce correct SWOS++ executables :)
-Now that SWOS++ isn't built with Watcom anymore technically we don't need alink,
-but added options for controlling section placement are still extremly useful,
-and not many linkers can do that in a straight forward manner.
+Now that SWOS++ isn't built with Watcom anymore technically we don't need
+alink, but added options for controlling section placement are still extremly
+useful, and not many linkers can do that in a straight forward manner.
 
 
 Network protocol
 ---------------
-It is comprised out of 3 parts:
+It is comprised of 3 parts:
 - Lobby protocol
 - Synchronization
 - Main loop part (game itself)
 
-There are two types of packet: 'simple' and 'important'. Simple packets are simply
-sent and forgotten - we can only hope that they arrive. They can't be
-fragmented, and have a size limit (depends on the implementation, but 1023 bytes
-for DOSBox together with headers). For important packets delivery is guaranteed,
-and if they're too big for one physical packet they will be fragmented and sent
-in parts. Protocol used to guarantee delivery is:
+There are two types of packet: 'simple' and 'important'. Simple packets are
+simply sent and forgotten - we can only hope that they arrive. They can't be
+fragmented, and have a size limit (depends on the implementation, but 1023
+bytes for DOSBox together with headers). For important packets delivery is
+guaranteed, and if they're too big for one physical packet they will be
+fragmented and sent in parts. Protocol used to guarantee delivery is:
 TODO
 dword - packet id
 data...
@@ -318,9 +319,9 @@ pause we enter paused loop immediately (before the rendering).
 
 IPX
 ---
-Sending is always non-blocking and releases the ECB, so we can use single ECB to
-serve all send requests. When new packet arrives internal list is searched for
-free ECB, and if there isn't one the packet is lost.
+Sending is always non-blocking and releases the ECB, so we can use single ECB
+to serve all send requests. When new packet arrives internal list is searched
+for free ECB, and if there isn't one the packet is lost.
 IPXBUFFERSIZE (currently 1424) is packet size limitation in DOSBox, but from
 what I see package of that size will be rejected during the send. The effective
 send capacity is one byte less. As far as the receiving goes, packet of full
@@ -333,14 +334,14 @@ equal to maximum packet size reduced by size of IPX header.
 Join and Game ID
 --------------
 To avoid situation where client attempts to connect to server and fails, but
-server considers them connected, thus rejecting subsequent attempts we introduce
-join id. It is a random number that client generates and sends to server with
-each login attempt. Server keeps this id for each connected client, and can use
-it to differentiate between reconnecting echo and legitimate new attempts of
-connecting.
+server considers them connected, thus rejecting subsequent attempts we
+introduce join id. It is a random number that client generates and sends to
+server with each login attempt. Server keeps this id for each connected client,
+and can use it to differentiate between reconnecting echo and legitimate new
+attempts of connecting.
 Game id is introduced to avoid rare case - when client is attempting to join
-non-existent game on the same IP. It can happen if the game is closed and opened
-again before client started connecting to already enumerated game. It is
+non-existent game on the same IP. It can happen if the game is closed and
+opened again before client started connecting to already enumerated game. It is
 implemented by broadcasting random game id when game is published, and only
 allowing clients with correct id to connect. When connecting from command line
 this is ignored (only IP matters).
@@ -352,9 +353,9 @@ To avoid multiplayer games interfering with single player game options,
 multiplayer options are kept separately. GetFreshMPOptions() will get fresh,
 up-to-date options, while ApplyOptions() will apply given options to SWOS.
 Since server and client must be in perfect sync, that means they also must use
-same options. Server sends its options within accepting packet when client first
-joins the lobby. Client has to save its own options first, and then overwrite
-them with server's.
+same options. Server sends its options within accepting packet when client
+first joins the lobby. Client has to save its own options first, and then
+overwrite them with server's.
                                                      saved
 SWOS                           MP                    client
 options                      options                 options
@@ -404,8 +405,8 @@ Locating data items from SWOS++ requires subtracting section alignment; we need
 to take a look at map file, and see the length of code (for example 0x1c46c).
 Code starts at 0x401000, and ends at 0x41d46c (0x401000 + 0x1c46c). Let's say
 that .data section starts at 0x41e000. So the difference 0x41e000 - 0x41d46c =
-0xb94 needs to be added to every memory address in order to be able to precisely
-locate the symbol.
+0xb94 needs to be added to every memory address in order to be able to
+precisely locate the symbol.
 
 
 Relative calls patching
@@ -415,17 +416,17 @@ formula:
 address to write = address of new function that we want to call -
                    address of location that is being patched -
                    5
-(5 is because address of call is always calculated relative to next instruction,
-and length of call instruction is exactly 5 bytes). Same story goes for relative
-jmp (0xe9 opcode). This can only be done dynamically.
+(5 is because address of call is always calculated relative to next
+instruction, and length of call instruction is exactly 5 bytes). Same story
+goes for relative jmp (0xe9 opcode). This can only be done dynamically.
 
 
 Fixed point format
 ------------------
-For more precise calculations SWOS uses 32-bit fixed point numbers, with 16 bits
-for integer part and 16 bits for fractional part. Both parts have one bit for
-sign - highest bit, and remaining 15 bits for value. I'm not sure what's the
-effect of sign bit on fractional part, I think it's ignored.
+For more precise calculations SWOS uses 32-bit fixed point numbers, with 16
+bits for integer part and 16 bits for fractional part. Both parts have one bit
+for sign - highest bit, and remaining 15 bits for value. I'm not sure what's
+the effect of sign bit on fractional part, I think it's ignored.
 
 s|aaaaaaaaaaaaaaa.s|bbbbbbbbbbbbbbb
 

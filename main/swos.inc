@@ -10,6 +10,9 @@
 ; size of tactics structure
 %define TACTICS_SIZE 370
 
+; size of SWOS main menu
+%define SWOS_MAIN_MENU_SIZE 480
+
 ; Declare and put string into destination.
 ; %1 - destination, %2 - string
 ;
@@ -93,6 +96,7 @@ extern Joy2SetStatus
 extern Player1StatusProc
 extern Player2StatusProc
 extern WriteFile
+extern LoadFile
 extern FlipInMenu
 extern SetControlWord
 extern GetKey
@@ -102,6 +106,9 @@ extern RestoreOldInt9Handler
 extern DumpScreen
 extern CDROM_StopAudio
 extern SWOS_Text2Sprite
+extern ConvertSpriteColors
+extern UnchainSpriteInMenus
+extern DoUnchainSpriteInMenus
 extern CopySprite
 extern DrawSpriteCentered
 extern SWOS_DrawSprite
@@ -150,7 +157,6 @@ extern SetupPlayers
 extern CheckContinueAbortPrompt
 extern LoadTeamFile
 extern LoadDIYFile
-extern SetName
 extern PlayMatchAfterDraw
 extern ExitPlayMatch
 extern PlayMatchSelected
@@ -160,8 +166,11 @@ extern continueMenu
 extern ExitChooseTeams
 extern ChooseTeamsDialog
 extern DrawLittlePlayersAndBall
+extern CalculateDeltaXAndY
 extern InitLittlePlayerSprites
 extern SetBenchPlayersNumbers
+extern ExitEuropeanChampionshipMenu
+extern FillSkinColorConversionTable
 extern DrawAnimatedPatterns
 extern ScrollToCurrent
 extern AllowStatistics
@@ -186,6 +195,9 @@ extern BookPlayer
 extern DrawSprites
 extern InitTeamsData
 extern TeamsControlsCheck
+extern SetNextPlayerFrame
+extern MovePlayer
+extern SetAnimationTable
 extern CalculateIfPlayerWinsBall
 extern GetFilenameAndExtension
 extern FindFiles
@@ -195,7 +207,6 @@ extern ShowHighlights
 extern Flip
 extern StopAIL
 extern AIL_stop_play
-extern swos_start
 extern swos_libc_strcmp_
 extern swos_libc_memset_
 extern swos_libc_time_
@@ -213,12 +224,6 @@ extern aPlayer_0
 extern aPlayerCoach_0
 extern aCoach_3
 extern aHigh
-extern aUSER_A
-extern aUSER_B
-extern aUSER_C
-extern aUSER_D
-extern aUSER_E
-extern aUSER_F
 extern aReplay
 extern aComputer
 extern aContinue
@@ -305,7 +310,7 @@ extern joy1_fire_2
 extern joy2_fire_1
 extern joy2_fire_2
 extern lin_adr_384k
-extern key_count
+extern keyCount
 extern scanCode
 extern controlWord
 extern convertedKey
@@ -357,15 +362,17 @@ extern color_table_shine
 extern playMatchTeam1Ptr
 extern playMatchTeam2Ptr
 extern contAbortResult
+extern aTeam2_dat
 extern aSetup_dat
-extern convert_keys_table
-extern pitch_dat_buffer
+extern convertKeysTable
+extern pitchDatBuffer
 extern currentMenu
 extern tact_4_4_2
 extern tacticsTable
 extern saveFileTitle
 extern chooseTacticsTeamPtr
 extern editTacticsCurrentTactics
+extern editTeamsSaveVarsArea
 extern left_team_coach_no
 extern right_team_coach_no
 extern left_team_player_no
@@ -380,6 +387,8 @@ extern showStats
 extern statsTimeout
 extern team1Scorers
 extern team2Scorers
+extern playerRunningAnimTable
+extern playerNormalStandingAnimTable
 extern goal_base_ptr
 extern nextGoalPtr
 extern replayState
@@ -391,6 +400,7 @@ extern menuCycleTimer
 extern vsPtr
 extern screenWidth
 extern stateGoal
+extern goalScored
 extern spritesIndex
 extern found_filenames_buffer
 extern inputing_text_ok
@@ -421,6 +431,7 @@ extern game_length_str_table
 extern SWOS_MainMenu
 extern playMatchMenu
 extern continueAbortMenu
+extern angleCoeficients
 extern sineCosineTable
 extern chosenTactics
 extern editTacticsMenu
@@ -441,6 +452,8 @@ extern gameState
 extern eventTimer
 extern halfNumber
 extern teamPlayingUp
+extern defaultPlayerDestinations
+extern playerSpeedsGameInProgress
 extern _STACKLOW
 extern _STACKTOP
 

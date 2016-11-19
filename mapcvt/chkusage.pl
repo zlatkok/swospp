@@ -1,6 +1,8 @@
 # Check usage of symbols - find possibly unused ones.
 # Keep in sync with filter.txt changes.
 
+use File::Find::Rule;
+
 # read in filter.txt first
 open FILT, "<filter.txt" or die "Couldn't open filter file `filter.txt'.\n";
 
@@ -14,9 +16,8 @@ while (<FILT>) {
 }
 close FILT;
 
-opendir DIR, '../main' or die "Can't open directory.";
-while (defined($file = readdir(DIR))) {
-    next if $file !~ /\.asm$|\.inc$|\.c$|\.h$/;
+for my $file (File::Find::Rule->in('../main')) {
+    next if $file !~ /\.asm$|\.inc$|\.c$|\.cpp|\.h$/;
     # skip generated files
     next if index($file, 'swos.asm') != -1 || index($file, 'swos.inc') != -1 || index($file, 'swossym.h') != -1;
     #print "processing $file...\n";
@@ -24,11 +25,12 @@ while (defined($file = readdir(DIR))) {
     while (<FILE>) {
         chomp;
         my $line = $_;
-        map { $symbols{$_} += $line =~ /(\W|^)$_(\W|$)/ } keys %symbols;
+        foreach $word (split /[^\w]/, $line) {
+            $symbols{$word}++ if exists($symbols{$word});
+        }
     }
     close FILE;
 }
-close DIR;
 
 while (($key, $value) = each %symbols) {
     # don't complain about SWOS libc functions

@@ -230,7 +230,12 @@ extern "C" const char *MainMenuSelect()
     }
 
     /* no direct mode switches, just return main menu and everything will go as usual */
+#ifdef SWOS_16_17
+    extern char newMainMenu[] asm ("newMainMenu");
+    return newMainMenu;
+#else
     return SWOS_MainMenu;
+#endif
 }
 
 

@@ -41,13 +41,13 @@ void DrawSprite(int x, int y, int width, int height, const char *spriteData, int
 static void DrawSpriteInGame(int x, int y, const SpriteGraphics *s)
 {
     deltaColor = 0;
-    DrawSprite(x, y, s->wquads * 16, s->nlines, s->sprData, 0);
+    DrawSprite(x, y, s->wquads * 16, s->nlines, s->data, 0);
 }
 
 static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
 {
     deltaColor = 0;
-    DrawSprite(x, y, s->wquads * 16, s->nlines, s->sprData, -1);
+    DrawSprite(x, y, s->wquads * 16, s->nlines, s->data, -1);
 }
 
 
@@ -93,7 +93,7 @@ void PrintSmallNumber(int num, int x, int y, bool32 inGame)
     const byte *currentDigitLengths = digitLengths[inGame];
     const int kerning = inGame;
     const int startSprite = inGame ? 1188 : 162;
-    char *eightMiddlePixel = &spritesIndex[inGame ? 1195 : 169]->sprData[16];
+    char *eightMiddlePixel = &spritesIndex[inGame ? 1195 : 169]->data[16];
     void (*drawFunc)(int, int, const SpriteGraphics *) = inGame ? DrawSpriteInGame : DrawSpriteInMenus;
     int widths[16], *currentDigitWidth = widths;
 

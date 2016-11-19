@@ -5,7 +5,7 @@
 #include "util.h"
 #include "swos.h"
 
-char pitch_dat_buffer[10 * 1024];
+char pitchDatBuffer[10 * 1024];
 
 void __cdecl WriteToLogFunc(const char *fmt, ...) {}
 

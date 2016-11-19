@@ -1,12 +1,12 @@
 Standard SWOS menus
 -------------------
 
-Menu is stored in form of a menu structure. First goes header comprising of 22
-bytes, and then entries follow, with 56 bytes each.
+Menu is laid out in memory as a variable length structure that consists of a 22
+bytes header followed by entries, which are 56 bytes each.
 
 Parameters to menu entry functions (before draw, after draw, etc.) are in
 following registers:
-A5 - pointer to entry which is receiving an event
+A5 - pointer to entry which is receiving the event
 A0 - pointer to function itself (since it's called indirectly through A0)
 
 Upon entry to init and afterDraw function of the menu A6 will point to menu
@@ -24,41 +24,42 @@ Header (size 22 bytes):
 
 Menu entries, following the header:
 
-       0  ; da li je vec nacrtan? (word)
-            0 - ne
-            1 - da
-       2  ; redni broj (0-based)
-       4  ; da li je vidljiv?
-            0  - crtaj
-            !0 - ne
+       0  ; has it already been drawn? (word)
+            0 - no
+            1 - yes
+       2  ; ordinal (0-based)
+       4  ; is it visible?
+            0  - draw
+            !0 - don't
        6  ; is_disabled (word) (1 = disabled, 0 = not)
-       8  ; leva stavka   ; broj stavke koja se selektuje kada se pritisne
-       9  ; desna stavka  ; levo, desno, gore, dole respektivno
-       10 ; gornja stavka
-       11 ; donja stavka
-       12 ; levo          ; [0 = gore, 1 = desno, 2 = dole, 3 = levo]
-       13 ; desno         ; pravac kretanja koji se bira kada je stavka
-       14 ; gore          ; iskljucena ili nevidljiva
-       15 ; dole
-       16 ; leva stavka   ; stavka koja se selektuje u slucaju da je ova stavka
-       17 ; desna stavka  ; iskljucena ili nevidljiva
-       18 ; gornja stavka
-       19 ; donja stavka
+       8  ; left item     ; ordinal of entry that's selected once left, right,
+       9  ; right item    ; up, down is pressed, respectively
+       10 ; up item
+       11 ; down item
+       12 ; left          ; [0 = up, 1 = right, 2 = down, 3 = left]
+       13 ; right         ; direction of movement that is chosen once the entry
+       14 ; up            ; is disabled or invisible
+       15 ; down
+       16 ; left entry    ; entry that's selected in case this entry is
+       17 ; right entry   ; disabled or invisible
+       18 ; up entry
+       19 ; down entry
        20 ; x
        22 ; y
        24 ; width
        26 ; height
-       28 ; tip1 [0,1,2,3] (word)
-            0: nista ne crta se u prvom krugu
-            1: ako je 1, onda se ne crta nista, nego se poziva funkcija na
-               offsetu 30 (dword) sa parametrima x i y (u D0 i D1)
-            2: standardna stavka - pozadina i okvir
-               Donji bajt je boja pozadine, gornji bajt je boja unutrasnjeg
-               okvira. Ako je boja unutrasnjeg okvira nula, ne crtaj ga.
-               Spoljasnji okvir se crta samo ako ima prostora (visina je veca
-               od 6 ili 8). Ako je boja pozadine nula, ne crta se nikakav
-               okvir, a pozadina se crta sa bojom 15 (zuta-zelena-crna).
-            3: sprajt, i na offsetu 30 je njegov index u sprite.dat (word)
+       28 ; type1 [0,1,2,3] (word)
+            0: NOP -- nothing is drawn in the first cycle
+            1: custom draw function -- don't draw anything, but invoke function
+               from offset 30 (dword) with x and y arguments in D0 and D1
+            2: standard entry -- has background and frame
+               Low byte is background color, high byte is color of the internal
+               frame. If the color of internal frame is zero, don't draw it.
+               Outer frame is drawn only if there is room (height is greater
+               than 6 or 8). If background color is zero, no frame is drawn,
+               and the background is colored with color 15 (yellow-green-
+               black).
+            3: sprite -- at offset 30 is its index into sprite.dat (word)
 
        30 ; switch(ofs28) {
             case 1:
@@ -188,10 +189,10 @@ ofs4 = 1
 TIP 2:  (pozicije)
 
 sledeca 4 bajta postavi na offsete:
-+8
-+9
-+10
-+11
++8   left
++9   right
++10  up
++11  down
 ---------------------------
 TIP 3:  (funkcija 1)
 
@@ -602,7 +603,7 @@ Uzvesi sve ovo u obzir, boje koje se koriste u crtanju pozadine menija su:
 8  - plava u crnu                   [-||-]
 9  - rozikasta u braon              [-||-]
 10 - svetlo crvena u jarko crvenu   [-||-]
-11 - plava u ljubicastu             [bledo plavi]
+11 - plava u ljubicastu (roze)      [bledo plavi]
 12 - narandzasta u smedju           [crveni]
 13 - svetlo plava u plavu           [sivi]
 14 - zuta-zelena-crna               [-||-]

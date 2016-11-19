@@ -13,10 +13,12 @@ use Term::ANSIColor;
 
 ##################    configuration section    ##################
 
+my $SWOS_16_17  = 1;    # build for SWOS 16/17 edition
+
 # SWOS++ base file name
 my $BASE_FNAME  = 'swospp';
 
-# list of ignored files, if without extension will ignore all files regardles of their extension
+# list of ignored files, if without extension will ignore all files regardless of their extension
 my %IGNORE_SRCS = map { $_ => 1 } qw//;
 
 my $CC          = 'g++';
@@ -29,7 +31,7 @@ my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 
                   '-mpush-args -mno-accumulate-outgoing-args -mno-stack-arg-probe -fno-exceptions -fno-unwind-tables ' .
                   '-fno-asynchronous-unwind-tables -momit-leaf-frame-pointer -mpreferred-stack-boundary=2 ' .
                   '-Wundef -fomit-frame-pointer -fverbose-asm -Wstack-usage=43008 -Wno-multichar -o$@ $<';
-my $AFLAGS      = '-s -w+macro-params -w+orphan-labels -fwin32 -O3 -o$@ -l$(LST_DIR)/$*.lst $<';
+my $AFLAGS      = '-s -w+macro-params -w+orphan-labels -fwin32 -O3 -o$@ -l$(LST_DIR)/$*.asm.lst $<';
 
 my $DBG_CFLAGS  = ' -DDEBUG=1 -g';
 my $DBG_AFLAGS  = ' -DDEBUG';
@@ -72,6 +74,7 @@ sub linkFiles;
 sub createBin;
 sub recreateCommandLine;
 sub showWarningReport;
+sub handleSWOSAnniversaryVersion;
 
 my $FILENAME = $BASE_FNAME . '.bin';
 my $LNK_FILE = $BASE_FNAME . '.lnk';
@@ -102,12 +105,20 @@ if ($TARGET eq 'dbg') {
     $AFLAGS .= $DBG_AFLAGS;
 }
 ensureDirectories();
-generateBitmaps();
+
+# make script will be secret implicit dependency of each file
+my $scriptTimestamp = getTimestamp($0);
+# if we have to rebuild make it as if script changed
+$scriptTimestamp = time() if ($REBUILD);
+
+generateBitmaps($scriptTimestamp);
 
 my $TARGET_FULL = ('RELEASE', 'DEBUG')[$TARGET eq 'dbg'];
 $OBJ_DIR = catfile($OBJ_DIR, $TARGET);
 my %SRC_EXTENSIONS = map { $_ => 1 } qw/.c .cpp .asm/;
 my %INCLUDES_EXTENSIONS = map { $_ => 1 } qw/inc h/;
+
+handleSWOSAnniversaryVersion();
 
 # go into file loop
 logl("Traversing source directories...");
@@ -119,7 +130,7 @@ find( { wanted => sub
 
     # skip files from debug dir if we're not building debug version
     return if (substr(canonpath($path), 0, 5) eq 'debug' && $TARGET ne 'dbg');
-    next if ($IGNORE_SRCS{$file} || $IGNORE_SRCS{$base});
+    return if ($IGNORE_SRCS{$file} || $IGNORE_SRCS{$base});
 
     # each subdirectory will be additional include path
     if (-d) {
@@ -143,11 +154,6 @@ find( { wanted => sub
     }
 }, no_chdir => 1 }, '.');
 logl(Dumper(%includes));
-
-# make script will be secret implicit dependency of each file
-my $scriptTimestamp = getTimestamp($0);
-# if we have to rebuild make it as if script changed
-$scriptTimestamp = time() if ($REBUILD);
 
 # gather dependencies
 logl("Resolving dependencies and updating timestamps...");
@@ -347,7 +353,8 @@ sub newSrcFile
     $srcFile{'ext'} = $ext;
     $srcFile{'timestamp'} = (stat $path)[9];
     $srcFile{'depsScanned'} = 0;
-    $srcFile{'obj'} = catdir($OBJ_DIR, $dir, "$base.obj");
+    # append extension so we can handle asm and C++ files with same names
+    $srcFile{'obj'} = catdir($OBJ_DIR, $dir, "$base$ext.obj");
     unlink($srcFile{'obj'}) if (-z $srcFile{'obj'});
     rmtree($srcFile{'obj'}) if (-d $srcFile{'obj'});
     $srcFile{'objTimestamp'} = getTimestamp($srcFile{'obj'});
@@ -476,21 +483,32 @@ sub updateTimestamp
 sub generateBitmaps
 {
     logl("Generating bitmaps...");
+    my ($scriptTimestamp) = @_;
+
     use constant BMP_GEN_SCRIPT => 'bmpcvt.pl';
+    # go with whichever is newer
+    my $bmpScriptTimestamp = max(getTimestamp(BMP_GEN_SCRIPT), $scriptTimestamp);
+
     -e catdir($BMP_DIR, BMP_GEN_SCRIPT) or die "Bitmap generation script ", BMP_GEN_SCRIPT, " is missing.\n";
-    my $scriptTimestamp = getTimestamp(BMP_GEN_SCRIPT);
+
     opendir(my $DIR, $BMP_DIR);
     my @files = map { s/\.[^.]+$//; $_ } grep {/\.bmp$/ } readdir $DIR;
+    my %parmMap = (
+        'swospp-logo.bmp' => [ '0', '-g', ],
+        'swos_united_logo.bmp' => [ '15', ],
+    );
+
     foreach my $file (@files) {
         my $bmpFile = "$file.bmp";
-        my @parms = $bmpFile eq 'swospp-logo.bmp' ? ('0', '-g') : ();
+        my $parms = exists($parmMap{$bmpFile}) ? $parmMap{$bmpFile} : [];
         my $bmpTimestamp = getTimestamp(catdir($BMP_DIR, $bmpFile));
         my $bpTimestamp = getTimestamp((catdir($BMP_DIR, $file . '.bp')));
-        if ($bmpTimestamp >= $bpTimestamp || $scriptTimestamp > $bpTimestamp) {
+        if ($bmpTimestamp >= $bpTimestamp || $bmpScriptTimestamp > $bpTimestamp) {
             print "Extracting $bmpFile...\n";
-            runCommand('perl', catdir($BMP_DIR, BMP_GEN_SCRIPT), catdir($BMP_DIR, $bmpFile), @parms);
+            runCommand('perl', catdir($BMP_DIR, BMP_GEN_SCRIPT), catdir($BMP_DIR, $bmpFile), @$parms);
         }
     }
+
     closedir($DIR);
     $additionalIncludes{'..\bitmap'} = 1;   # for possible includes via NASM's incbin
 }
@@ -499,7 +517,7 @@ sub generateBitmaps
 sub runCommand
 {
     if ($PARAMS{'verbose'} || $DEBUG) {
-        print "COMMAND: @_ \n";
+        print 'COMMAND: ' . join(' ', @_) . "\n";
         return if $DEBUG;
     }
     system(@_) == 0 or die "Failed to run command: " . join(' ', @_) . ", ($?)\n";
@@ -547,6 +565,17 @@ sub logl
 }
 
 
+sub handleSWOSAnniversaryVersion
+{
+    if ($SWOS_16_17) {
+        $CFLAGS .= ' -DSWOS_16_17=1';
+        $AFLAGS .= ' -DSWOS_16_17';
+    } else {
+        $IGNORE_SRCS{'swos1617'} = 1;
+    }
+}
+
+
 sub buildFiles
 {
     my ($buildList) = @_;
@@ -586,7 +615,7 @@ sub buildFiles
             # dissasemble; note that this will make listings of files with same names
             # in different subdirectories overwrite each other
             filterCommandOutput($DIS . ' ' . $srcFiles{$src}{'obj'} . " /s=$srcFiles{$src}{'path'}",
-                catdir($LST_DIR, $srcFiles{$src}{'base'}) . '.lst');
+                catdir($LST_DIR, $srcFiles{$src}{'base'}) . $ext . '.lst');
         }
         # if we get here, everything went well with compiling/assembling, so update our internal timestamps
         $srcFiles{$src}{'objTimestamp'} = time();

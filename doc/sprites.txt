@@ -1,0 +1,481 @@
+=== Osnovno
+
+Sprajtovi i font se nalaze u dat fajlovima: charset.dat,goal1.dat,team1.dat,
+team2.dat itd. Sprite.dat je gomila offseta, i nakon fixup-a se samo indeksira
+ovaj fajl i dobija se pointer na odredjeni sprajt. Prvih 227 sprajtova su oni
+sprajtovi koji su potrebni za vreme dok je meni sistem aktivan (fontovi,
+male slicice igraca, face, itd...).
+
+Sprajtovi se nalaze u bit-coded obliku, i prvo moraju da se "uncrunchuju" da bi
+se koristili. Za to je zasluzna procedura UnchainFont (koja uprkos imenu
+raspakuje i sprajtove (sprajtovi i karakteri su jedno te isto)). Sprajtovi
+koriste samo 16 boja, i zato je 2 pixel-a = 1 byte. Format sprajt strukture bi
+izgledao otprilike ovako:
+
+        offset  duzina   opis
+        ------  ------   ----
+           0      4      pointer na pixele sprajta
+           4      6      nepoznato, uvek nula u fajlovima
+          10      2      tacna sirina u pixelima (niblovima)
+          12      2      broj linija (nlines)
+          14      2      sirina u paragrafima, tj. broj pixela / 16, odnosno
+                         broj bajtova / 8 (posto je jedan pixel = nibble;
+                         koristi se samo 16 boja).
+                         Formule:
+                         ofs14 << 4 - broj pixela
+                         ofs14 << 3 - broj bajtova (znaci i sirina na ekranu)
+          16      2      centar po x, opseg: [-8..34]
+          18      2      centar po y, opseg: [0..27], koriste se samo za vreme
+                         partije, kod sprajtova koji se koriste samo u menijima
+                         vrednosti su nula
+          20      1      za sada nepoznato, mozda nekakvi flegovi?
+          21      1      nlines / 4, za sada nisam video da se igde koristi
+          22      2      redni broj sprajta u sprite.dat fajlu
+
+Polja 16 i 18 bi mogla da budu:
+1) koordinata tacke (u sprajtu) od koje se lopta odbija
+2) nekakve Z koordinate, ili vidljivi deo prilikom preklapanja ili tako nesto
+oduzmi polje16 od x
+oduzmi polje18 od y
+Izgleda da su to koordinate centra sprajta (ili polovine)
+
+sprite.dat:
+227 pointera su podaci iz charset.dat (sprajtovi za vreme menija)
+114 pointera u score.dat
+303 pointera u team(1|2|3).dat (obicno 1)
+303       -||-                 (obicno 2)
+116 pointera u goal1.dat
+116       -||-
+155 pointera u bench.dat (ili benc2.dat ako se koristi samo 16 boja)
+1   dword - 0 - oznacava kraj fajla
+
+team1.dat sadrzi slicice igraca sa vertikalnim prugama na majicama
+team2.dat sadrzi slicice igraca sa obojenim rukavima
+team3.dat sadrzi slicice igraca sa horizontalnim prugama na majicama
+
+Igraci sa jednobojnim majicama se crtaju tako sto se uzme team1.dat, i
+izjednaci boja pruga i pozadine.
+
+
+   sprite.dat:                   team1.dat - niz sprajt struktura
+(pointeri na sprajt
+     strukture)              ptr 0    +------+--------+
+   +-----+-----+            +-------->|   x  |        |
+   |  x  |  x  |            |         +---|--+--------+
+   +--|--+--|--+            |      +--+---+           |
+   |  +-----|--+------------+      |  +---------------+
+   |        |  |                   +->| sprite 0 data |
+   |        +--+------------+         |               |
+   |     .     |            | ptr 1   +------+--------+
+   |     .     |            +-------->|   x  |        |
+         .                            +---|--+--------+
+   |           |                   +--+---+           |
+   +-----------+                   |  +---------------+
+                                   +->| sprite 1 data |
+                                      |               |
+                                      +---------------|
+                                      |       .       |
+                                              .
+                                              .
+                                      |               |
+                                      +---------------+
+
+I pored toga sto se ovde koriste pointeri, sprajtovi su u stvari smesteni
+sekvencijalno. U svakom .dat fajlu koji sadrzi sprajtove redosled je sledeci:
+prvo sprajt struktura, pa odmah zatim pikseli sprajta. Pojedini fajlovi se
+razlikuju pri tretiranju offset polja, ali ona su tu samo radi boljih
+performansi pri citanju i iscrtavanju.
+Prvih 227 offset-a je relativno na charset.dat. Zatim offset-i krecu opet od
+nule, ali su sada relativni na memorijski blok koga cine score.dat, team1.dat
+(ili team2.dat), team3.dat, goal1.dat (dva puta), i bench ili benc.dat. Kraj
+sprite.dat-a oznacen je sa nula offsetom, koji takodje oznacava i kraj
+poslednjeg fajla (benc[h2].dat).
+Offset do podataka je uvek relativan u odnosu na pocetak fajla, izuzev u
+slucaju benc[h2].dat, gde su offseti relativni u odnosu na pocetak zbirnog
+memorijskog bloka.
+
+
+=== Sprite map
+
+Sprajt 1286 ima gresku: sirina je pogresno postavljena na 5 pixela. Trebalo bi
+da bude 16 piksela.
+
+0-112 character set
+
+0-56 small set:
+0 - x in a box
+1 - '
+2 - (
+3 - )
+4 - ,
+5 - -
+6 - .
+7 - /
+8-17 - brojevi
+18-43 - slova
+44 - kockica (kursor)
+45 - *
+46 - znak funte
+47 - duza crtica
+48 - ?
+49 - :
+50 - +
+51 - %
+52 - ;
+53 - A sa dva akcenta iznad
+54 - U      - || -
+55 - O      - || -
+
+56 - nekakva uspravna crta
+
+zatim ide veliki set, za veliki karakter na indeks malog dodati 57 (izuzev za
+broj 56, on je jedinstven)
+
+113-122 zvezdice (za oznacavanje skill-a igraca)
+
+123 - slika lopte, ali nisam primetio da se igde koristi
+
+mali igraci sa odgovarajucom bojom i sarama na dresovima; koriste se za
+editovanje taktike (u njih se kopiraju odgovarajuce slicice)
+124 belac
+125 ridji
+126 crnja
+
+mali golmani, koriste se kod editovanja taktike
+(u njih se kopiraju odgovarajuce slicice)
+127 belac
+128 ridji
+129 crnja
+
+mali igraci sa jednobojnim dresovima
+130 belac
+131 ridji
+132 crnja
+
+mali igraci sa obojenim rukavima
+133 belac
+134 ridji
+135 crnja
+
+mali igraci sa vertikalnim prugama na dresovima
+136 belac
+137 ridji
+138 crnja
+
+mali igraci sa horizontalnim prugama na dresovima
+139 belac
+140 ridji
+141 crnja
+
+mali golmani
+142 belac
+143 ridji
+144 crnja
+
+149 - kursor za vreme editovanje taktike, frejm 1
+150 -                 -||-                      2
+151                   -||-                      3
+
+181 - dva prazna sprajta - nalaze se u edit teams meniju, u nevidljivim
+182 - stavkama pred kraj
+
+183 - strelica na gore (za skrolovanje)
+184 -    -||-     dole       -||-
+
+face igraca, za vreme editovanja taktike (mozda i jos negde)
+186 - belac
+187 - ridji
+188 - crnja
+
+189 - prazan sprajt, takodje se nalazi u edit teams meniju, kao poslednja,
+      nevidljiva stavka
+
+pehari
+215 - sampion u prvenstvu
+216 - pobednik turnira po pozivu
+217 - osvajac kupa
+218 - ???
+219 - kup evropskih sampiona
+220 - kup pobednika kupova
+221 - UEFA kup
+222 - svetsko prvenstvo
+223 - evropsko prvenstvo
+
+227-234 prva skrolujuca reklama
+235-242 druga       -||-
+243-250 treca       -||-
+
+255-270 brojevi + imena igraca, ispisuju se u levom gornjem uglu ekrana,
+        oznacavaju igraca koji trenutno ima loptu; tim 1
+271-286 brojevi + imena igraca za tim 2
+Ovi sprajtovi se popunjavaju pred utakmicu, inicijalno su prazni.
+
+307 - ime prvog tima
+308 Ova dva sprajta imaju nekakva posebna svojstva, i koristi se posebna
+    procedura za crtanje.
+
+310-317 - prostor u koji ce se upisati strelci golova za prvi tim
+318-325 -                    - || -                      drugi tim
+
+330 - sprite for current game time ("118 mins." when uninitialized)
+
+During the game, sprites [341..1178] will be adapted to colors of playing
+teams. Hair and skin color are handled by having three sets of images, and
+using the correct ones for each individual player. Goalkeepers have their own
+images, for main and reserve goalkeeper.
+
+team 1
+341-441  set 1 (all player images - white)
+442-542  set 2 (       -||-       - ginger)
+543-643  set 3 (       -||-       - black)
+
+team 2
+745-845  set 1 (all player images - white)
+846-946  set 2 (       -||-       - ginger)
+947-1004 set 3 (       -||-       - black)
+
+940-1004  team1 main goalkeeper
+1005-1062 team1 reserve goalkeeper
+
+1063-1120 team2 main goalkeeper
+1121-1178 team2 reserve goalkeeper
+
+team1 bench players
+1310-1315 sitting
+1316-1321 standing
+
+team2 bench players
+1322-1327 sitting
+1328-1333 standing
+
+
+=== Sprite decoding algorithm
+
+- linija se deli na cetiri "ravni", 0, 1, 2 i 3 (wquads * 8 / 4)
+- svaki piksel se sastoji iz cetiri bita
+- svaki piksel je sastavljen od po jednog bita iz svake ravni
+- prvi piksel se sastoji iz najvisih bitova iz ravni 3, 2, 1, 0 respektivno
+- drugi piksel se sastoji od sledecih bitova (sestih)
+- tako se ide bit po bit nadesno, do kraja linije
+- ovaj proces se ponavlja nlines puta dok se ne obrade sve linije
+
+
+=== In-game sprite struktura
+Ovo bi u stvari trebalo da se nazove Player struktura, ali gotovo sad :).
+
+offset  duzina   opis
+------  ------   ----
+  0        2     da li ce sprajt biti u highlights-ima? 0 = ne, !0 = da
+                 broj tima! za loptu, sudiju, korner zastavicu = 3
+                 0 = sprajtovi koji ne ulaze u highlights
+  2        2     redni broj igraca (majice)
+  4        2     ??? (nula za vreme utakmice)
+                 mozda nekakav picture offset za neki specifican sprajt
+  6        4     pointer to an animation table, it changes depending if the
+                 player is running, tackling or heading; can change without
+                 ball (say rolling on the pitch injured, or getting booked)
+                 table structure:
+                 - first word is the number of cycles between image transitions
+                 - after that the array of 32 pointers to image indices tables
+                   follows; they are actually grouped into 4 categories of 8
+                   pointers each:
+                       0 - player, team 1
+                       1 - player, team 2
+                       2 - goalkeeper, team 1
+                       3 - goalkeeper, team 2
+                 - inside the category pointer is indexed based on sprite
+                   direction 0..7
+                 - in index table special indices exist:
+                     = 999   - reset index to zero
+                     = 100   - subtract one of the indices
+                     <= 101  - add 100 + this to index
+                     -99..-1 - seems to be delay value
+                     otherwise - negate, add to frame delay and write to timer
+ 10        2     initial direction for the animation
+ 12        1     stanje igraca
+                 poredi se sa y;
+                 ako je razlicito od nule, igrac se ne markira
+                 kod lopte je non-stop = 255 (proveriti opet)
+                 kod igraca se gleda samo bajt, i vrednosti su:
+                 0  - trci
+                 1  - klizeci start
+                 3  - skrsen
+                 4  - kod golmana, boksuje loptu, hvata loptu
+                 5  - izvodi aut
+                 6  - kod golmana, baca se, niska lopta
+                 7  - kod golmana, baca se, visoka lopta
+                 9  - udara glavom
+                 12 - dobija karton (zuti ili crveni)
+                 13 - povredjen
+                 14 - tuzan, kada je izgubio
+                 15 - srecan, kada je pobedio
+                 jos muguce vrednosti su: 8, 10, 11 - ostalo izaziva pucanje
+                 programa
+ 13        1     brojac koliko ce dugo igrac ostati na zemlji nakon sto je
+                 oboren ili povredjen
+                 u stvari koliko vremena ce biti "neoperativan"; ovo se polje
+                 koristi i kad igrac izvodi aut, udara glavom, itd...
+ 14        2     ??? (kod lopte uvek 0)
+ 16        2     nesto za x
+ 18        2     nesto za y
+                 kod sudije, igraca i senke lopte ovo je dword, pointer na
+                 nesto
+                 ovde se upisuje dword iz tablice za sprajtove
+                 izgleda pointer na niz indeksa slicica
+ 20        2     mozda nastavak prethodnog polja
+                 izgleda da je polje 18 pointer na niz indeksa sa slicicama
+                 sprajtova koje se prikazuju (niz wordova) i izgleda da se
+                 zavrsava sa negativnim clanom
+                 mozda je cak i unija, jer se negde ofs18 koristi kao word
+ 22        2     indeks slicice koja se trenutno prikazuje
+ 24        2     ??? upisuje se prvi word iz tablica za sprajtove
+                 mozda broj slicica, ili najvisi indeks
+ 26        2     ciklicni tajmer za slicice, vrti se kad god je sprajt vidljiv
+                 kada dodje na nulu, crta se sledeca slicica
+ 28        2     neograniceni tajmer slicica, sa zastojem
+ 30        4     x koordinata u fiksnom zarezu signed word.signed word (na +2 offset-u je celi deo)
+ 34        4     y koordinata u fiksnom zarezu
+ 38        4     z koordinata u fiksnom zarezu (ima smisla samo kod lopte)
+ 42        2     pravac u kome je igrac okrenut, 0..7 (0 = gore, 4 = dole...)
+                        0
+                    7   |   1
+                        |
+                   6 ---+--- 2
+                        |
+                    5   |   3
+                        4
+                 za loptu -1 ako je van igre
+ 44        2     brzina igraca
+                 mnozi se sa some_pitch_related_value2
+                 ofs6 iz pitch_cvt tabele
+ 46        4     delta x, u fiksnom zarezu word.word (pomeraj po x)
+ 50        4     delta y, u fiksnom zarezu word.word (pomeraj po y)
+ 54        4     delta z, u fiksnom zarezu word.word (pomeraj po z)
+ 58        2     destination x, whole part
+ 60        2     destination y, whole part
+ 62        6     ??? (kod lopte 62, 64 = 0, 66 = -1 const.)
+ 68        2     is_visible, da li je sprajt vidljiv? !0 - da, 0 - ne
+ 70        2     indeks slicice sprajta, ako je negativno nema slicicu
+ 72        2     flag za snimanje sprajta: 1 - nemoj da snimas, !1 - snimaj
+ 74        4     sqr(x igraca - x lopte) + sqr(y igraca - y lopte)
+ 78        4
+ 82        2     rezultat iz tmp01 (pravac i smer 0..255)
+ 84        2     da li je sprajt crtan u prethodnom ciklusu? 0 = ne, 1 = da
+ 86        2     ??? mozda true za igraca, false za golmana
+                 kod lopte uvek nula
+ 88        4     ??? kod lopte uvek nula
+ 92        2     pravac u kome je igrac okrenut 0..7 (0 = gore, 4 = dole...)
+ 94        2     ako se igrac krece, vrednost je 255, ako stoji 0
+                 (tretira se kao bajt)
+ 96        2     nesto u vezi faulova (setuje se na 1 pri prvom faulu i ostaje
+                 tako dugo vreme, resetuje se gotovo random)
+                 ako je 2, nakon krljanja ce se samo pustiti komentar za faul
+                 recimo tackle state, 1 ako igrac uklizava, 2 za uspesno uklizavanje
+                 (uspeva da pokupi loptu)
+ 98        2     ??? nesto u vezi udaranja glavudzom
+100        2     ??? vrednosti 0,1,2,3
+                 izgleda se inicijalizuje na 1, ako je ofs 142 tima != 0 (za igrace)
+                 za golmane = 3
+                 u MovePlayers, ako je lopta van igre ako je 1 stavi na 2
+102        2     ako je < 0, igrac ima crveni karton, ako je > 0 igrac ima zuti
+                 karton, ako je nula, nema kartona
+104        2     izgleda nesto u vezi povreda, izgleda ako je -2 => povreda
+                 moze biti i -1 i -2
+                 stepen povrede, pocetna vrednost za tajmer povrede (koliko ce
+                 se dugo igrac valjati po terenu) (bajt)
+                 video sam vrednosti 60, 70 i 80
+106        2     brojac, umanjuje se za jedan dok je igrac u klizecem startu
+                 moze se i povecavati za jedan, nepoznato zasto
+                 menja se samo dok je igrac blizu lopte
+108        2     da li je igrac izbacen, tj. da li je dobio crveni karton?
+                 (1 = true)
+
+Duzina 110 bajtova.
+
+
+=== Konverzija boja sprajta
+
+Boje:
+
+ 0 - \
+ 1 - +- bez izmene
+ 2 - |
+ 3 - /
+ 4 - boja koze (tamna nijansa)
+ 5 - boja koze (srednja nijansa)
+ 6 - boja koze (svetla nijansa)
+ 7 - ide u nulu
+ 8 - ne menja se
+ 9 - boja kose (srednja nijansa)
+10 - osnovna boja majice
+11 - boja pruga majice (menja se sa 10 u slucaju vertikalnih pruga)
+12 - boja kose (tamna nijansa)
+13 - boja kose (svetla nijansa)
+14 - boja sortsa
+15 - boja carapa
+
+
+=== Koordinate objekata po terenu
+
+Koordinate su u pikselima u odnosu na gornji levi piksel terena. SWOS koristi
+y koordinate uvecane za 16, jer ima jos jedan red patterna pre pocetka koji se
+ne vidi. Dimenzije terena su 672 x 848 piksela.
+
+[koordinate date za 16 manje nego u SWOS-u]
+
+y koordinata lopte se poredi sa 216, 682, 449 pri odredjivanju da li ce se
+partija produziti
+
+Sesnaesterac po x: [193..478]
+Donja granica gornjeg sesnaesterca: 200
+Gornja granica donjeg sesnaesterca: 666
+Granice terena po y: [113..753] (SWOS: 129..769)
+Granice od kojih se lopta odbija po x: [53..618]
+              -||-               po y: [84..783]
+Gornja gol-linija: 113
+Donja gol-linija: 753
+Krajnja donja linija donjeg gola: 762
+Precka gornjeg dela: 96
+Leva stativa: 302
+Desna stativa: 372
+Leva aut linija: 81
+Desna aut linija: 590
+
+y kamere kada gornji tim krece sa centra: 336
+      -||-    donji          -||-       : 309
+
+Teren: (0, 16) - (671, 863)
+Koordinate gola po x: 302..366
+Precka gornjeg gola: 112
+Pokusaj suta na gol po x: 240..430
+
+Donja bela tacka: 336, 711
+
+Lopta na centru: (336, 449)
+
+Korneri:
+gornji levi:  ( 86, 134)
+gornji desni: (585, 134)
+donji levi:   ( 86, 764)
+donji desni:  (585, 764)
+
+Gol auti (kada golman izvodi):
+gornji levi:  (276, 154)
+gornji desni: (396, 154)
+donji levi:   (276, 744)
+donji desni:  (396, 744)
+
+Granice za "near miss":
+po x: 290..281
+po z:   0..25
+Takodje, brzina lopte mora biti barem 768
+
+Granice donjeg podrucja za slobodni udarac:
+po y: 551..666
+Granice gornjeg podrucja za slobodni udarac:
+po y: 200..31
+
+
+=== Razno
+
+- igrac koji je postigao gol se raduje u 78.90625% frejmova, dok se njegovi saigraci raduju u 50%
