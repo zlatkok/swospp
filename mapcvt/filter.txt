@@ -170,7 +170,7 @@ seed2, byte
 Rand, function
 ChangeGameLength
 ChangePitchType
-game_length_str_table
+gameLengthStrTable
 pitch_type_str_table
 aPlayer_0
 aPitchType
@@ -390,6 +390,7 @@ SetNextPlayerFrame, function
 playerSpeedsGameInProgress, array const word[8]
 goalScored, word
 playerNormalStandingAnimTable, array const char
+UpdateTime
 
 
 ### Watcom C library

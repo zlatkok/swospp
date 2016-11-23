@@ -1,43 +1,36 @@
-=== Osnovno
+=== Basics
 
-Sprajtovi i font se nalaze u dat fajlovima: charset.dat,goal1.dat,team1.dat,
-team2.dat itd. Sprite.dat je gomila offseta, i nakon fixup-a se samo indeksira
-ovaj fajl i dobija se pointer na odredjeni sprajt. Prvih 227 sprajtova su oni
-sprajtovi koji su potrebni za vreme dok je meni sistem aktivan (fontovi,
-male slicice igraca, face, itd...).
+Sprites and fonts are located in dat files: charset.dat, goal1.dat, team1.dat,
+team2.dat etc. Sprite.dat contains offsets for sprites, and after fix up all
+that's needed to access any sprite is to index into this file. First 227
+sprites are the sprites needed while the menu system is active (fonts, little
+player images, faces, etc.).
 
-Sprajtovi se nalaze u bit-coded obliku, i prvo moraju da se "uncrunchuju" da bi
-se koristili. Za to je zasluzna procedura UnchainFont (koja uprkos imenu
-raspakuje i sprajtove (sprajtovi i karakteri su jedno te isto)). Sprajtovi
-koriste samo 16 boja, i zato je 2 pixel-a = 1 byte. Format sprajt strukture bi
-izgledao otprilike ovako:
+Sprites are stored in bit-coded form, and they must be "uncrunched" first in
+order to be used, which is job of UnchainSprite procedure. Sprites use only 16
+colors, and therefore each pixel is represented with 4 bits (2 pixels = 1
+byte). This is what the format of the SpriteGraphics structure looks like:
 
-        offset  duzina   opis
-        ------  ------   ----
-           0      4      pointer na pixele sprajta
-           4      6      nepoznato, uvek nula u fajlovima
-          10      2      tacna sirina u pixelima (niblovima)
-          12      2      broj linija (nlines)
-          14      2      sirina u paragrafima, tj. broj pixela / 16, odnosno
-                         broj bajtova / 8 (posto je jedan pixel = nibble;
-                         koristi se samo 16 boja).
-                         Formule:
-                         ofs14 << 4 - broj pixela
-                         ofs14 << 3 - broj bajtova (znaci i sirina na ekranu)
-          16      2      centar po x, opseg: [-8..34]
-          18      2      centar po y, opseg: [0..27], koriste se samo za vreme
-                         partije, kod sprajtova koji se koriste samo u menijima
-                         vrednosti su nula
-          20      1      za sada nepoznato, mozda nekakvi flegovi?
-          21      1      nlines / 4, za sada nisam video da se igde koristi
-          22      2      redni broj sprajta u sprite.dat fajlu
+        offset  length   description
+        ------  ------   -----------
+           0      4      pointer to sprite pixels
+           4      6      unknown, always zero in files
+          10      2      exact width in pixels (nibbles)
+          12      2      number of lines (nlines)
+          14      2      width in paragraphs - number of pixels / 16, or
+                         number of bytes / 8 (since 1 pixel = 1 nibble)
+                         Some formulas:
+                         ofs14 << 4 - number of pixels
+                         ofs14 << 3 - number of bytes (width when copied to screen)
+          16      2      x center, used range: [-8..34]
+          18      2      y center, used range: [0..27], these are used only in
+                         game sprites, menu sprites have it at zero always
+          20      1      so far unknown, perhaps some sort of flags?
+          21      1      nlines / 4, haven't seen it used anywhere so far
+          22      2      sprite ordinal in sprite.dat file
 
-Polja 16 i 18 bi mogla da budu:
-1) koordinata tacke (u sprajtu) od koje se lopta odbija
-2) nekakve Z koordinate, ili vidljivi deo prilikom preklapanja ili tako nesto
-oduzmi polje16 od x
-oduzmi polje18 od y
-Izgleda da su to koordinate centra sprajta (ili polovine)
+Fields 16 and 18 are used for example as a point in sprite from which ball
+bounces off.
 
 sprite.dat:
 227 pointera su podaci iz charset.dat (sprajtovi za vreme menija)

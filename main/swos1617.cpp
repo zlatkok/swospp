@@ -72,7 +72,7 @@ static void printCredits()
         "\0"
         "SPECIAL THANKS TO:\0"
         "SYNCHRONATED, ZLATKO KARAKAŠ, ROCK AND ROLL, REDHAIR\0"
-        "ELMICHAJ, ARMANDO JIMENEZ, STARWINDZ, MOZG\0"
+        "ELMICHAJ, ARMANDO JIMENEZ, STARWINDZ, MOZG, SIDA79, ZIGEUNER\0"
         "\0"
         "VISIT:          WWW.SENSIBLESOCCER.DE\0"
         "                  WWW.FACEBOOK.COM/SWOSUNITED\0";

@@ -899,7 +899,7 @@ section .data
         ; [44] game length
         StartEntry 251, chat_y + 13, 54, 11, optGameLength
             EntryColor 13
-            StringTable 0, game_length_str_table
+            StringTable 0, gameLengthStrTable
             OnSelect ChangeGameLengthAndNotify
             NextEntries -1, -1, gameLobbyMenu_playerWatcher, 46
         EndEntry

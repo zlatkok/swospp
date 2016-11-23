@@ -245,6 +245,23 @@ Granice "setkanja" golmana po x: 285..387
 Kada se baca, 75 frejmova je neoperativan.
 
 
+=== Time keeping
+
+Function UpdateTime is responsible of advancing match timer. It is called each
+frame, from core game loop. Game seconds advance based on
+secondsSwitchAccumulator variable. In each frame variable timeDelta gets
+subtracted from it, and if the result strictly less than zero one game second
+has elapsed. timeDelta values depend on game length selected in options:
+3 mins - 30, 5 mins - 18, 7 mins - 12, 10 mins - 9. Once accumulator gets below
+zero, 54 is added to it. This is actually wrong, and has caused shorter matches
+on PC version, which went unnoticed for about 20 years :). Proper value is 70
+and it's fixed in SWOS++. It can also be patched with hex editor, file offset
+is 0x1038aa, value 0x36 needs to be changed to 0x46.
+When game seconds are incremented, they are increased by a value from variable
+timerDifference, which represents number of ticks passed between this and last
+frame (it will be at least 1).
+
+
 === Misc.
 
 U neg_term_spr_array se nalaze svi sprajtovi koje igra iscrtava po frejmu.

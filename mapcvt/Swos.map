@@ -3142,8 +3142,8 @@
  0002:00018B6C       trainingMatchSavedPlayers
  0002:00018BB2       lastMatchPlayers
  0002:00018BF2       currentTactics
- 0002:00018CA6       season_finished
- 0002:00018CA8       career_finished
+ 0002:00018CA6       seasonFinished
+ 0002:00018CA8       careerFinished
  0002:00018CC4       season_number_of_squads
  0002:0001ACB4       euro_cup_copy
  0002:0001AD03       cup_winners_cup_copy
@@ -3385,7 +3385,7 @@
  0002:00050332       lastKey
  0002:00050334       frameCount
  0002:00050336       timerDifference
- 0002:00050338       last_timer_index
+ 0002:00050338       lastStoppageTimerValue
  0002:0005033A       stoppageTimer
  0002:0005033C       currentTick
  0002:00050348       drawitem_checks
@@ -3472,7 +3472,7 @@
  0002:00050E18       corner_flag_sprite
  0002:00050E86       advert_ingame_sprites
  0002:000511F6       referee_sprite
- 0002:000512D2       current_time_sprite
+ 0002:000512D2       currentTimeSprite
  0002:00051340       result_on_halftime
  0002:000513AE       result_after_the_game
  0002:0005141C       team1_name_sprite
@@ -3862,7 +3862,7 @@
  0002:000708FC       pl2Tactics
  0002:000708FE       team1_computer
  0002:00070900       team2_computer
- 0002:00070902       ingame_game_length
+ 0002:00070902       ingameGameLength
  0002:00070904       extra_time_state
  0002:00070906       penalties_state
  0002:0007090A       team1_goals_first_leg
@@ -4425,9 +4425,9 @@
  0002:000B1962       src_color3
  0002:000B1F74       show_prerelease_counter
  0002:000B1F76       prg_active
- 0002:000B1F78       options_menu
+ 0002:000B1F78       optionsMenu
  0002:000B21C6       pitch_type_str_table
- 0002:000B21F0       game_length_str_table
+ 0002:000B21F0       gameLengthStrTable
  0002:000B2206       auto_replays_str_table
  0002:000B2214       all_pl_teams_equal_str_table
  0002:000B2222       auto_save_hl_str_table
@@ -4666,11 +4666,11 @@
  0002:000BDA5F       faces_array_2
  0002:000BDA62       goalie_table
  0002:000BDA76       copy_time_sprite
- 0002:000BDA78       time_left_till_update
- 0002:000BDA7A       game_seconds
+ 0002:000BDA78       timeLeftTillUpdate
+ 0002:000BDA7A       gameSeconds
  0002:000BDA7C       gameTime
- 0002:000BDA80       time_delta
- 0002:000BDA82       game_len_sec_table
+ 0002:000BDA80       timeDelta
+ 0002:000BDA82       gameLenSecondsTable
  0002:000BDA8A       end_game_counter
  0002:000BDA8C       pitch_normal
  0002:000BDAA7       pitch_dry
@@ -4743,11 +4743,11 @@
  0002:000BDF52       last_team_booked
  0002:000BDF56       ref_timer
  0002:000BDF58       rand_value_from_len_tables
- 0002:000BDF5A       game_len_3mins
- 0002:000BDF7A       game_len_5mins
- 0002:000BDF9A       game_len_7mins
- 0002:000BDFBA       game_len_10mins
- 0002:000BDFDA       game_len_table
+ 0002:000BDF5A       gameLength3mins
+ 0002:000BDF7A       gameLength5mins
+ 0002:000BDF9A       gameLength7mins
+ 0002:000BDFBA       gameLength10mins
+ 0002:000BDFDA       gameLengthTable
  0002:000BDFEA       ball_out_of_game_timer
  0002:000BDFEC       write_only_var_03
  0002:000BDFF0       aSfxFlcWincup_r

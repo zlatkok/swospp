@@ -1,6 +1,10 @@
-14.10.206.
+22.11.2016.
+- fixed bug which was causing matches to last too short - it was actually one
+  wrong constant in UpdateTime, that was probably left over from Amiga where
+  frame rate is different
+14.11.2016.
 - SWOS 2016/2017 anniversary edition is out!
-11.10.2016.
+11.11.2016.
 - preparing new version, for 20th SWOS anniversary
 01.05.2016.
 - v1.9.1.7 sent to Playaveli

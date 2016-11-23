@@ -18,7 +18,6 @@ Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Fea
     <tr><td>bin</td><td>binary files, SWOS++, loader, utility programs...</td></tr>
     <tr><td>dist</td><td>this is where the dist archive will be created</tr>
     <tr><td>doc</td><td>various documentation, both internal and public</tr>
-    <tr><td>etc</td><td>various files that don't belong anywhere else, listings, lib files, etc.</tr>
     <tr><td>extra</td><td>additional scripts and executables needed for build</tr>
     <tr><td>loader</td><td>loader source</tr>
     <tr><td>main</td><td>SWOS++ source</tr>
@@ -28,6 +27,7 @@ Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Fea
     <tr><td>patch</td><td>patcher source</tr>
     <tr><td>pe2bin</td><td>source of converter from Win32 PE to custom executable format</tr>
     <tr><td>test</td><td>unit tests for various components, and miscellaneous test code</tr>
+    <tr><td>var</td><td>various files that don't belong anywhere else, listings, lib files, etc.</tr>
 </table>
 
 
@@ -35,9 +35,9 @@ Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Fea
 
 - GNU make
 - subset of any working Unix environment (for shell, and some UNIX utilities)
+- GCC 4.9.x (4.8.x might not work)
 - Open Watcom C Compiler (main program used to be compiled with it, but
   nowadays used for test programs only)
-- GCC 4.9.x (4.8.x might not work)
 - NASM 0.98.36 my patched version (in /extra)
 - Perl, any not-totally-ancient version will do
 - Python 3, same note

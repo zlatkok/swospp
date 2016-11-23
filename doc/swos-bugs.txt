@@ -18,3 +18,4 @@
   first word - team number which is not used anyway. But still it remains
   unknown whether this is intentional or not.
 - DoUnchainSpriteInMenus starts with mov cx, word [D1] but uses full ecx later
+- game lengths are too short... only took 20 years to notice :D

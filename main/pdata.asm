@@ -712,6 +712,9 @@ PatchStart:
         nop
     EndRecord
 
+    ; fix game length bug on PC version
+    PatchByte UpdateTime + 0xfa, 70
+
 %ifdef DEBUG
     ; don't waste time on opening animations in debug version
     PatchByte Initialization + 0x19, 1
