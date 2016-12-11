@@ -1,3 +1,23 @@
+11.12.2016.
+- 1.9.2.0 sent to Playa; did some fixed for "coach" bug blindly, but can't
+  reproduce, so just hoping for the best
+- bunch of small bugs fixed that were there for a long time
+06.12.2016.
+- added saving of player positions in play match menu, as well as current
+  tactics; that damn bug when "play match" changes to "coach match" still
+  eludes me
+- changed file ordering to alphabetically, order by modification time was too
+  annoying when trying to fix multiple errors in one file with rebuilding in
+  between
+03.12.2016.
+- I fixed that damn and so annoying bug where swapping players in starting
+  lineup wouldn't work after first game... seems that I was adding selected
+  teams to selected teams buffer without resetting number of teams first...
+  that caused SWOS' elaborate caching system to pick up first team (which is
+  now obsolete), and return it when looking for players... in turn causing
+  player positions table not to get updated when players are swapped (or more
+  accurately it gets updated, but in wrong team).... ugh, so finally found it
+  after looking at ALL the wrong places...
 22.11.2016.
 - fixed bug which was causing matches to last too short - it was actually one
   wrong constant in UpdateTime, that was probably left over from Amiga where

@@ -1,7 +1,5 @@
 #include <cstdint>
 #include <stdarg.h>
-#include "swos.h"
-#include "util.h"
 
 #pragma GCC diagnostic ignored "-Wparentheses"
 
@@ -13,7 +11,7 @@ char *ltoa (long value, char *buffer, int radix);
 
 #define BUF_SIZE 40
 
-typedef struct Specification {
+struct Specification {
     int width;
     int precision;
     int size_modifier;
@@ -36,7 +34,7 @@ typedef struct Specification {
     int is_short:1;
     int is_long:1;
     int is_short_short:1;
-} Specification;
+};
 
 static void SetZeroPad(Specification *spec);
 static void ResetSpecification(Specification *);
@@ -298,7 +296,8 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
         if (spec->precision >= 0 && spec->precision < spec->length)
             spec->n1 = spec->precision;
         if (spec->sharp) {
-            spec->n1 = max(spec->n1, spec->precision);
+            if (spec->precision > spec->n1)
+                spec->n1 = spec->precision;
             spec->n1 = spec->n1 * 3 - 1;
         }
         break;

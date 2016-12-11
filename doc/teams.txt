@@ -8,36 +8,37 @@ alphabetically.
 First we have a word, big endian - number of teams in file,
 then there is team header, 76 bytes
 header is followed by 16 structure that represent players,
-size is 38 bytes
+size is 38 bytes each
 
 team header:
 ------------
 offset:  size:  desc.
 -------  -----  -----
-   0       1    broj zemlje - broj team fajla (team.nnn), koristi se kao index
-                u nekakvu tablicu translacije, i na rezultat se dodaje 2. bajt
-                Fajlovi od 80 do 85 sadrze nacionalne timove po kontinentima:
-                80 - Evropa
-                81 - Afrika
-                82 - Juzna Amerika
-                83 - Severna Amerika
-                84 - Azija
-                85 - Australija i Okeanija
-                (za ostalo videti mapu team.* fajlova na kraju)
-   1       1    redni broj tima u fajlu
-   2       2    globalni broj tima: formira se tako sto se broj zemlje
-                konvertuje preko tablice i na njega se dodaje redni broj tima
-                (mora biti jedinstven za citav SWOS)
-   4       1    status tima (ko kontrolise tim):
-                  0 - tim nije selektovan
-                  1 - kompjuter
-                  2 - igrac-trener
-                  3 - trener
-                u fajlu je ovo polje nebitno
-   5      17    ime tima, null-terminated
-  22       1    pa valjda null terminator :P
-  23       1    and-uje sa 0xFE
-  24       1    taktika:
+   0       1    country number - number of team file (team.nnn), used as an
+                index into some kind of translation table, 2nd byte is added to
+                the result
+                Files 80 to 85 contain national teams by continents:
+                80 - Europe
+                81 - Africa
+                82 - South America
+                83 - North America
+                84 - Asia
+                85 - Australia and Oceania
+                (for the rest see map of team.* files near the bottom)
+   1       1    team ordinal in the file
+   2       2    global team number: formed by converting country number via a
+                translation table and adding team ordinal to the result (it has
+                to be unique in entire SWOS)
+   4       1    team status (who's controlling it):
+                  0 - team isn't selected
+                  1 - computer
+                  2 - player-coach
+                  3 - coach
+                this field is irrelevant in the file
+   5      17    team name, null-terminated
+  22       1    I'm guessing null terminator :P
+  23       1    AND this with 0xFE
+  24       1    tactics:
                   0  - 4-4-2
                   1  - 5-4-1
                   2  - 4-5-1
@@ -56,12 +57,12 @@ offset:  size:  desc.
                   15 - USER D
                   16 - USER E
                   17 - USER F
-  25       1    liga:
+  25       1    league:
                   0 - premier
-                  1 - prva
-                  2 - druga
-                  3 - treca
-                  4 - van lige
+                  1 - first
+                  2 - second
+                  3 - third
+                  4 - non-league
                 primarni set:
   26       1    tip majice:
                   0 - obicna
@@ -107,159 +108,59 @@ struktura igraca:
 offset:  size:  desc.
 -------  -----  -----
    0       1    nacionalnost:
-                  0   - ALB
-                  1   - AUT
-                  2   - BEL
-                  3   - BUL
-                  4   - CRO
-                  5   - CYP
-                  6   - TCH
-                  7   - DEN
-                  8   - ENG
-                  9   - EST
-                  10  - FAR
-                  11  - FIN
-                  12  - FRA
-                  13  - GER
-                  14  - GRE
-                  15  - HUN
-                  16  - ISL
-                  17  - ISR
-                  18  - ITA
-                  19  - LAT
-                  20  - LIT
-                  21  - LUX
-                  22  - MLT
-                  23  - HOL
-                  24  - NIR
-                  25  - NOR
-                  26  - POL
-                  27  - POR
-                  28  - ROM
-                  29  - RUS
-                  30  - SMR
-                  31  - SCO
-                  32  - SLO
-                  33  - SWE
-                  34  - TUR
-                  35  - UKR
-                  36  - WAL
-                  37  - YUG
-                  38  - BLS
-                  39  - SVK
-                  40  - ESP
-                  41  - ARM
-                  42  - BOS
-                  43  - AZB
-                  44  - GEO
-                  45  - SWI
-                  46  - IRL
-                  47  - MAC
-                  48  - TRK
-                  49  - LIE
-                  50  - MOL
-                  51  - CRC
-                  52  - SAL
-                  53  - GUA
-                  54  - HON
-                  55  - BHM
-                  56  - MEX
-                  57  - PAN
-                  58  - USA
-                  59  - BAH
-                  60  - NIC
-                  61  - BER
-                  62  - JAM
-                  63  - TRI
-                  64  - CAN
-                  65  - BAR
-                  66  - ELS
-                  67  - SVC
-                  68  - ARG
-                  69  - BOL
-                  70  - BRA
-                  71  - CHL
-                  72  - COL
-                  73  - ECU
-                  74  - PAR
-                  75  - SUR
-                  76  - URU
-                  77  - VEN
-                  78  - GUY
-                  79  - PER
-                  80  - ALG
-                  81  - SAF
-                  82  - BOT
-                  83  - BFS
-                  84  - BUR
-                  85  - LES
-                  86  - ZAI
-                  87  - ZAM
-                  88  - GHA
-                  89  - SEN
-                  90  - CIV
-                  91  - TUN
-                  92  - MLI
-                  93  - MDG
-                  94  - CMR
-                  95  - CHD
-                  96  - UGA
-                  97  - LIB
-                  98  - MOZ
-                  99  - KEN
-                  100 - SUD
-                  101 - SWA
-                  102 - ANG
-                  103 - TOG
-                  104 - ZIM
-                  105 - EGY
-                  106 - TAN
-                  107 - NIG
-                  108 - ETH
-                  109 - GAB
-                  110 - SIE
-                  111 - BEN
-                  112 - CON
-                  113 - GUI
-                  114 - SRL
-                  115 - MAR
-                  116 - GAM
-                  117 - MLW
-                  118 - JAP
-                  119 - TAI
-                  120 - IND
-                  121 - BAN
-                  122 - BRU
-                  123 - IRA
-                  124 - JOR
-                  125 - SRI
-                  126 - SYR
-                  127 - KOR
-                  128 - IRN
-                  129 - VIE
-                  130 - MLY
-                  131 - SAU
-                  132 - YEM
-                  133 - KUW
-                  134 - LAO
-                  135 - NKR
-                  136 - OMA
-                  137 - PAK
-                  138 - PHI
-                  139 - CHN
-                  140 - SGP
-                  141 - MAU
-                  142 - MYA
-                  143 - PAP
-                  144 - TAD
-                  145 - UZB
-                  146 - QAT
-                  147 - UAE
-                  148 - AUS
-                  149 - NZL
-                  150 - FIJ
-                  151 - SOL
-                  152 - CUS
+
+    0  - ALB        51  - CRC         102 - ANG
+    1  - AUT        52  - SAL1        103 - TOG
+    2  - BEL        53  - GUA1        104 - ZIM
+    3  - BUL        54  - HON1        105 - EGY
+    4  - CRO        55  - BHM1        106 - TAN
+    5  - CYP        56  - MEX1        107 - NIG
+    6  - TCH        57  - PAN1        108 - ETH
+    7  - DEN        58  - USA1        109 - GAB
+    8  - ENG        59  - BAH1        110 - SIE
+    9  - EST        60  - NIC1        111 - BEN
+    10 - FAR        61  - BER1        112 - CON
+    11 - FIN        62  - JAM1        113 - GUI
+    12 - FRA        63  - TRI1        114 - SRL
+    13 - GER        64  - CAN1        115 - MAR
+    14 - GRE        65  - BAR1        116 - GAM
+    15 - HUN        66  - ELS1        117 - MLW
+    16 - ISL        67  - SVC1        118 - JAP
+    17 - ISR        68  - ARG1        119 - TAI
+    18 - ITA        69  - BOL1        120 - IND
+    19 - LAT        70  - BRA1        121 - BAN
+    20 - LIT        71  - CHL1        122 - BRU
+    21 - LUX        72  - COL1        123 - IRA
+    22 - MLT        73  - ECU1        124 - JOR
+    23 - HOL        74  - PAR1        125 - SRI
+    24 - NIR        75  - SUR1        126 - SYR
+    25 - NOR        76  - URU1        127 - KOR
+    26 - POL        77  - VEN1        128 - IRN
+    27 - POR        78  - GUY1        129 - VIE
+    28 - ROM        79  - PER1        130 - MLY
+    29 - RUS        80  - ALG1        131 - SAU
+    30 - SMR        81  - SAF1        132 - YEM
+    31 - SCO        82  - BOT1        133 - KUW
+    32 - SLO        83  - BFS1        134 - LAO
+    33 - SWE        84  - BUR1        135 - NKR
+    34 - TUR        85  - LES1        136 - OMA
+    35 - UKR        86  - ZAI1        137 - PAK
+    36 - WAL        87  - ZAM1        138 - PHI
+    37 - YUG        88  - GHA1        139 - CHN
+    38 - BLS        89  - SEN1        140 - SGP
+    39 - SVK        90  - CIV1        141 - MAU
+    40 - ESP        91  - TUN1        142 - MYA
+    41 - ARM        92  - MLI1        143 - PAP
+    42 - BOS        93  - MDG1        144 - TAD
+    43 - AZB        94  - CMR1        145 - UZB
+    44 - GEO        95  - CHD1        146 - QAT
+    45 - SWI        96  - UGA1        147 - UAE
+    46 - IRL        97  - LIB1        148 - AUS
+    47 - MAC        98  - MOZ1        149 - NZL
+    48 - TRK        99  - KEN1        150 - FIJ
+    49 - LIE        100 - SUD1        151 - SOL
+    50 - MOL        101 - SWA1        152 - CUS
+
    1       1    ??? (boolean izgleda)
    2       1    broj igraca (majice) u timu
    3      23    ime igraca (null terminated)
@@ -270,14 +171,23 @@ offset:  size:  desc.
                 belac   0x00 0x20 0x40 0x60 0x80 0xA0 0xC0 0xE0
                 ridji   0x08 0x28 0x48 0x68 0x88 0xA8 0xC8 0xE8
 
-                bitovi 5,6,7 - pozicija, 0 = rezerva
-                bitovi 3 i 4 - faca (00 = belac, 10 = crnja, 01 = ridji)
-  27       1    ??? (init na nulu) 2.,3. i 4. bit su nesto, takodje bitovi
+                bits 5,6,7 - position, 0 = goalkeeper
+                bits 3,4 - face (00 = white, 10 = black, 01 = ginger)
+  27       1    ??? bit-field (initialized to zero)
+                bits 2,3,4 - cards: bit 2 - yellow card, bit 3 - red card
+                     (doesn't matter if direct or after two yellow)
+                bits 0,1 - could be cards state if D3 param to PlayGame is true
+                           if D3 param is true:
+                            bits 0,1 are:
+                             zero: cards <- 0
+                             non-zero: cards <- 2 (red card)
+                bits 5,6,7 - injuries
                 0 i 1, i bitovi 5,6,7
                 u fajlu je nebitno, pred partiju se bitovi 5,6,7 setuju na
                 osnovu slucajnih vrednosti
+                could it be injuries?
   28       1    (h.o. nibble) ???
-                (l.o.  -||- ) passing (vrednosti 0..15)
+                (l.o.  -||- ) passing (values 0..15)
   29       1    (h.o.  -||- ) shooting
                 (l.o.  -||- ) heading
   30       1    (h.o.  -||- ) tackling
@@ -380,9 +290,10 @@ offset:  size:  desc.
 -------  -----  -----
    0       1    ? - uvek nula u hilovima, ako je razlicito od nule, onda se
                 preskace igrac (strelica ne moze da ga selektuje)
-   1       1    indeks igraca u file team strukturi
-   2       1    broj postignutih golova
-   3       1    redni broj igraca (broj za vreme partije)
+                probably isInjured flag
+   1       1    player index in team file structure
+   2       1    number of goals scored
+   3       1    shirt number
    4       1    indeks pozicije igraca, ili -1 ako je bio zamenjen
    5       1    indeks face igraca
    6       1    da li je igrac povredjen? [0,1]
@@ -393,6 +304,7 @@ offset:  size:  desc.
    9       1    ima uticaja na kriterijum za crveni karton, cini mi se da je
                 kriterijum strozi ako je true
                 moguce cak da je true ako igrac vec ima zuti karton?
+                cards (offset 10) are copied here right before the game
   10       1    zuti/crveni kartoni - 1 ako je igrac dobio zuti karton, 3 ako
                 je dobio crveni (bilo direktno, bilo preko dva zuta)
                 bitflags:
@@ -430,8 +342,8 @@ offset:  size:  desc.
                 na poluvremenu i kraju partije: ukoliko ima 0 ili 1 zuti
                 karton, i ukoliko je ovo polje jedan, upisi 2
                 izgleda u kom je poluvremenu igrao igrac
-  37       1    index face igraca [0,1,2,3]
-  38      23    puno ime igraca
+  37       1    player face index [0,1,2,3]
+  38      23    full name of the player
 
 61 je velicina strukture igraca. Igraci su izgleda poredjani po brojevima u
 file strukturi.
@@ -878,6 +790,20 @@ offset:  size:  description
 5) 14BFD2, verovatno kupovi,
 
 
+POOLPLYR.DAT
+============
+
+It is comprised of 900 records, sized 58 bytes each. This makes the file size
+fixed to 52,200 bytes. Structure of records is:
+
+offset:  size:  description
+-------  -----  -----------
+   0       2    some id word, maybe team id
+   1       1    also used for comparing and locating records
+   2      17    ???
+  20      38    Player (file) record
+
+
 GetPlayerPrice
 ==============
 
@@ -1043,3 +969,11 @@ db 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 1
 - s obzirom da su oba broja u opsegu [0..49], razlika mora biti u opsegu [1..49]
 - vrednosti tablice su tako nastelovane da ce rezultat u svakom slucaju biti [0..49]
 - vrednosti tablice moraju biti manje ili jednake vrednosti indeksa da bi rezultat bio u [0..49] opsegu
+
+Player swapping
+===============
+Players in starting lineup (1-11) will keep their shirt number when swapped.
+Bench players are explicitly assigned numbers 12-16, and if at least one bench
+player is involved in the swap both players will swap their shirt numbers with
+each other. Bench player(s) will still end up as 12-16 as SWOS will assign
+those numbers to all bench players after the swap has been made.

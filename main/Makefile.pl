@@ -18,13 +18,15 @@ my $SWOS_16_17  = 1;    # build for SWOS 16/17 edition
 # SWOS++ base file name
 my $BASE_FNAME  = 'swospp';
 
-# list of ignored files, if without extension will ignore all files regardless of their extension
+# list of ignored files, file name without extension will cause all files with
+# that name to be ignored regardless of their extension
 my %IGNORE_SRCS = map { $_ => 1 } qw//;
 
 my $CC          = 'g++';
 my $AS          = '..\extra\nasm';
 my $DIS         = '';       # no need for wdis anymore, gcc can generate listings directly
 my $LINK        = 'alink';
+my $PCH         = 'stdinc.h';
 
 my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 -Wa,-adhlns=$(LST_DIR)/$*.lst -fno-ident ' .
                   '-mno-red-zone -mrtd -march=i386 -nostdlib -ffreestanding -fno-leading-underscore -fno-stack-protector ' .
@@ -32,6 +34,9 @@ my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 
                   '-fno-asynchronous-unwind-tables -momit-leaf-frame-pointer -mpreferred-stack-boundary=2 ' .
                   '-Wundef -fomit-frame-pointer -fverbose-asm -Wstack-usage=43008 -Wno-multichar -o$@ $<';
 my $AFLAGS      = '-s -w+macro-params -w+orphan-labels -fwin32 -O3 -o$@ -l$(LST_DIR)/$*.asm.lst $<';
+
+my $CPP_INCLUDE_SWITCH = '-I';
+my $ASM_INCLUDE_SWITCH = '-I';
 
 my $DBG_CFLAGS  = ' -DDEBUG=1 -g';
 my $DBG_AFLAGS  = ' -DDEBUG';
@@ -90,6 +95,7 @@ my %additionalIncludes;
 my %srcFiles;
 my %includes;
 my %warnings;
+my $PCH_OUTPUT = $OBJ_DIR;
 
 # parse command line and set some flags
 parseCommandLine();
@@ -114,7 +120,8 @@ $scriptTimestamp = time() if ($REBUILD);
 generateBitmaps($scriptTimestamp);
 
 my $TARGET_FULL = ('RELEASE', 'DEBUG')[$TARGET eq 'dbg'];
-$OBJ_DIR = catfile($OBJ_DIR, $TARGET);
+$OBJ_DIR = catdir($OBJ_DIR, $TARGET);
+$PCH_OUTPUT = catfile($OBJ_DIR, "$PCH.gch");
 my %SRC_EXTENSIONS = map { $_ => 1 } qw/.c .cpp .asm/;
 my %INCLUDES_EXTENSIONS = map { $_ => 1 } qw/inc h/;
 
@@ -155,20 +162,31 @@ find( { wanted => sub
 }, no_chdir => 1 }, '.');
 logl(Dumper(%includes));
 
+my $pchBuilt = buildPrecompiledHeader($scriptTimestamp);
+
 # gather dependencies
 logl("Resolving dependencies and updating timestamps...");
 map {
+    # skip if precompiled headers were generated
     my $srcPath = $_;
-    getDependencies($srcPath, $srcFiles{$_}{'dir'}, $srcFiles{$srcPath}{'file'});
-    updateTimestamp($srcPath);
-    # we have dependencies for this file, as well as joint timestamp, so push it to the list if it needs to be built
-    # also force rebuild if make script changed
-    $srcFiles{$srcPath}{'build'} = $srcFiles{$srcPath}{'timestamp'} > $srcFiles{$srcPath}{'objTimestamp'} || $scriptTimestamp > $srcFiles{$srcPath}{'objTimestamp'};
+    my $isCppFile = $srcFiles{$srcPath}{'ext'} eq '.c' || $srcFiles{$srcPath}{'ext'} eq '.cpp';
+
+    if ($pchBuilt && $isCppFile) {
+        $srcFiles{$srcPath}{'build'} = 1;
+    } else {
+        getDependencies($srcPath, $srcFiles{$srcPath}{'dir'}, $srcFiles{$srcPath}{'file'});
+        updateTimestamp($srcPath);
+        # we have dependencies for this file, as well as joint timestamp, so push it to the list if it needs to be built
+        # also force rebuild if make script changed
+        $srcFiles{$srcPath}{'build'} = $srcFiles{$srcPath}{'timestamp'} > $srcFiles{$srcPath}{'objTimestamp'} ||
+            $scriptTimestamp > $srcFiles{$srcPath}{'objTimestamp'};
+    }
 } keys %srcFiles;
 
 # generate build list after all the files have been processed since some might turn out
 # to be includes with wrong extension; only then can this be determined with certainty
 my @buildList = grep { $srcFiles{$_}{'build'} } keys %srcFiles;
+
 logl("Source files:");
 logl(Dumper(\%srcFiles));
 logl("Includes:");
@@ -331,14 +349,14 @@ sub getDependencies
     $dependencies = [uniq(@{$dependencies})];
 
     # finally create and fill dependencies file
-    if (!$isBinary) {
+    if (!$isBinary && @{$dependencies}) {
         open($OUT, '>', "$depFile") or die "Failed to create dependency file $depFile\n";
         print $OUT "$_\n" for @{$dependencies};
         close($OUT);
     }
 
     # we're done, just mark it as scanned
-    markAsScanned($path, $file, defined($parent) && length($parent) > 0, $dependencies);
+    return markAsScanned($path, $file, defined($parent) && length($parent) > 0, $dependencies);
 }
 
 
@@ -413,6 +431,7 @@ sub printHelp
         "-v      - show version and quit\n",
         "-h      - show help and exit";
 }
+
 
 sub parseCommandLine
 {
@@ -576,20 +595,71 @@ sub handleSWOSAnniversaryVersion
 }
 
 
+sub getAdditionalIncludes
+{
+    my ($switch) = @_;
+    return join(' ', map { "$switch$_" } keys %additionalIncludes);
+}
+
+
+sub expandCommandVariables
+{
+    my ($cmd, $path, $obj, $base, $lstDir) = @_;
+    return replace($cmd, {
+        '$<' => $path,
+        '$@' => $obj,
+        '$*' => $base,
+        '$(LST_DIR)' => $lstDir,
+    });
+}
+
+
+# expects to run before dependencies resolution
+sub buildPrecompiledHeader
+{
+    my ($scriptTimestamp) = @_;
+    my ($base, $dirs, $ext) = fileparse($PCH, qr/\.[^.]*/);
+
+    $srcFiles{$PCH} = newSrcFile($PCH, $dirs, $PCH, $base, $ext);
+    getDependencies($PCH, '', $PCH);
+    updateTimestamp($PCH);
+    my $gchTimestamp = getTimestamp($PCH_OUTPUT);
+    my $pchTimestamp = $srcFiles{$PCH}{'timestamp'};
+    delete $srcFiles{$PCH};
+
+    if ($pchTimestamp > $gchTimestamp || $scriptTimestamp > $gchTimestamp) {
+        print "Generating precompiled headers...\n";
+        my $cmd = $CC . ' ' . getAdditionalIncludes($CPP_INCLUDE_SWITCH) . ' -x c++-header ' . $CFLAGS;
+        runCommand(expandCommandVariables($cmd, $PCH, $PCH_OUTPUT, $PCH, $LST_DIR));
+        return 1;
+    }
+
+    return 0;
+}
+
+
 sub buildFiles
 {
     my ($buildList) = @_;
-    my $cIncludeDirs = join(' ', map { "-I$_" } keys %additionalIncludes);
-    my $asmIncludeDirs = join(' ', map { "-I$_" } keys %additionalIncludes);
-    my $C_CMD_LINE = $CC . ' ' . $cIncludeDirs . ' ' . $CFLAGS;
+    my $cIncludeDirs = getAdditionalIncludes($CPP_INCLUDE_SWITCH);
+    my $asmIncludeDirs = getAdditionalIncludes($ASM_INCLUDE_SWITCH);
+    my $C_CMD_LINE = $CC . ' -include ' . catfile($OBJ_DIR, $PCH) . ' ' . $cIncludeDirs . ' ' . $CFLAGS;
     my $ASM_CMD_LINE = $AS . ' ' . $asmIncludeDirs . ' ' . $AFLAGS;
     my %buildCommands = ('.c' => $C_CMD_LINE, '.cpp' => $C_CMD_LINE, '.asm' => $ASM_CMD_LINE);
     my $targetTag = "[$TARGET_FULL] ";
 
-    # sort bulid list, oldest first, and asm files before cpp
+    # sort build list by path, and asm files before cpp
     @buildList = sort {
         if ($srcFiles{$a}{'ext'} eq $srcFiles{$b}{'ext'}) {
-            return $srcFiles{$a}{'timestamp'} <=> $srcFiles{$b}{'timestamp'};
+            # put root files in front
+            my $isRootA = index($srcFiles{$a}{'path'}, '\\') == -1;
+            my $isRootB = index($srcFiles{$b}{'path'}, '\\') == -1;
+            if ($isRootA && !$isRootB) {
+                return -1;
+            } elsif (!$isRootA && $isRootB) {
+                return 1;
+            }
+            return $srcFiles{$a}{'path'} cmp $srcFiles{$b}{'path'};
         } else {
             return $srcFiles{$a}{'ext'} eq '.asm' ? -1 : 1
         }
@@ -604,15 +674,10 @@ sub buildFiles
             $srcFiles{$src}{'file'}, "...\n";
         # expand commands
         my $cmd = $buildCommands{$srcFiles{$src}{'ext'}};
-        replace(\$cmd, {
-            '$<' => $srcFiles{$src}{'path'},
-            '$@' => $srcFiles{$src}{'obj'},
-            '$*' => $srcFiles{$src}{'base'},
-            '$(LST_DIR)' => $LST_DIR,
-        });
-        runCommand($cmd);
+        runCommand(expandCommandVariables($cmd, $srcFiles{$src}{'path'},
+            $srcFiles{$src}{'obj'}, $srcFiles{$src}{'base'}, $LST_DIR));
         if ($DIS ne '' && ($ext eq '.c' || $ext eq '.cpp')) {
-            # dissasemble; note that this will make listings of files with same names
+            # disassemble; note that this will make listings of files with same names
             # in different subdirectories overwrite each other
             filterCommandOutput($DIS . ' ' . $srcFiles{$src}{'obj'} . " /s=$srcFiles{$src}{'path'}",
                 catdir($LST_DIR, $srcFiles{$src}{'base'}) . $ext . '.lst');
@@ -702,12 +767,13 @@ sub replace
 {
     my ($str, $replaceList) = @_;
     while (my ($findVal, $replaceVal) = each %{$replaceList}) {
-        my $pos = index($$str, $findVal);
+        my $pos = index($str, $findVal);
         while ($pos > -1) {
-            substr($$str, $pos, length($findVal), $replaceVal);
-            $pos = index($$str, $findVal, $pos + length($replaceVal));
+            substr($str, $pos, length($findVal), $replaceVal);
+            $pos = index($str, $findVal, $pos + length($replaceVal));
         }
     }
+    return $str;
 }
 
 

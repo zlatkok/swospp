@@ -56,7 +56,6 @@ PUSHAD
 +0  EDI
 
 
-
 Motorola 68k Registers
 ----------------------
 [Disclaimer: I'm by no means expert on AMIGA or Motorola 68000 CPU or emulators
@@ -72,6 +71,8 @@ PC specific and performance sensitive routines where hand-crafted.
 registers except A7 were mapped to 32-bit memory locations. A7 is stack
 pointer, and it was mapped directly to Intel ESP register. A* registers are
 usually used for pointers.
+Oddly, memory locations for registers are not dword aligned -- as a matter of
+fact their addresses are odd.
 Parameters to SWOS subroutines seem to be passed almost exclusively in
 registers, and stack is only used for saving and restoring registers.
 Most integer variables are 2 bytes long, as it is optimal for 16-bit data bus.
@@ -452,8 +453,8 @@ TODO
 
 
 Becoming:
-how the bytes were patched at first, then asm, then C (Watcom pa Open Watcom),
-and then even C++ (via GCC)
+how the bytes were patched at first, then asm, then C (Watcom, then Open
+Watcom), and even C++ (via GCC)
 
 TODO: map file/mapcvt, listings
 .pdata and how to use it

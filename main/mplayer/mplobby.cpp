@@ -1,7 +1,3 @@
-#include "swos.h"
-#include "types.h"
-#include "dos.h"
-#include "util.h"
 #include "mplayer.h"
 #include "dosipx.h"
 #include "qalloc.h"
@@ -9,12 +5,11 @@
 
 #pragma GCC diagnostic ignored "-Wparentheses"
 
-
 static char chatLines[MAX_CHAT_LINES][MAX_CHAT_LINE_LENGTH + 1];
 static byte chatLineColors[MAX_CHAT_LINES];
 static int currentChatLine;
 
-dword currentTeamId = -1;                   /* id of current team            */
+dword currentTeamId = -1;                   /* id of current team */
 
 
 static WaitingToJoinReport joinGamesState;
@@ -33,16 +28,16 @@ static void (*enterGameLobbyFunction)();
 static void (*updateLobbyFunction)(const LobbyState *state);
 static void (*disconnectedFunction)();
 static bool32 (*modalSyncFunction)();
-static void (*showTeamsMenuFunction)(const char *, const char *);
+static ShowTeamsMenuFunction showTeamsMenuFunction;
 static void (*onErrorFunction)();       /* called when game exits due to an error */
 static void (*onGameEndFunction)();     /* called when game ends naturally */
 
 /* local info: addresses, names, ids and number of games collected so far */
-typedef struct WaitingGame {
+struct WaitingGame {
     IPX_Address address;
     char name[GAME_NAME_LENGTH + 6 + 1];
     byte id;
-} WaitingGame;
+};
 
 static int numWaitingGames;
 static WaitingGame waitingGames[MAX_GAMES_WAITING];
@@ -62,7 +57,7 @@ enum MP_States {
 };
 
 #ifdef DEBUG
-static const char *stateToString(enum MP_States state)
+static const char *StateToString(enum MP_States state)
 {
     static_assert(ST_MAX == ST_GAME + 1, "States updated, update string conversion also.");
     static char buf[16];
@@ -109,12 +104,9 @@ static word startSearchTick;
 static word lastPingTime;
 static word findGamesTimeout;
 
-typedef struct NetPlayer {
+struct NetPlayer {
     char name[NICKNAME_LEN + 1];
-    union {
-        TeamFile team;
-        char teamFiller[TEAM_SIZE];
-    };
+    TeamFile team;
     Tactics *userTactics;   /* user tactics, allocated when/if necessary */
     IPX_Address address;
     byte flags;             /* bit 0 - is watcher
@@ -123,7 +115,7 @@ typedef struct NetPlayer {
                                bit 3 - is player in hold of menu controls */
     word joinId;
     word lastPingTime;
-} NetPlayer;
+};
 
 enum PlayerFlags {
     PL_IS_WATCHER       = 1,
@@ -142,11 +134,11 @@ static int numConnectedPlayers;
 static int ourPlayerIndex;
 
 static bool LoadTeam(dword teamId, TeamFile *dest);
-static LobbyState *initLobbyState(LobbyState *state);
+static LobbyState *InitLobbyState(LobbyState *state);
 static LobbyState *putOurPlayerOnTop(LobbyState *state);
 static void CleanUpPlayers();
 
-static void EnterSyncingState(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *));
+static void EnterSyncingState(bool32 (*modalSyncFunc)(), ShowTeamsMenuFunction showTeamsMenuFunc);
 static void DisconnectClient(int playerIndex, bool sendDisconnect);
 static void SendListGamesRequest();
 static void SendWaitingGamesReport();
@@ -196,6 +188,42 @@ dword GetControlsFromNetwork()
 }
 
 
+/** GetCurrentPlayerTeamIndex
+
+    Return zero based index of current player that's holding the controls in play match menu.
+    It will mimic the index of the team in selectedTeams.
+*/
+static int GetCurrentPlayerTeamIndex()
+{
+    assert(state == ST_PL1_SETUP_TEAM || state == ST_PL2_SETUP_TEAM || state == ST_GAME);
+
+    for (int i = 0, playerIndex = 0; i < numConnectedPlayers; i++) {
+        if (isControlling(i))
+            return playerIndex;
+        if (isPlayer(i))
+            playerIndex++;
+        assert(i <= 1);
+    }
+
+    assert(0);      /* something is seriously wrong if we get here */
+    return 0;
+}
+
+
+/** SaveTeamChanges
+
+    Any change done to lineup in play match menu will be reflected on teams stored in selectedTeams.
+    That's why find our team in there by id and copy over anything that player changed.
+*/
+static void SaveTeamChanges()
+{
+    auto playerTeamIndex = GetCurrentPlayerTeamIndex();
+    assert(playerTeamIndex == 0 || playerTeamIndex == 1);
+WriteToLog("playerTeamIndex = %d", playerTeamIndex);
+    StoreTeamData(&selectedTeams[playerTeamIndex]);
+}
+
+
 /** SwitchToNextControllingState
 
     Called after a player finishes setting up team by pressing play match.
@@ -207,6 +235,8 @@ bool32 SwitchToNextControllingState()
         WriteToLog(LM_SYNC, "Player 2 now setting up the team.");
         state = ST_PL2_SETUP_TEAM;
         numCommands = 0;        /* flush queue, just in case */
+        if (isPlayer(ourPlayerIndex) && isControlling(ourPlayerIndex))
+            SaveTeamChanges();
         /* player 1 finished, pass on control to player 2 */
         int i;
         for (i = 0; i < numConnectedPlayers; i++) {
@@ -239,12 +269,15 @@ bool32 SwitchToNextControllingState()
             if (isPlayer(i)) {
                 playerAddresses[playerIndex++] = &connectedPlayers[i].address;
                 assert(playerIndex <= 2);
-                if (i == ourPlayerIndex)
+                if (i == ourPlayerIndex) {
                     playerNo = playerIndex;
+                    if (isControlling(i))
+                        SaveTeamChanges();
+                }
                 *(!pl1CustomTactics ? &pl1CustomTactics : &pl2CustomTactics) = connectedPlayers[i].userTactics;
             } else
                 watcherAddresses[numWatchers++] = &connectedPlayers[i].address;
-            connectedPlayers[i].flags &= ~PL_IS_SYNCED; /* clear this in case it left from previous game */
+            connectedPlayers[i].flags &= ~PL_IS_SYNCED; /* clear this in case there's a leftover from previous game */
         }
         addresses = (IPX_Address *)qAlloc((numWatchers + 2) * sizeof(IPX_Address));
         assert(addresses);
@@ -257,6 +290,7 @@ bool32 SwitchToNextControllingState()
         return true;
     } else
         WriteToLog("Invalid state %#x!!!", state);
+
     return false;
 }
 
@@ -300,6 +334,7 @@ void DisbandGame()
 {
     int length;
     char *packet = createPlayerLeftPacket(&length, 0);
+
     if (weAreTheServer) {
         WriteToLog("Game disbanded.");
         for (int i = 1; i < numConnectedPlayers; i++) {
@@ -311,6 +346,7 @@ void DisbandGame()
         DisconnectClient(0, true);
         WriteToLog("Game left.");
     }
+
     state = ST_NONE;
     CancelSendingPackets();
     ReleaseClientMPOptions();
@@ -322,16 +358,17 @@ void DisbandGame()
 /** LoadTeam
 
     teamId -  id of team to load
-    dest   -> pointer to buffer that will receive loaded team, if everything ok
+    dest   -> pointer to buffer that will receive loaded team, if everything OK
 
     Load specified team into memory, do some basic check if id is valid. Return
     true if everything went well, false for error.
 */
-static bool LoadTeam(dword teamId, TeamFile *dest)
+static bool LoadTeam(dword teamId, TeamFile *destTeam)
 {
-    int teamNo = teamId & 0xff, ordinal = teamId >> 8 & 0xff, handle;
     if (teamId == (dword)-1)
         return false;
+
+    int teamNo = teamId & 0xff, ordinal = (teamId >> 8) & 0xff, handle;
 
     WriteToLog("Trying to load team %#x, teamNo = %d, ordinal = %d", teamId, teamNo, ordinal);
     if (ordinal > 93) {
@@ -352,16 +389,19 @@ static bool LoadTeam(dword teamId, TeamFile *dest)
         WriteToLog("Team id %#x invalid (team file missing).", teamId);
         return false;
     }
+
     CloseFile(handle);
 
     D0 = teamNo;
     calla(LoadTeamFile);
 
-    memcpy(dest, teamFileBuffer + 2 + ordinal * TEAM_SIZE, TEAM_SIZE);
-    dest->teamStatus = 2;                                                       /* controlled by player */
-    *strncpy(dest->coachName, GetPlayerNick(), sizeof(dest->coachName) - 1) = '\0';  /* set coach name to player nickname */
+    memcpy(destTeam, teamFileBuffer + 2 + ordinal * sizeof(TeamFile), sizeof(TeamFile));
+    destTeam->teamStatus = 2;                                                       /* controlled by player */
+    *strncpy(destTeam->coachName, GetPlayerNick(), sizeof(destTeam->coachName) - 1) = '\0';  /* set coach name to player nickname */
 
-    WriteToLog("Loaded team '%s' OK.", dest->teamName);
+    ApplySavedTeamData(destTeam);
+
+    WriteToLog("Loaded team '%s' OK.", destTeam->name);
     return true;
 }
 
@@ -369,9 +409,9 @@ static bool LoadTeam(dword teamId, TeamFile *dest)
 /* This is an important thing to do, otherwise play match menu will be working with teams in wrong
    locations, and will fail to write changes properly. So make it look like as if team was loaded from
    friendly game team selection. */
-static char *AddTeamToSelectedTeams(const TeamFile *team)
+static TeamFile *AddTeamToSelectedTeams(const TeamFile *team)
 {
-    return (char *)memcpy(selectedTeamsBuffer + TEAM_SIZE * numSelectedTeams++, team, TEAM_SIZE);
+    return (TeamFile *)memcpy(&selectedTeams[numSelectedTeams++], team, sizeof(TeamFile));
 }
 
 
@@ -379,9 +419,11 @@ static char *AddTeamToSelectedTeams(const TeamFile *team)
 static int FindPlayer(const IPX_Address *node)
 {
     int i;
+
     for (i = 0; i < numConnectedPlayers; i++)
         if (addressMatch(node, &connectedPlayers[i].address))
             break;
+
     return i;
 }
 
@@ -390,21 +432,35 @@ static void InitPlayer(NetPlayer *player, const char *name, const char *teamName
 {
     player->name[0] = '\0';
     player->team.teamFileNo = 0;
+
     if (name)
         *strncpy(player->name, name, NICKNAME_LEN) = '\0';
+
     if (teamName)
-        *strncpy(player->team.teamName, teamName, sizeof(decltype(player->team)::teamName) - 1) = '\0';
+        *strncpy(player->team.name, teamName, sizeof(decltype(player->team)::name) - 1) = '\0';
+
     player->team.teamFileNo = player->team.teamOrdinal = player->team.globalTeamNumber = -1;
     player->userTactics = nullptr;
+
     if (address)
         copyAddress(&player->address, address);
+
     player->flags = 0;
     player->joinId = joinId;
     player->lastPingTime = 0;
 }
 
 
-/* Add a chat line to our storage and dispatch to clients if we're the server. */
+/** HandleChatLine
+
+    senderIndex -  index of player that sent the message, or -1 if it's "system" message
+    text        -> text of the message
+    color       -  color of the message (from menu palette)
+
+    Add a chat line to our storage and dispatch to clients if we're the server.
+    If senderIndex is negative it's a "system" message, usually about some event, such
+    as player disconnect.
+*/
 static void HandleChatLine(int senderIndex, const char *text, byte color)
 {
     static int lastSender = -1;
@@ -446,21 +502,25 @@ static void HandleChatLine(int senderIndex, const char *text, byte color)
 
 static void DisconnectClient(int playerIndex, bool sendDisconnect)
 {
+    assert(numConnectedPlayers < MAX_PLAYERS);
+
     int length;
     char *packet = createPlayerLeftPacket(&length, playerIndex);
-    assert(numConnectedPlayers < MAX_PLAYERS);
+
     if (playerIndex < 0 || playerIndex >= numConnectedPlayers) {
         WriteToLog("Invalid player index in disconnect (%d).");
         return;
     }
 
-    /* send diconnect packet to offending client, but don't wait for reply
+    /* send disconnect packet to offending client, but don't wait for reply
        (connection most likely already lost anyway) */
     if (sendDisconnect)
         SendSimplePacket(&connectedPlayers[playerIndex].address, packet, length);
+
     DisconnectFrom(&connectedPlayers[playerIndex].address);
     qFree(connectedPlayers[playerIndex].userTactics);
     connectedPlayers[playerIndex].userTactics = nullptr;
+
     if (weAreTheServer) {
         for (int i = 1; i < numConnectedPlayers; i++)
             if (i != playerIndex && i != playerIndex)
@@ -484,14 +544,17 @@ static void ServerHandlePlayerLeftPacket(const char *packet, int length, const I
 {
     assert(weAreTheServer);
     int playerIndex;
+
     if (!unpackPlayerLeftPacket(packet, length, &playerIndex)) {
         WriteToLog("Rejecting invalid player disconnect packet.");
         return;
     }
+
     if ((playerIndex = FindPlayer(node)) > numConnectedPlayers - 1) {
         WriteToLog("Probably left-over disconnect request received. Ignoring.");
         return;
     }
+
     WriteToLog("About to disconnect player (by their request), playerIndex = %d, numConnectedPlayers = %d",
         playerIndex, numConnectedPlayers);
     DisconnectClient(playerIndex, true);
@@ -564,7 +627,7 @@ void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const Lobb
         ourPlayerIndex = 0;
         inLobby = true;
 
-        /* do a full initialization in order not to forget something */
+        /* do a full initialization here so as not to forget something */
         InitPlayer(&connectedPlayers[0], GetPlayerNick(), nullptr, nullptr, 0);
         GetOurAddress(&connectedPlayers[0].address);
 
@@ -605,7 +668,8 @@ static void SetFlags(int bit, bool set)
     char *packet;
     int length;
     byte oldFlags = connectedPlayers[ourPlayerIndex].flags;
-    connectedPlayers[ourPlayerIndex].flags = (oldFlags & ~(1 << bit)) | ((set != 0) << bit);
+    connectedPlayers[ourPlayerIndex].flags = ((oldFlags & ~(1 << bit))) | (((set != 0) << bit));
+
     if (oldFlags != connectedPlayers[ourPlayerIndex].flags) {
         packet = createPlayerFlagsPacket(&length, connectedPlayers[ourPlayerIndex].flags, ourPlayerIndex);
         if (weAreTheServer)
@@ -629,22 +693,25 @@ void SetPlayerReadyState(bool isReady)
 }
 
 
-char *SetTeam(char *newTeam, dword teamIndex)
+char *SetTeam(TeamFile *newTeam, dword teamId)
 {
-    memcpy(&connectedPlayers[ourPlayerIndex].team, newTeam, TEAM_SIZE);
+    /* must copy it to selected teams too */
+    memcpy(&connectedPlayers[ourPlayerIndex].team, newTeam, sizeof(TeamFile));
+    currentTeamId = teamId;
+    ApplySavedTeamData(newTeam);
 
-    currentTeamId = teamIndex;
-    if (!inLobby)
-        return newTeam + 5;
+    if (inLobby) {
+        int length;
+        char *packet = createPlayerTeamChangePacket(&length, 0, newTeam->name);
 
-    int length;
-    char *packet = createPlayerTeamChangePacket(&length, 0, newTeam + 5);
-    if (weAreTheServer)
-        for (int i = 1; i < numConnectedPlayers; i++)
-            SendImportantPacket(&connectedPlayers[i].address, packet, length);
-    else
-        SendImportantPacket(&connectedPlayers[0].address, packet, length);
-    return newTeam + 5;
+        if (weAreTheServer)
+            for (int i = 1; i < numConnectedPlayers; i++)
+                SendImportantPacket(&connectedPlayers[i].address, packet, length);
+        else
+            SendImportantPacket(&connectedPlayers[0].address, packet, length);
+    }
+
+    return newTeam->name;
 }
 
 
@@ -666,7 +733,7 @@ void AddChatLine(const char *line)
 
 /** CanGameStart
 
-    See if conditions are fullfiled for starting a game. Those can be summarized as:
+    Test if conditions are fulfilled for starting a game. Those can be summarized as:
     - having exactly 2 players
     - both players must be ready
     - both players must have their teams selected
@@ -678,7 +745,7 @@ bool32 CanGameStart()
         return false;
     for (int i = 0; i < numConnectedPlayers; i++) {
         if (isPlayer(i)) {
-            if (isReady(i) && connectedPlayers[i].team.teamName[0] != '\0')
+            if (isReady(i) && connectedPlayers[i].team.name[0] != '\0')
                 numReadyPlayers++;  /* must be player, ready and have a team */
             else
                 numNonReadyPlayers++;
@@ -693,9 +760,9 @@ bool32 CanGameStart()
     Start game was pressed in game lobby. Commence synchronization process, where players exchange
     their teams and custom tactics. Prerequisite of setup teams menu.
 */
-void SetupTeams(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *))
+void SetupTeams(bool32 (*modalSyncFunc)(), ShowTeamsMenuFunction showTeamsMenuFunc)
 {
-    WriteToLog("Synchronizing... modalSyncFunc = %#x, showTeamMenuFunc = %#x", modalSyncFunc, showTeamMenuFunc);
+    WriteToLog("Synchronizing... modalSyncFunc = %#x, showTeamsMenuFunc = %#x", modalSyncFunc, showTeamsMenuFunc);
 
     const IPX_Address *addresses[MAX_PLAYERS - 1];
     for (int i = 1; i < numConnectedPlayers; i++)
@@ -711,7 +778,7 @@ void SetupTeams(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *
     char *packet = createSyncPacket(&length, addresses, numConnectedPlayers - 1, randomVariables, randVarsSize);
     for (int i = 1; i < numConnectedPlayers; i++)
         SendImportantPacket(addresses[i - 1], packet, length);
-    EnterSyncingState(modalSyncFunc, showTeamMenuFunc);
+    EnterSyncingState(modalSyncFunc, showTeamsMenuFunc);
 }
 
 
@@ -733,7 +800,7 @@ static void CheckIncomingServerLobbyTraffic()
     byte joinId, receivedGameId, color;
     IPX_Address node;
 
-    /* ignore lost packets due to low mem in hope they'll send again when we have more mem */
+    /* ignore lost packets due to low memory in hope they'll send again when we have more memory */
     if (!(packet = ReceivePacket(&length, &node)))
         return;
 
@@ -774,7 +841,7 @@ static void CheckIncomingServerLobbyTraffic()
                             qFree(packet);
                             return;
                         } else {
-                            /* inform other clients about disconnect, but don't send diconnect to the client */
+                            /* inform other clients about disconnect, but don't send disconnect to the client */
                             WriteToLog("Re-join detected, old id = %d, new id = %d",
                                 connectedPlayers[playerIndex].joinId, joinId);
                             DisconnectClient(playerIndex, false);
@@ -786,7 +853,7 @@ static void CheckIncomingServerLobbyTraffic()
                     ConnectTo(&node);
                     for (i = 0; i < numConnectedPlayers + 1; i++)
                         playerAddresses[i] = &connectedPlayers[i].address;
-                    initLobbyState(lobbyState);
+                    InitLobbyState(lobbyState);
                     response = createJoinedGameOkPacket(&respLength, lobbyState, playerAddresses);
                     WriteToLog("Responding positively to join game request.");
                     SendImportantPacket(&node, response, respLength);
@@ -824,7 +891,7 @@ static void CheckIncomingServerLobbyTraffic()
             break;
         }
         /* set our internal state */
-        *strncpy(connectedPlayers[playerIndex].team.teamName, teamName, MAX_TEAM_NAME_LEN) = '\0';
+        *strncpy(connectedPlayers[playerIndex].team.name, teamName, MAX_TEAM_NAME_LEN) = '\0';
         /* reuse that packet to notify other clients */
         setPlayerIndex(packet, playerIndex);
         for (i = 1; i < numConnectedPlayers; i++)
@@ -965,7 +1032,7 @@ static bool CheckIncomingClientLobbyTraffic()
             WriteToLog("Malformed player team change packet rejected.");
         } else {
             assert(playerIndex >= 0 && playerIndex < numConnectedPlayers);
-            *strncpy(connectedPlayers[playerIndex].team.teamName, playerTeamName, MAX_TEAM_NAME_LEN) = '\0';
+            *strncpy(connectedPlayers[playerIndex].team.name, playerTeamName, MAX_TEAM_NAME_LEN) = '\0';
         }
         break;
     case PT_PING:
@@ -1039,11 +1106,13 @@ static bool GotAllTeamsAndTactics()
 /* Multiplayer game just ended. Get the results and go back to corresponding state. */
 void GameFinished()
 {
+    assert(onGameEndFunc && onErrorFunc);
+
     byte gameStatus = GetGameStatus();
     if (gameStatus != GS_GAME_DISCONNECTED && gameStatus != GS_WATCHER_ABORTED) {
         GoBackToLobby();
-        assert(onGameEndFunction);
-        onGameEndFunction();
+        if (onGameEndFunction)
+            onGameEndFunction();
     } else {
         DisbandGame();
         if (onErrorFunction)
@@ -1056,7 +1125,7 @@ static void MenuTransitionAfterTheGame()
 {
     /* must refresh menu before the fade in, and after menu conversion */
     if (state == ST_GAME_LOBBY || state == ST_WAITING_TO_START)
-        updateLobbyFunction(putOurPlayerOnTop(initLobbyState(lobbyState)));
+        updateLobbyFunction(putOurPlayerOnTop(InitLobbyState(lobbyState)));
 }
 
 
@@ -1104,7 +1173,7 @@ static bool HandleSyncTimeouts()
 
 /** SyncFailed
 
-    Timeout has expired and we haven't managed to sync everybody, so return to lobby.
+    Timeout has expired and we haven't managed to sync everybody, so return to the lobby.
 */
 static void SyncFailed()
 {
@@ -1123,6 +1192,17 @@ static void SyncFailed()
     CancelSendingPackets();
 }
 
+
+static void ShowTeamsMenu(TeamFile *team1, TeamFile *team2)
+{
+    assert(showTeamsMenuFunction && team1 && team2);
+    numSelectedTeams = 0;   /* reset this or we will be adding duplicate teams after 1st game */
+    team1 = AddTeamToSelectedTeams(team1);
+    team2 = AddTeamToSelectedTeams(team2);
+    showTeamsMenuFunction(team1, team2, GetCurrentPlayerTeamIndex);
+    MenuTransitionAfterTheGame();
+    IPX_OnIdle();
+}
 
 /** ServerSyncSuccess
 
@@ -1158,10 +1238,7 @@ static bool32 ServerSyncSuccess()
             }
 
             state = ST_PL1_SETUP_TEAM;
-            assert(showTeamsMenuFunction && team1 && team2);
-            showTeamsMenuFunction(AddTeamToSelectedTeams(team1), AddTeamToSelectedTeams(team2));
-            MenuTransitionAfterTheGame();
-            IPX_OnIdle();
+            ShowTeamsMenu(team1, team2);
 
             return true;
         }
@@ -1224,12 +1301,7 @@ static bool32 HandleSyncOkPacket(char *packet, const IPX_Address& node)
             }
         }
 
-        assert(showTeamsMenuFunction && team1 && team2);
-        selTeamsPtr = (char *)selectedTeamsBuffer;  /* just in case */
-        showTeamsMenuFunction(AddTeamToSelectedTeams(team1), AddTeamToSelectedTeams(team2));
-        MenuTransitionAfterTheGame();
-        IPX_OnIdle();
-
+        ShowTeamsMenu(team1, team2);
         return false;
     }
 
@@ -1242,7 +1314,7 @@ static bool32 HandleSyncOkPacket(char *packet, const IPX_Address& node)
     Handle state transition during synchronization - when teams and tactics are
     exchanged among all clients. Server supervises the process and issues final
     result when everything is finished.
-    Return true
+    Return true if we are moving out of sync state, be it success or not.
 */
 static bool32 SyncOnIdle()
 {
@@ -1262,11 +1334,13 @@ static bool32 SyncOnIdle()
                 WriteToLog("Received PT_TEAM_AND_TACTICS from a watcher.");
             else {
                 qFree(connectedPlayers[i].userTactics);
-                connectedPlayers[i].userTactics = (Tactics *)qAlloc(sizeof(Tactics) * 6);
-                //if !(alloc) FAIL
-                if (!unpackTeamAndTacticsPacket(packet, packetLen,
-                    &connectedPlayers[i].team, connectedPlayers[i].userTactics))
-                    WriteToLog("Malformed PT_TEAM_AND_TACTICS packet received.");
+                if (connectedPlayers[i].userTactics = (Tactics *)qAlloc(sizeof(Tactics) * 6)) {
+                    if (!unpackTeamAndTacticsPacket(packet, packetLen,  &connectedPlayers[i].team, connectedPlayers[i].userTactics))
+                        WriteToLog("Malformed PT_TEAM_AND_TACTICS packet received.");
+                } else {
+                    //TODO:fail the sync
+                    return false;
+                }
             }
             break;
 
@@ -1350,7 +1424,7 @@ static bool32 SyncOnIdle()
 
 
 /* Create lobby state to send to a connecting player or GUI. */
-static LobbyState *initLobbyState(LobbyState *state)
+static LobbyState *InitLobbyState(LobbyState *state)
 {
     assert(state);
     state->numPlayers = numConnectedPlayers;
@@ -1359,7 +1433,7 @@ static LobbyState *initLobbyState(LobbyState *state)
     for (int i = 0; i < MAX_PLAYERS; i++) {
         state->playerNames[i] = connectedPlayers[i].name;
         state->playerFlags[i] = connectedPlayers[i].flags;
-        state->playerTeamsNames[i] = connectedPlayers[i].team.teamName;
+        state->playerTeamsNames[i] = connectedPlayers[i].team.name;
     }
     int currentOutputLine = (currentChatLine + 1) % MAX_CHAT_LINES;
     for (int i = 0; i < MAX_CHAT_LINES; i++) {
@@ -1371,7 +1445,7 @@ static LobbyState *initLobbyState(LobbyState *state)
 }
 
 
-static void swapLobbyStatePlayerSpot(LobbyState *state, int i1, int i2)
+static void SwapLobbyStatePlayerSpot(LobbyState *state, int i1, int i2)
 {
     assert(state);
     int iTmp;
@@ -1401,9 +1475,9 @@ static LobbyState *putOurPlayerOnTop(LobbyState *state)
 {
     assert(state);
     if (!weAreTheServer) {
-        swapLobbyStatePlayerSpot(state, 0, ourPlayerIndex);
+        SwapLobbyStatePlayerSpot(state, 0, ourPlayerIndex);
         for (int i = ourPlayerIndex - 1; i >= 1; i--)
-            swapLobbyStatePlayerSpot(state, i, i + 1);
+            SwapLobbyStatePlayerSpot(state, i, i + 1);
     }
     return state;
 }
@@ -1465,7 +1539,7 @@ void LeaveWaitingToJoinState()
         enterGameLobbyFunc -> callback to notify when the lobby has been successfully joined
         disconnectedFunc   -> callback to notify if we're disconnected from the lobby
         modalSyncFunc      -> callback that gets called periodically during the sync phase, when idle
-        showTeamMenuFunc   -> callback to notify when sync phase is over, GUI should take user to team setup
+        showTeamsMenuFunc  -> callback to notify when sync phase is over, GUI should take user to team setup
         onErrorFunc        -> callback to notify when game ends with error (will not be notified if there is no error)
         onGameEndFunc      -> callback to notify when game ends properly (will not be notified if error)
 
@@ -1474,8 +1548,7 @@ void LeaveWaitingToJoinState()
 */
 void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
     void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(), bool32 (*modalSyncFunc)(),
-    void (*showTeamMenuFunc)(const char *, const char *), void (*onErrorFunc)(),
-    void (*onGameEndFunc)())
+    ShowTeamsMenuFunction showTeamsMenuFunc, void (*onErrorFunc)(), void (*onGameEndFunc)())
 {
     assert(index >= 0 && index < MAX_GAMES_WAITING);
     joiningGame = index;
@@ -1484,7 +1557,7 @@ void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
     enterGameLobbyFunction = enterGameLobbyFunc;
     disconnectedFunction = disconnectedFunc;
     modalSyncFunction = modalSyncFunc;
-    showTeamsMenuFunction = showTeamMenuFunc;
+    showTeamsMenuFunction = showTeamsMenuFunc;
     onErrorFunction = onErrorFunc;
     onGameEndFunction = onGameEndFunc;
 
@@ -1492,13 +1565,13 @@ void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
     copyAddress(&connectedPlayers[0].address, &waitingGames[index].address);
 
     if (!LoadTeam(currentTeamId, &connectedPlayers[0].team)) {  /* try to load the player's team */
-        connectedPlayers[0].team.teamName[0] = '\0';
+        connectedPlayers[0].team.name[0] = '\0';
         currentTeamId = -1;
     }
 
     int length;
     char *packet = createJoinGamePacket(&length, joinId = GetTickCount(), waitingGames[index].id,
-        GetPlayerNick(), connectedPlayers[0].team.teamName);
+        GetPlayerNick(), connectedPlayers[0].team.name);
 
     lastRequestTick = currentTick;      /* record to track timeout in connect */
     lastPingTime = 0;
@@ -1644,9 +1717,9 @@ static void ClientJoinsGame(LobbyState *lobbyState, const char *ourTeamName)
     ourPlayerIndex = numConnectedPlayers - 1;
     n->flags = 0;
 
-    memcpy(&n->team, &connectedPlayers[0].team, TEAM_SIZE);
+    memcpy(&n->team, &connectedPlayers[0].team, sizeof(TeamFile));
     strcpy(n->name, GetPlayerNick());
-    strcpy(n->team.teamName, ourTeamName);
+    strcpy(n->team.name, ourTeamName);
 
     /* save client options so they don't get overwritten by server options */
     SaveClientMPOptions();
@@ -1702,8 +1775,8 @@ static bool32 JoiningGameOnIdle(LobbyState *lobbyState)
         case PT_JOIN_GAME_ACCEPTED:
             for (int i = 0; i < MAX_PLAYERS; i++)
                 addresses[i] = &connectedPlayers[i].address;
-            *strncpy(ourTeamName, connectedPlayers[0].team.teamName, MAX_TEAM_NAME_LEN) = '\0';
-            if (unpackJoinedGameOkPacket(packet, packetSize, initLobbyState(lobbyState), addresses)) {
+            *strncpy(ourTeamName, connectedPlayers[0].team.name, MAX_TEAM_NAME_LEN) = '\0';
+            if (unpackJoinedGameOkPacket(packet, packetSize, InitLobbyState(lobbyState), addresses)) {
                 qFree(packet);
                 ClientJoinsGame(lobbyState, ourTeamName);
                 return true;
@@ -1735,7 +1808,7 @@ static bool32 JoiningGameOnIdle(LobbyState *lobbyState)
         static word lastResendTick;
         if (currentTick - lastResendTick > 25) {
             packet = createJoinGamePacket(&packetSize, joinId, waitingGames[joiningGame].id,
-                GetPlayerNick(), connectedPlayers[ourPlayerIndex].team.teamName);
+                GetPlayerNick(), connectedPlayers[ourPlayerIndex].team.name);
             SendSimplePacket(&waitingGames[joiningGame].address, packet, packetSize);
             lastResendTick = currentTick;
         }
@@ -1761,13 +1834,13 @@ static void ResetSyncFlags()
 }
 
 
-static void EnterSyncingState(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *))
+static void EnterSyncingState(bool32 (*modalSyncFunc)(), ShowTeamsMenuFunction showTeamsMenuFunc)
 {
     WriteToLog("Going into syncing state...");
 
     state = ST_SYNC;
     modalSyncFunction = modalSyncFunc;
-    showTeamsMenuFunction = showTeamMenuFunc;
+    showTeamsMenuFunction = showTeamsMenuFunc;
     lastRequestTick = currentTick;      /* reuse this */
     syncDone = false;
 
@@ -1849,6 +1922,7 @@ static bool HandleTimeouts()
         case ST_GAME_LOBBY:
             /* client-only state */
             assert(!weAreTheServer);
+            /* server should be our only connection */
             DisconnectClient(0, true);
             state = ST_NONE;
             if (disconnectedFunction)
@@ -1857,8 +1931,8 @@ static bool HandleTimeouts()
             return false;
 
         case ST_SYNC:
-        case ST_PL1_SETUP_TEAM:
-        case ST_PL2_SETUP_TEAM:
+        //case ST_PL1_SETUP_TEAM:
+        //case ST_PL2_SETUP_TEAM:
             ;//nazad u lobi obavesti servera
             // ako je server diskonekt
             CleanUpPlayers();//? :P
@@ -1893,7 +1967,7 @@ bool32 NetworkOnIdle()
         SendPingPackets();
         /* form state and send it to GUI to update */
         assert(updateLobbyFunction && weAreTheServer);
-        updateLobbyFunction(putOurPlayerOnTop(initLobbyState(lobbyState)));
+        updateLobbyFunction(putOurPlayerOnTop(InitLobbyState(lobbyState)));
         break;
 
     case ST_TRYING_TO_JOIN_GAME:
@@ -1905,7 +1979,7 @@ bool32 NetworkOnIdle()
 
         PingServer();
         assert(updateLobbyFunction && !weAreTheServer);
-        updateLobbyFunction(putOurPlayerOnTop(initLobbyState(lobbyState)));
+        updateLobbyFunction(putOurPlayerOnTop(InitLobbyState(lobbyState)));
         break;
 
     case ST_SYNC:
@@ -1921,7 +1995,7 @@ bool32 NetworkOnIdle()
         return true;
 
     default:
-        WriteToLog("Unknown state: %s", stateToString(state));
+        WriteToLog("Unknown state: %s", StateToString(state));
     }
 
     if (!HandleTimeouts())

@@ -1,11 +1,8 @@
 #include <stdarg.h>
 #include <errno.h>
-#include "swos.h"
-#include "util.h"
 #include "options.h"
 #include "xmlparse.h"
 #include "mplayer.h"
-#include "dos.h"
 
 byte pl2Keyboard asm("pl2Keyboard");
 
@@ -91,7 +88,7 @@ static const char *getXmlNodeName(const char *p, char *nameBuff, int maxSize, in
                d - integer
                s - string
                b - binary array
-               n - subnode follows
+               n - subnode follows (attach it to the last top level node)
                c - callback to a function that will return pointer to variables
     <name>   - name of the option, it is terminated by next % or end of string
                fields without names are considered fillers, and are ignored

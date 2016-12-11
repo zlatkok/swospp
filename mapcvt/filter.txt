@@ -142,7 +142,7 @@ DrawMenu, function
 LoadDIYFile, function
 PrimitivePrintf, function
 numSelectedTeams, word
-selectedTeamsBuffer, array byte
+selectedTeams, array TeamFile
 gameType, word
 aComputer
 aPlayerCoach_0
@@ -391,6 +391,13 @@ playerSpeedsGameInProgress, array const word[8]
 goalScored, word
 playerNormalStandingAnimTable, array const char
 UpdateTime
+FindTeamInCache
+GetPlayerByOrdinal, function
+InitIngameTeamStructure, function
+MakePlayerNameSprite
+playerPositionsArray
+PlayMatchMenuSwapPlayers
+showingCpuTeams
 
 
 ### Watcom C library

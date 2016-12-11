@@ -1,38 +1,36 @@
 #pragma once
 
-#include "swos.h"
-
 #ifndef htons
 #define htons(x) ((((x) >> 8) & 0xff) | (((x) & 0xff) << 8))
 #endif
 
 #pragma pack(push, 1)
-typedef struct RM_Info {
+struct RM_Info {
     long edi, esi, ebp, resv, ebx, edx, ecx, eax;
     ushort flags, es, ds, fs, gs, ip, cs, sp, ss;
-} RM_Info;
+};
 
-typedef struct IPX_Address {
-    byte network[4];    // Big-Endian
-    byte node[6];       // Big-Endian
-    word socket;        // Big-Endian
-} IPX_Address;
+struct IPX_Address {
+    byte network[4];    // big-endian
+    byte node[6];       // big-endian
+    word socket;        // big-endian
+};
 
-typedef struct IPX_Header {
+struct IPX_Header {
     word checkSum;
     word length;
     byte transportControl;
     byte packetType;
     IPX_Address destination;
     IPX_Address source;
-} IPX_Header;
+};
 
-typedef struct ECB_Fragment {
+struct ECB_Fragment {
     word address[2];            /* offset-segment */
     word size;                  /* low-high */
-} ECB_Fragment;
+};
 
-typedef struct ECB {
+struct ECB {
     word link[2];               /* offset-segment */
     word ESRAddress[2];         /* offset-segment */
     byte inUseFlag;
@@ -43,26 +41,26 @@ typedef struct ECB {
     byte immediateAddress[6];   /* low-high */
     word fragmentCount;         /* low-high */
     ECB_Fragment fragDesc[1];   /* number of fragment descriptors will always be 1 */
-} ECB;
+};
 
-typedef struct SWOSPP_Packet {
+struct SWOSPP_Packet {
     ECB ecb;
     IPX_Header ipx;
     dword verifyStamp;
     dword adler32Checksum;
     byte type;
     char data[];
-} SWOSPP_Packet;
+};
 #pragma pack(pop)
 
-typedef struct UnAckPacket {
+struct UnAckPacket {
     int size;
     dword time;
     IPX_Address address;
     struct UnAckPacket *next;
     byte type;
     dword data[];
-} UnAckPacket;
+};
 
 extern "C" const char *InitializeNetwork();
 extern "C" void ShutDownNetwork();

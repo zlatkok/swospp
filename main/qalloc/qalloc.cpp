@@ -4,8 +4,6 @@
     Meant to be used for small allocations - for heaps up to 64kb.
 */
 
-#include "swos.h"
-#include "util.h"
 #include "qalloc.h"
 
 #define INTERNAL_HEAP_SIZE  45 * 1024   /* should be enough for all packets at once */
@@ -13,7 +11,7 @@ static char internalHeap[INTERNAL_HEAP_SIZE];
 static int minimumSplitSize = 128;
 
 /* only works with heaps up to 64kb size, hi-hi */
-typedef struct Block {
+struct Block {
     word next;
     word prev;
     word size;
@@ -21,14 +19,14 @@ typedef struct Block {
     char origin[16];    /* track allocation origin when reporting memory leaks */
     word sig;           /* try to capture memory overwrites */
 #endif
-} Block;
+};
 
 #ifdef DEBUG
 #define setSig(p)   (((Block *)(p))->sig = 0xbdfd)
 #define checkSig(p) (assert(((Block *)(p))->sig == 0xbdfd))
 
 /* per heap statistics */
-typedef struct HeapStats {
+struct HeapStats {
     word currentAllocations;
     word currentlyAllocated;
     word maxAllocations;
@@ -36,7 +34,7 @@ typedef struct HeapStats {
     word excludedBlocks[16];    /* don't report these blocks as memory leaks */
     word numExcludedBlocks;
     void *heap;
-} HeapStats;
+};
 
 static HeapStats heapStats[16];
 static int numHeaps;
@@ -85,7 +83,7 @@ static void removeHeapStats(void *heap)
 
     Go through heap and mark each currently allocated block as excluded from memory leak checking.
     Useful in case you have some blocks that will stay allocated throughout the whole program life cycle
-    without getting explicitely freed, causing final memory check to report them as memory leaks.
+    without getting explicitly freed, causing final memory check to report them as memory leaks.
 */
 void excludeHeapBlocks(void *heap, int size)
 {

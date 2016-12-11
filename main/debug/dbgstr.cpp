@@ -1,6 +1,3 @@
-#include "types.h"
-#include "util.h"
-#include "swos.h"
 #include "dump.h"
 
 /** Char2Sprite

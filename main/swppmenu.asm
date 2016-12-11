@@ -721,7 +721,7 @@ PushMenu:
 
 ; PopMenu
 ;
-; Called from SWOS, from ShowMenu, after last shown menu has ben exited. Check
+; Called from SWOS, from ShowMenu, after last shown menu has been exited. Check
 ; if a custom menu to return to has been queued and set up stack to return to
 ; it, if not just remove current one from our internal stack of currently open
 ; menus.

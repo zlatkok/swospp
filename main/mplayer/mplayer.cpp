@@ -2,13 +2,9 @@
     Multiplayer module - hellz yeah!
 */
 
-
-#include "types.h"
-#include "util.h"
 #include "qalloc.h"
 #include "options.h"
 #include "mplayer.h"
-
 
 static char playerNick[NICKNAME_LEN + 1];   /* player name for online games  */
 static char gameName[GAME_NAME_LENGTH + 1]; /* name of current game          */
@@ -16,6 +12,8 @@ static char gameName[GAME_NAME_LENGTH + 1]; /* name of current game          */
 static const MP_Options defaultOptions = { DEFAULT_MP_OPTIONS };
 static MP_Options mpOptions;
 static MP_Options *savedClientOptions;
+
+SavedTeamData savedTeamData[5];             /* we will keep saved positions for a few teams */
 
 static byte numSubstitutes;
 static byte maxSubstitutes;
@@ -37,6 +35,7 @@ const char *InitMultiplayer()
 
     if (!mpOptions.size)
         mpOptions = defaultOptions;
+
     MP_Options options;
     ApplyMPOptions(GetMPOptions(&options));
 
@@ -46,7 +45,7 @@ const char *InitMultiplayer()
     InitPlayerNick();
     InitGameName();
 
-    /* assumes options have been loaded from the xml */
+    /* assumes options have been loaded from the XML */
     SetSkipFrames(mpOptions.skipFrames);
     SetNetworkTimeout(mpOptions.networkTimeout);
 
@@ -99,6 +98,43 @@ void SetPlayerNick(const char *newPlayerNick)
 }
 
 
+void ApplySavedTeamData(TeamFile *team)
+{
+    for (size_t i = 0; i < sizeofarray(savedTeamData); i++) {
+        dword teamId = *(dword *)team;
+        if (teamId == savedTeamData[i].teamId) {
+            WriteToLog("Found saved team data for %s", team->name);
+            memcpy(team->playerOrder, savedTeamData[i].positions, sizeof(savedTeamData[i].positions));
+            team->tactics = savedTeamData[i].tactics;
+            return;
+        }
+    }
+
+    WriteToLog("No saved team data for %s", team->name);
+}
+
+
+void StoreTeamData(const TeamFile *team)
+{
+    size_t i;
+    const size_t kNumTeams = sizeofarray(savedTeamData);
+
+    for (i = 0; i < kNumTeams; i++)
+        if (team->getId() == savedTeamData[i].teamId)
+            break;
+
+    /* if all slots are taken, just overwrite any */
+    if (i >= kNumTeams)
+        i = currentTick % kNumTeams;
+
+    assert(i < kNumTeams);
+    WriteToLog("Storing data for team %s, %s", team->name, team->coachName);
+    memcpy(savedTeamData[i].positions, team->playerOrder, sizeof(team->playerOrder));
+    savedTeamData[i].tactics = team->tactics;
+    savedTeamData[i].teamId = team->getId();
+}
+
+
 char *InitGameName()
 {
     if (!gameName[0]) {
@@ -133,6 +169,16 @@ void registerMPOptions(RegisterOptionsFunc registerOptions)
 }
 
 
+void registerPlayMatchMenuOptions(RegisterOptionsFunc registerOptions)
+{
+    static_assert(sizeof(SavedTeamData) == 24 && sizeofarray(savedTeamData) == 5, "Saved positions changed.");
+    memset(savedTeamData, -1, sizeof(savedTeamData));      /* default to -1 team ids */
+    registerOptions("playMatch", 9, "Saved settings from play match menu", 35,
+        "%n" "%24b/team1" "%24b/team2" "%24b/team3" "%24b/team4" "%24b/team5",
+        &savedTeamData[0], &savedTeamData[1], &savedTeamData[2], &savedTeamData[3], &savedTeamData[4]);
+}
+
+
 /** RegisterNetworkOptions
 
     registerOptions -> callback to register multiplayer options to be saved/loaded.
@@ -143,6 +189,8 @@ extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions)
         "%*s/playerNick%*s/gameName%4d/team", sizeof(playerNick), playerNick,
         sizeof(gameName), gameName, &currentTeamId);
     registerMPOptions(registerOptions);
+    registerPlayMatchMenuOptions(registerOptions);
+
 }
 
 

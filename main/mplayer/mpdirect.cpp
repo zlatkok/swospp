@@ -5,10 +5,7 @@
     while doing that, since it might take a while.
 */
 
-#include "swos.h"
-#include "util.h"
 #include "mplayer.h"
-
 
 extern "C" void SetGameLobbyMenuServerMode(bool);
 extern "C" char *GetDirectConnectMenu();

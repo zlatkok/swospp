@@ -1,9 +1,5 @@
-#include "types.h"
-#include "util.h"
-#include "swos.h"
 #include "xmltree.h"
 #include "xmlparse.h"
-#include "dos.h"
 #include "qalloc.h"
 
 /* don't try loading too big files :P */

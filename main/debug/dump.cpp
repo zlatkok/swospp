@@ -1,5 +1,3 @@
-#include "swos.h"
-#include "util.h"
 #include "dump.h"
 
 #pragma GCC diagnostic ignored "-Wparentheses"

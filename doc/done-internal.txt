@@ -1,5 +1,17 @@
 INTERNAL LIST OF STUFF DONE:
 2.0:
+- lineup and tactics from play match menu are now saved in options (for up to 5 different teams)
+- player shirt number range extended up to 255
+- fixed problem when both players play with the same team
+- fixed players unable to be swapped before the match after the first game
+- fixed showing error dialog in infinite loop when failing to connect to lobby in direct connect mode
+- improved getaddr script to look up SWOS addresses too
+- using precompiled headers now, but they seem not to be of much help (now build seems even slower by ~1 second)
+- fixed empty entry selected when player leaves game in game lobby and cursor is on their name
+- fixed bug when player was unable to change line up in play match menu after
+  first game
+- fixed game length being too short compared to Amiga version
+- fixed bug where options would get reset on each program start
 - fixed bug when controls would lock up on 2nd entry into setup teams menu
 - created test.txt, which contains stuff that needs to be checked before
   releasing a build (hopefully it would become at least partly automated)
@@ -14,7 +26,7 @@ INTERNAL LIST OF STUFF DONE:
 - fixed InputText to correctly handle case when input buffer already contains
   string longer than max length
 - 68k registers implemented as unions in C, to avoid casts (but disabled, seems
-  even more kludgy that way, and might introduce subtle errors)
+  even more kludgey that way, and might introduce subtle errors)
 - comments starting with ### in filter.txt pass over to swossym.h
 - 68k register now have their proper names
 - when choosing joypad buttons it's possible to cancel special fire (assign

@@ -3,8 +3,6 @@
     Multiplayer options menu event handlers.
 */
 
-#include "swos.h"
-#include "util.h"
 #include "dosipx.h"
 #include "mplayer.h"
 #include "options.h"
@@ -119,7 +117,7 @@ static char *LoadTeam()
     D0 = teamNo;
     calla_ebp_safe(LoadTeamFile);
     assert(D0);
-    return teamFileBuffer + 2 + ordinal * TEAM_SIZE;
+    return teamFileBuffer + 2 + ordinal * sizeof(TeamFile);
 }
 
 

@@ -1,7 +1,4 @@
 #include <stdarg.h>
-#include "swos.h"
-#include "util.h"
-#include "dos.h"
 
 static BFile logFile;
 static char logFileBuffer[4 * 1024];

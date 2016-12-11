@@ -1,6 +1,4 @@
 #include "dosipx.h"
-#include "util.h"
-#include "dos.h"
 #include "qalloc.h"
 
 /* maximum number of clients we will accept as a server */
@@ -28,12 +26,12 @@ static IPX_Address broadcastAddress;
 #define ACK_PACKET_SIG          0xca
 #define CANCEL_PARTIAL_SIG      0xd7
 
-typedef struct ClientAckId {
+struct ClientAckId {
     IPX_Address address;
     dword sendingId;
     dword receivingId;
     dword sendingGroupId;
-} ClientAckId;
+};
 
 static ClientAckId *clientAckIds;
 static int numClients;          /* number of currently conected clients */
@@ -45,13 +43,13 @@ static void SendPacket(const IPX_Address *dest, const char *data, int length);
 static void AcknowledgePacket(dword id, const IPX_Address *dest);
 void FreeAllUnAck();
 
-typedef struct Fragment {
+struct Fragment {
     int dataSize;
     struct Fragment *next;
     byte data[];
-} Fragment;
+};
 
-typedef struct FragmentLink {
+struct FragmentLink {
     IPX_Address address;
     dword fragmentId;
     byte partsReceived;
@@ -60,7 +58,7 @@ typedef struct FragmentLink {
     struct FragmentLink *next;
     Fragment *lastFragment;
     Fragment first;
-} FragmentLink;
+};
 
 #define MAX_FRAGMENTS 8
 

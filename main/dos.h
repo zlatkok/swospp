@@ -43,7 +43,7 @@ enum DOS_fileAttributes {
 #define INVALID_HANDLE  ((dword)-1)
 
 #pragma pack(push, 1)
-typedef struct DTA {
+struct DTA {
     byte  searchAttribute;
     byte  searchDrive;
     byte  searchName[11];
@@ -56,7 +56,7 @@ typedef struct DTA {
     word  fileDate;
     dword fileSize;
     char  fileName[13];
-} DTA;
+};
 #pragma pack(pop)
 
 

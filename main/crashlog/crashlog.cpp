@@ -1,7 +1,4 @@
-#include "swos.h"
-#include "util.h"
 #include "crashlog.h"
-
 
 /* exception context */
 static byte USED_BY_ASM(exceptionNo);

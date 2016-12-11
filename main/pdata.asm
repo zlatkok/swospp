@@ -338,6 +338,7 @@ CheckInputDisabledTimer:
 
         test al, 0x80
         jz   .no_change_in_fire_state
+
         xor  byte [lastFireState], -1
 
 .no_change_in_fire_state:
@@ -412,6 +413,7 @@ CheckInputDisabledTimer:
 .go_on:
         calla GetKey
         mov  ax, [lastKey]
+
 .out:
         retn
 
@@ -443,9 +445,66 @@ FixJoypadNumLoopsZero:
 ;
 extern MainMenuSelect
 HookMainMenuSetup:
-    call MainMenuSelect
-    mov  [A6], eax
-    retn
+        call MainMenuSelect
+        mov  [A6], eax
+        retn
+
+
+; HookSetBenchPlayersNumbers
+;
+; in:
+;     al  -  player shirt number
+;     esi -> player (file) less header
+;
+; Don't reset bench player's shirt number if it's a high number (> 16)
+;
+HookSetBenchPlayersNumbers:
+        test al, al
+        jz   .skip
+
+        cmp  al, 16
+        jg   .skip
+
+        mov  [esi + PlayerFile.shirtNumber + TEAM_FILE_HEADER_SIZE], al
+        retn
+
+.skip:
+        pop  eax
+        retn
+
+
+; HookBenchPlayerSwap
+;
+; in:
+;     esi -> player 1 (file) - header
+;     A1  -> player 2 (file) - header
+;
+; Prevent shirt number swapping in case any of players has high (custom) shirt
+; number. If nobody does, allow standard behaviour to happen.
+;
+HookBenchPlayerSwap:
+        mov  al, [esi + PlayerFile.shirtNumber + TEAM_FILE_HEADER_SIZE]
+        cmp  al, 16
+        jg   .skip
+
+        test al, al
+        jz   .skip
+
+        mov  esi, [A1]
+        mov  bl, [esi + PlayerFile.shirtNumber + TEAM_FILE_HEADER_SIZE]
+        cmp  bl, 16
+        jg   .skip
+
+        test bl, bl
+        jz   .skip
+
+        mov  [D0], al
+        retn
+
+.skip:
+        pop  eax
+        add  eax, 0x21
+        jmp  eax
 
 
 
@@ -593,8 +652,12 @@ PatchStart:
     PatchByte DrawSubstitutesMenuEntry + 0x38, 132  ; entry length
     PatchByte DrawSubstitutesMenuEntry + 0x168, 130 ; entry solid background
 
-    ; prevent SWOS from reseting bench players numbers to 12..16
-    PatchByte SetBenchPlayersNumbers, 0xc3
+    ; prevent SWOS from reseting bench players numbers to 12..16, but only for high numbered players
+    StartRecord SetBenchPlayersNumbers + 0x40
+        calla HookSetBenchPlayersNumbers, ebx
+        nop
+        nop
+    EndRecord
 
     ; player sprite number setting is also done while booking
     StartRecord BookPlayer + 0x165
@@ -714,6 +777,15 @@ PatchStart:
 
     ; fix game length bug on PC version
     PatchByte UpdateTime + 0xfa, 70
+
+    ; fix conversion of shirt numbers greater than 127
+    PatchWord MakePlayerNameSprite + 5, 0x00b4
+
+    ; hook player swap so bench players retain their custom shirt numbers
+    StartRecord PlayMatchMenuSwapPlayers + 0x100
+        calla HookBenchPlayerSwap
+        nop
+    EndRecord
 
 %ifdef DEBUG
     ; don't waste time on opening animations in debug version

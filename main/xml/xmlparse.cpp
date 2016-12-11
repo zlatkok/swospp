@@ -4,27 +4,23 @@
 */
 
 #include <errno.h>
-#include "types.h"
-#include "swos.h"
-#include "util.h"
 #include "xmlparse.h"
 #include "xmltree.h"
-#include "dos.h"
 #include "qalloc.h"
 
-typedef struct XmlNodeListElem {
+struct XmlNodeListElem {
     XmlNode *node;
     struct XmlNodeListElem *next;
-    } XmlNodeListElem;
+};
 
-typedef struct XmlContentListElem {
+struct XmlContentListElem {
     char *content;
     int size;
     int totalSize;
     struct XmlContentListElem *next;
-} XmlContentListElem;
+};
 
-typedef enum XmlParserState {
+enum XmlParserState {
     STATE_START,
     STATE_TAG_OPENED,
     STATE_INSIDE_TAG,
@@ -33,7 +29,7 @@ typedef enum XmlParserState {
     STATE_GET_POSSIBLE_CONTENT,
     STATE_END_TAG_OPENED,
     STATE_EXPECT_END_TAG_CLOSE,
-} XmlParserState;
+};
 
 /* parser internal variables... obviously, we're not thread-safe :P */
 static int lineNo;

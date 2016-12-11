@@ -1,16 +1,30 @@
-1.9.1.7.
+1.9.2.0
+- fixed players unable to be swapped before the match after the first game
+- lineup and tactics from play match menu are now saved in options (for up to 5 different teams)
+- fixed empty entry getting selected when player leaves game in game lobby while cursor is on their name
+- fixed getting stuck if client fails to connect to lobby in direct connect mode
+- player shirt number range extended up to 255 (but this is really as much as it goes :))
+- fixed issue when both players play with the same team
+
+1.9.1.9
+- fixed game length being too short compared to Amiga version
+
+1.9.1.8
+- SWOS 2016/2017. anniversary edition!
+
+1.9.1.7
 - fixed options not getting saved
 
-1.9.1.6.
+1.9.1.6
 - direct connect mode implemented (join directly to multiplayer lobby)
 - fixed joypad calibration
 - fixed settings getting overwritten by default ones
 - many small fixes
 
-1.9.1.5.
+1.9.1.5
 - it is now possible to use custom tactics via multiplayer options menu
 - fixed editing tactics for teams with high player numbers
-- instead of binary files options are now saved to and loaded from xml-like files
+- instead of binary files options are now saved to and loaded from XML-like files
 - multiplayer options are preserved between games, including user tactics
 - added crash logging
 - selection of second joypad button can be skipped

@@ -31,6 +31,7 @@
  0001:00004741       SelTeamForTacticsCommon
  0001:000049CD       ChooseTeamForEditTactics
  0001:00004C3A       RotatePlayersLeft
+ 0001:00004CD9       FormTopSkillsString
  0001:000051CC       SoccerBinStuff
  0001:000052D3       PlayIntroAnimation
  0001:00005375       SoccerBinCopySec3To4
@@ -263,7 +264,7 @@
  0001:0000DC06       DrawMenu
  0001:0000DDAB       MenuProc
  0001:0000E2C5       DrawAllItems2
- 0001:0000E2E8       DrawAllItems
+ 0001:0000E2E8       DrawMultipleItems
  0001:0000E33B       CallDrawMenuItem
  0001:0000E341       DrawMenuItem
  0001:0000ED94       DrawBackAllItems
@@ -380,23 +381,23 @@
  0001:0001344A       ShowFriendlyMenu
  0001:000134A2       ContestInProgress
  0001:000136B4       SearchTeamInTmdFile
- 0001:0001370D       SearchTeam
+ 0001:0001370D       FindTeamInCache
  0001:000137FE       InitTeams
  0001:0001386D       TeamInit
  0001:000138EE       out2
  0001:000138EF       PlayFriendly
  0001:0001390E       InitAndPlayGame
  0001:00013BAB       SetupPlayers
- 0001:00014093       GetPlayerPtr
+ 0001:00014093       GetPlayerAtIndex
  0001:00014200       GetTeamPointer
- 0001:00014345       GetPlayerPointer
+ 0001:00014345       GetPlayer
  0001:000144E5       GetSurname
  0001:00014C3B       GetPlayerRandomNum
  0001:00014CD4       CheckContinueAbortPrompt
  0001:00014D67       CareerInitVars
  0001:000160A8       nullsub_13
  0001:00016787       InitDIYCup
- 0001:00017211       GetTeamPtr
+ 0001:00017211       VerifyTeamLoaded
  0001:00017FB8       SaveDIYTournament
  0001:000181F9       RestoreDIYLeague
  0001:00018373       SaveDIYLeague
@@ -414,6 +415,7 @@
  0001:0001DD90       PlayGame
  0001:0001F43E       InitIngameTeamStructure
  0001:0001F799       SetPlayerNameAndFace
+ 0001:0001F899       InitIngamePlayer
  0001:000201E1       SetTeamSecondaryColors
  0001:00020288       ConvertColorForSprite
  0001:00020D52       ChangeTeamTactics
@@ -464,7 +466,7 @@
  0001:00024BAF       jmp_SetExitMenuFlag
  0001:00024BB4       ContestMenuScrollUp
  0001:00024C76       ContestMenuScrollDown
- 0001:00024F0C       CheckClubussines
+ 0001:00024F0C       CheckClubBusiness
  0001:00024F71       CheckJobOffers
  0001:000250E7       ContestSetButtons
  0001:000253CD       SeasonLowerButtons
@@ -498,6 +500,7 @@
  0001:0002930B       GetCurrentSeasonPointer
  0001:00029915       cseg_39915
  0001:00029D98       GetNumberOfSubstitutes
+ 0001:0002A954       IsPlayerInjured
  0001:0002B899       FindTeamInDIY
  0001:0002BDA8       GetMoreExpensiveTeamsCountWrapper
  0001:0002BE6E       EndlessLoop
@@ -519,7 +522,7 @@
  0001:0002F62B       PlayMatchInit
  0001:0002F71F       PlayMatchAfterDraw
  0001:0002F8DF       SetCurrentSelectedPlayerIndexPointer
- 0001:0002F934       PlayersOnSelected
+ 0001:0002F934       OnSwapPlayer
  0001:0002FCA5       PlayMatchMenuSwapPlayers
  0001:00030000       out_0
  0001:00030012       PlayMatchChangeTactics
@@ -530,16 +533,17 @@
  0001:0003028E       PlayMatchOnSelect11
  0001:000302C3       PlayMatchOnSelect30
  0001:000302F3       PlayMatch30AfterDraw
- 0001:00030333       UpdateCheckmark
+ 0001:00030333       UpdateTeamCheckmark
  0001:000304EF       SetGameStartButtonText
- 0001:00030612       SetBottomRowButtons
- 0001:00030A70       SetPlayerEntriesColor
- 0001:00030B93       SetPlayerSurnames
- 0001:00030E04       SetVariousButtons
- 0001:000317CC       PlayersAfterDrawCommon
+ 0001:00030612       ShowOrHidePlayMatchButton
+ 0001:00030A70       SetUpTacticsButtons
+ 0001:00030B93       SetPlayerSurnamesOnSidePitch
+ 0001:00030E04       SetVariableButtons
+ 0001:000317CC       DrawPlayerEntries
  0001:0003229B       RedrawPlayerNames
- 0001:00032325       UpdateBigCheckmark
- 0001:000324A5       CheckIfTeamAllright
+ 0001:00032325       UpdateLittleCheckmark
+ 0001:00032430       SavePositionsAndUpdateLittleCheckmark
+ 0001:000324A5       UpdateCheckMarkSprite
  0001:0003257B       UseMatchTeamSelect
  0001:000325FF       TogglePlayerCoach
  0001:00032700       ShowUseMatchTeamIfTraining
@@ -748,7 +752,7 @@
  0001:000420FC       InitLittlePlayerSprites
  0001:000423A5       ConvertPlayerDressColor
  0001:000423DB       CopyCurrentTactics
- 0001:00042448       GetPlayerPositionAtIndex
+ 0001:00042448       GetPlayerByOrdinal
  0001:00042528       SetBenchPlayersNumbers
  0001:00042E72       CheckIsTeamNational
  0001:000434A9       GetTeamLeague
@@ -785,6 +789,7 @@
  0001:000451C1       OffersCommon
  0001:000454B5       j_SetExitMenuFlag_11
  0001:000454BA       OffersAfterDrawCommon
+ 0001:00046543       AddCareerPoolPlayer
  0001:00046CCA       ThirdPartyOfferMenuInit
  0001:000471A8       ThirdPartyOfferViewSquad
  0001:00047246       AcceptOffer
@@ -1105,7 +1110,7 @@
  0001:00079B12       RestoreDIYTournament
  0001:0007C796       InitCareerTables
  0001:0007CC92       InitializeNewSeason
- 0001:0007DE76       Load_poolplyr_dat
+ 0001:0007DE76       LoadPoolplyrDat
  0001:0007FE23       GetPlayerPrice
  0001:000802B1       CountNearnessFactor
  0001:00080E67       GetTeamValueBase
@@ -2784,7 +2789,7 @@
  0002:00006732       aWorld
  0002:00006738       aWorld_0
  0002:0000673E       zero_country
- 0002:00006742       countries_table
+ 0002:00006742       countriesTable
  0002:00006B5A       aEuropean_0
  0002:00006B63       aNorthAmerica_0
  0002:00006B72       aSouthAmerica_0
@@ -3088,7 +3093,7 @@
  0002:0000958E       tmd_file_buffer
  0002:00016B50       currentSeasonShowing
  0002:00016B52       staying_in_old_club
- 0002:00016B5E       youre_sacked
+ 0002:00016B5E       youreSacked
  0002:00016B60       retired
  0002:00016B66       club_business_active
  0002:00016B68       new_balance
@@ -3123,17 +3128,18 @@
  0002:00016CEB       manager_name_buffer
  0002:00016CF4       manager_surname_buffer
  0002:00016D01       pl_nationality
- 0002:00016D18       num_offers
- 0002:00016E02       careerNumTeams
+ 0002:00016D18       numOffers
+ 0002:00016E02       careerNumPoolPlayers
  0002:00016E10       num_new_job_offers
  0002:00016E12       new_job_offers
  0002:00016E94       num_job_offers
  0002:00016E96       job_offers
- 0002:00016F18       time_to_negotiate
+ 0002:00016F18       timeToNegotiate
  0002:00016F1A       num_players_on_transfer_market
  0002:00016F1C       players_on_transfer_market
  0002:000170EC       currentMatchPlayers
  0002:0001710C       careerTeam
+ 0002:00017618       careerNumPlayers
  0002:00017E68       some_leagues_table
  0002:00018638       currentTeam
  0002:00018B44       playerPositions
@@ -3179,9 +3185,9 @@
  0002:0001B2DD       africa_world_cup_qualification_copy
  0002:0001B34D       asia_world_cup_qualification_copy
  0002:0001B3B9       oceania_world_cup_qualification_copy
- 0002:0001BB34       careerTeams
- 0002:0001F4F6       diy_file_buffer
- 0002:0001F4F8       competition_over
+ 0002:0001BB34       careerPlayers
+ 0002:0001F4F6       diyFileBuffer
+ 0002:0001F4F8       competitionOver
  0002:0001F4FA       diy_preset_name_of_competition
  0002:00020049       season_playing
  0002:0002004A       in_friendly_menu
@@ -3211,7 +3217,7 @@
  0002:00020937       inEditTactics
  0002:00020939       training_game_copy
  0002:0002093B       numSelectedTeams
- 0002:0002093D       selectedTeamsBuffer
+ 0002:0002093D       selectedTeams
  0002:0003146D       D0
  0002:00031471       D1
  0002:00031475       D2
@@ -3326,7 +3332,7 @@
  0002:0003ED06       menuStatus
  0002:0003ED08       menuFade
  0002:0003ED0A       controls_status
- 0002:0003ED0C       blink_counter
+ 0002:0003ED0C       menuBlinkCounter
  0002:0003ED10       charTables
  0002:0003ED20       numbers_buffer
  0002:0003ED28       shirt_col_table
@@ -3351,7 +3357,7 @@
  0002:0004E79E       teamFilenameBuffer
  0002:0004E7D0       numberOfTeams
  0002:0004E7D2       last_loaded_ext_number
- 0002:0004E7D4       funds_buffer
+ 0002:0004E7D4       fundsBuffer
  0002:0004E7D5       result_string
  0002:0004E81C       saveFileName
  0002:0004E82A       impTactFilename
@@ -3360,7 +3366,7 @@
  0002:0004E9E4       inmenu_keyboard_buffer
  0002:0004EA48       menu_size
  0002:0004EA4C       end_of_menu
- 0002:0004EA50       template_menu_entry
+ 0002:0004EA50       templateMenuEntry
  0002:0004EA88       exitMenu
  0002:0004EA8A       diy_file_buffer_copy
  0002:0004EABF       diy_pitch_type
@@ -3381,14 +3387,14 @@
  0002:0004FC84       right_team_saved
  0002:0005032C       numSpritesToRender
  0002:0005032E       teamsLoaded
- 0002:00050330       poolplyr_loaded
+ 0002:00050330       poolplyrLoaded
  0002:00050332       lastKey
  0002:00050334       frameCount
  0002:00050336       timerDifference
  0002:00050338       lastStoppageTimerValue
  0002:0005033A       stoppageTimer
  0002:0005033C       currentTick
- 0002:00050348       drawitem_checks
+ 0002:00050348       dontDrawMenuItems
  0002:0005034A       menu_x
  0002:0005034C       menu_y
  0002:0005034E       offsetSpriteDat
@@ -3594,7 +3600,7 @@
  0002:000534A9       chooseTeamsResult
  0002:000534AB       change_teams
  0002:000534AD       view_selected_teams
- 0002:000534AF       abort_select_teams
+ 0002:000534AF       abortSelectTeams
  0002:000534B1       exit_select_teams
  0002:000534B3       teams_table
  0002:00053517       teams_index
@@ -3635,7 +3641,7 @@
  0002:00053DB6       leftTeamIngame
  0002:0005445E       rightTeamIngame
  0002:00054B06       stadiumMenuHeader
- 0002:00054B2E       game_name
+ 0002:00054B2E       gameName
  0002:00054B56       gameMinSubstitutes
  0002:00054B58       gameMaxSubstitutes
  0002:00054B5A       squadChangesAllowed
@@ -3643,7 +3649,8 @@
  0002:00054B60       playMatchTeam2Ptr
  0002:00054B64       maxSubstitutesEntries
  0002:00054B66       pmMenuNumPlayers
- 0002:00054B6A       viewing_opponent_team
+ 0002:00054B68       numPlayersToShowInMenu
+ 0002:00054B6A       viewingOpponentTeam
  0002:00054B6C       selectedPlayerPosition
  0002:00054B6E       selectedPlayerTacticsPosition
  0002:00054B70       pmSelectedPlayerEntry
@@ -3651,7 +3658,7 @@
  0002:00054B76       player_started
  0002:00054B78       D2_param
  0002:00054B7E       diy_selected
- 0002:00054BC8       error_text
+ 0002:00054BC8       errorText
  0002:00054BCC       prompt_header
  0002:00054BD0       what_is_changing
  0002:00054BD4       continue_text
@@ -3816,8 +3823,8 @@
  0002:0005F544       saveFileTitle
  0002:0005F58A       oldPlayerSkill
  0002:0005F58C       newPlayerSkill
- 0002:0005F58E       positionsArray
- 0002:0005F5AE       savedPositionsArray
+ 0002:0005F58E       playerPositionsArray
+ 0002:0005F5AE       oldPlayerPositionsArray
  0002:0005F5CE       team1SelectedPlayerIndex
  0002:0005F5D0       team2SelectedPlayerIndex
  0002:0005F5D2       ball_row
@@ -4053,13 +4060,13 @@
  0002:000A8DED       write_only_var_04
  0002:000A8DEF       spritesIndex
  0002:000AAECF       trainingGame
- 0002:000AAED1       color_table_length
+ 0002:000AAED1       useColorTable
  0002:000AB3A2       choosing_preset
  0002:000AB3A4       number_of_files
  0002:000AB3A8       found_filenames_buffer
  0002:000AF48A       teamSkillDiffAfterChange
  0002:000AF494       is_national_squad
- 0002:000AF5D6       squad_menu
+ 0002:000AF5D6       squadMenu
  0002:000AFAAE       aArcSoccer_bin
  0002:000AFABF       semaphor
  0002:000AFAC6       introAnimationCounter
@@ -4493,7 +4500,7 @@
  0002:000B4592       menu_entry_height
  0002:000B4594       game_list_array
  0002:000B4604       nationality_ordinal
- 0002:000B4606       contest_menu
+ 0002:000B4606       contestMenu
  0002:000B4A66       career_menu
  0002:000B4BE4       ofs_coach_or_player
  0002:000B4BF2       nationalities_ordinals_array
@@ -4502,12 +4509,24 @@
  0002:000B4E5A       management_record_menu
  0002:000B5008       trophy_sprites
  0002:000B501C       current_season_number
- 0002:000B50E8       choose_teams_friendly
+ 0002:000B50E8       chooseTeamsFriendly
  0002:000B5710       isFirstPlayerChoosingTeam
  0002:000B5712       currentSelectedPlayerIndexPtr
- 0002:000B5716       got_cpu_player
+ 0002:000B5716       showingCpuTeams
  0002:000B571B       playMatchMenu
- 0002:000B6041       some_tactics_table
+ 0002:000B5D29       sidePitchPositionsDefault
+ 0002:000B5D6B       sidePitchPositions_5_4_1
+ 0002:000B5DAD       sidePitchPositions_4_5_1
+ 0002:000B5DEF       sidePitchPositions_5_3_2
+ 0002:000B5E31       sidePitchPositions_3_5_2
+ 0002:000B5E73       sidePitchPositions_4_3_3
+ 0002:000B5EB5       sidePitchPositions_4_2_4
+ 0002:000B5EF7       sidePitchPositions_3_4_3
+ 0002:000B5F39       sidePitchPositionsSweep
+ 0002:000B5F7B       sidePitchPositions_5_2_3
+ 0002:000B5FBD       sidePitchPositionsAttack
+ 0002:000B5FFF       sidePitchPositionsDefend
+ 0002:000B6041       sidePitchSurnamePositionsTable
  0002:000B6089       is_A_team
  0002:000B608C       continueAbortMenu
  0002:000B6110       design_diy_tournament_menu
@@ -4523,7 +4542,7 @@
  0002:000B7CE0       aDash2
  0002:000B7CE2       DIY_league_tournament_menu
  0002:000B8154       chooseTeamsMenu
- 0002:000B8226       select_teams_menu
+ 0002:000B8226       selectTeamsMenu
  0002:000B8944       choose_teams_friendly_menu
  0002:000B8E04       diy_competition_menu
  0002:000B8EB4       tactic_cursor_frames
@@ -4603,7 +4622,7 @@
  0002:000BCAC4       european_championship_menu
  0002:000BCAE6       versusMenu
  0002:000BCB6A       stadiumMenu
- 0002:000BCFD2       stadium_menu_little_player
+ 0002:000BCFD2       stadiumMenuLittlePlayer
  0002:000BCFD4       little_player_sprite_generic
  0002:000BCFD6       little_players_col_table
  0002:000BCFF6       little_players_spr_table
@@ -4666,7 +4685,7 @@
  0002:000BDA5F       faces_array_2
  0002:000BDA62       goalie_table
  0002:000BDA76       copy_time_sprite
- 0002:000BDA78       timeLeftTillUpdate
+ 0002:000BDA78       secondsSwitchAccumulator
  0002:000BDA7A       gameSeconds
  0002:000BDA7C       gameTime
  0002:000BDA80       timeDelta
@@ -4819,9 +4838,9 @@
  0002:000BE3BE       injuries_speed_penalty
  0002:000BE3CE       playerWithBallOffsets
  0002:000BE5DA       staticHeaderPlayerSpeed
- 0002:000BE5DC       number_buffer
+ 0002:000BE5DC       numberBuffer
  0002:000BE5EB       pl_names_len_tbl_copy_16
- 0002:000BE60B       pl_names_length_table
+ 0002:000BE60B       plNamesLengthTable
  0002:000BE62B       pl_names_len_tbl_copy
  0002:000BE64B       prev_last_player
  0002:000BE64F       prev_last_team_played

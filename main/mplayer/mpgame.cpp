@@ -4,9 +4,6 @@
 */
 
 #include <limits.h>
-#include "swos.h"
-#include "dos.h"
-#include "util.h"
 #include "qalloc.h"
 #include "dosipx.h"
 #include "mplayer.h"
@@ -22,11 +19,11 @@ static int lastAppliedFrame;            /* guard from applying same frame twice 
 static byte sendLastFrame;              /* keep sending last frame until ack-ed */
 static byte gameStatus;                 /* how did the game end */
 
-typedef struct ResendFrame {
+struct ResendFrame {
     int frameNo;
     word controls;
     byte state;
-} ResendFrame;
+};
 
 static ResendFrame resendFrames[3];     /* must keep at least 3 last frames */
 static int resendIndex;
@@ -98,7 +95,7 @@ extern "C" void SetSecondPlayerOnKeyboard(unsigned char);
 
 #pragma pack(push, 1)
 /* Our frame structure used for sending and receiving frames. */
-typedef struct Frame {
+struct Frame {
     word type;
     word controls;
     int frameNo;
@@ -109,7 +106,7 @@ typedef struct Frame {
     dword team2Hash;
     int hashFrame;
 #endif
-} Frame;
+};
 #pragma pack(pop)
 
 /* frames ready to be rendered locally - can only render if frame ready here */
@@ -118,13 +115,13 @@ static Frame framesToRender[4 * (MAX_SKIP_FRAMES + 3) + 2]; /* size determined e
 #ifdef DEBUG
 /* support for asserting state hashes across the network, and also for keeping
    certain number of states to be able to see the point where states mismatch */
-typedef struct FrameHash {
+struct FrameHash {
     dword team1Hash;
     dword team2Hash;
     TeamGeneralInfo team1Data;
     TeamGeneralInfo team2Data;
     int frameNo;
-} FrameHash;
+};
 
 static FrameHash frameHashes[20];
 static int frameHashIndex;      /* points to one after the last one */
@@ -296,6 +293,7 @@ static void applyFrame(const Frame *frame)
         if (frame->state & STATE_BENCH2_CALLED && isBench2Allowed())
             bench2Called = true;
     }
+
     if (frame->state & STATE_PAUSED)
         if (!showingStats)  /* no pause if showing stats */
             paused ^= 1;
@@ -415,7 +413,7 @@ static bool sendingThisFrame()
 
 /** sendNextFrame
 
-    Check if we're sending next frame and gather all input and send it to the other player if so.
+    Check if we're sending next frame and gather all the input and send it to the other player if so.
 */
 static void __attribute__((used)) sendNextFrame()
 {
@@ -536,7 +534,7 @@ static void GameEnded()
 
 /** HandleMPKeys
 
-    key - converted ascii code of last pressed key, or 0 if nothing
+    key - converted ASCII code of last pressed key, or 0 if nothing
 
     Called from MainKeysCheck(). Filter keys during multiplayer game, returning
     converted key that will replace the original value.
@@ -656,6 +654,27 @@ static void HookUpdateStatistics()
 }
 
 
+/** HookGetPlayerAtIndex
+
+    in:
+         D0 -  team number (ignored)
+         D1 -  index of a player whose index we are looking for
+         A2 -> TeamFile of the player (this will only come from this patched location)
+    out:
+         D1 -  player position (index in team file)
+         A0 -> player pointer, offsetted backwards by the size of TeamFile header
+
+    Replace this function and return real data based on concrete team, instead of relying on search by team id,
+    which can lead to returning wrong player structure when both players pick the same team.
+*/
+static void HookGetPlayerAtIndex()
+{
+    const auto team = (TeamFile *)A2;
+    D1 = team->playerOrder[word(D1)];
+    A0 = (dword)&team->players[D1] - TeamFileHeaderSize;
+}
+
+
 /* No input will be registered after this call. */
 static void DisableInput()
 {
@@ -732,9 +751,9 @@ static byte joy2SetStatusByte;
     player2Tactics      ->           -//-                               2
 
     Initialize multiplayer game related stuff and patch us in. Called before the game starts and
-    after teams have been selected. Both input arrays are allocated as one memory block from the heap,
-    and need to be deallocated when finished. It is called before InitTeamsData(), when player
-    presses Play Match (from inside SetupPlayers). Pair with FinishMultiplayerGame() to clean up properly.
+    after teams have been selected; before InitTeamsData(), when player presses Play Match
+    (from inside SetupPlayers). Both input arrays are allocated as one memory block from the heap,
+    and need to be deallocated when finished. Pair with FinishMultiplayerGame() to clean up properly.
 */
 void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inNumWatchers,
     IPX_Address *inWatcherAddresses, Tactics *pl1CustomTactics, Tactics *pl2CustomTactics)
@@ -844,6 +863,10 @@ void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inN
     *(dword *)((char *)Flip + 0x05) = 0x0fffc883;   /* this makes EGA_graphics test never succeed */
     *(word *)((char *)ReadGamePort + 0x7) = 0x7505; /* don't check joypad if player is on keyboard */
     PatchCall(GameLoop, 0x50b, HookUpdateStatistics);
+    /* hook calls to GetPlayerAtIndex to prevent it return player from wrong team
+       (if not patched, we get same team twice if both players picked same team) */
+    PatchCall(GetPlayerByOrdinal, 0xd4, HookGetPlayerAtIndex);
+    PatchCall(InitIngameTeamStructure, 0x1bc, HookGetPlayerAtIndex);
     /* turn off 2nd player on keyboard if active, and save us _A LOT_ of trouble
        (for instance - it sets joy2Status directly from keyboard handler) */
     if ((pl2KeyboardWasActive = pl2Keyboard))
@@ -887,6 +910,8 @@ extern "C" void FinishMultiplayerGame()
     PatchDword(GameLoop, 0x3a1, 0x000048fc);
     PatchWord(GameLoop, 0x3a5, 0xbfe8);
     PatchByte(UpdateStatistics, 0x36, 0xe8);
+    PatchDword(InitIngameTeamStructure, 0x1bc, 0xffff4a95);
+    PatchDword(GetPlayerByOrdinal, 0xd4, 0xfffd1b73);
     PatchByte(TeamsControlsCheck, 0xe, 0x74);
     PatchDword(GameLoop, 0x663, 0x00000994);
     PatchDword(GameLoop, 0x5b0, 0x000851f6);

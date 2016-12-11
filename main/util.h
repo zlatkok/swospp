@@ -1,7 +1,5 @@
 #pragma once
 
-#include "dos.h"
-
 /* Wrap variables used only from inline assembly with this macro to prevent optimizer from removing them */
 #undef USED_BY_ASM
 #define USED_BY_ASM(x) x asm(#x) __attribute__((used))
@@ -193,14 +191,14 @@ long int strtol(const char *ptr, const char **endptr, int base, int *result);
 #endif
 
 /* buffered file routines */
-typedef struct BFile {
+struct BFile {
     char *buffer;
     int bufferSize;
     int bytesInBuffer;
     int readPtr;
     dword handle;
     bool managed;
-} BFile;
+};
 
 #define FILE_BUFFER_SIZE    (4 * 1024)
 

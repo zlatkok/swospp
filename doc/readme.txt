@@ -32,7 +32,7 @@ should get same reply "Patched OK.". Then delete files:
 
 SWOS++ requires SWOS to work, so any computer capable of running SWOS will host
 it quite happily. It requires some small amount of additional memory (currently
-about 140kb) to load. Network play requires DOSBox, without it it might work
+about 300kb) to load. Network play requires DOSBox, without it it might work
 only in local IPX network, but that has never been tested.
 
 

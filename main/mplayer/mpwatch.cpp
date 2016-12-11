@@ -5,8 +5,6 @@
 */
 
 #include <limits.h>
-#include "swos.h"
-#include "util.h"
 #include "qalloc.h"
 #include "mpwatch.h"
 #include "mplayer.h"
@@ -19,15 +17,15 @@
 #define BENCH_MAX_SPRITES   1 + 6 + 6
 
 #pragma pack(push, 1)
-typedef struct ScorerInfo {
+struct ScorerInfo {
     byte indexNumGoals;     /* packed, hi nibble player index, lo nibble number of goals */
     dword goalTypes;        /* packed, 2 bits per goal, 0 = regular, 1 = penatly, 2 = own goal, variable size */
     dword goalTime[10];     /* ascii digits of time, always 3 digits */
-} ScorerInfo;
+};
 
 /* Structure of watcher packet that will be sent from players to watchers. When sending only send
    actual number of sprites, scorers and goals - maximum is just for storing packets. */
-typedef struct WatcherPacket {
+struct WatcherPacket {
     word type;                  /* PT_GAME_SPRITES */
     byte numSprites;
     byte rendered;
@@ -42,9 +40,9 @@ typedef struct WatcherPacket {
     char sig[2];                /* "zk" :P, more like padding */
     dword sprites[MAX_SPRITES]; /* bit-packed 10/10/11/1 - x/y/picture index/save flag, numSprites is length */
     ScorerInfo scorerInfo[2][MAX_SCORERS];  /* scorers for both team */
-} WatcherPacket;
+};
 
-typedef struct BenchMenuPlayer {
+struct BenchMenuPlayer {
     word shirtNumber:8;
     word face:2;
     word position:3;
@@ -52,15 +50,15 @@ typedef struct BenchMenuPlayer {
     word isInjured:1;
     schar cards:2;
     uchar injury:3;
-} BenchMenuPlayer;
+};
 
-typedef struct BenchInfo {
+struct BenchInfo {
     byte showingSubsMenu:1;
     byte showingFormationMenu:1;
     byte benchTeam:1;
-} BenchInfo;
+};
 
-typedef struct SubsMenuData {
+struct SubsMenuData {
     BenchMenuPlayer players[2][11];
     short plToBeSubstitutedPos:5;
     short plToBeSubstitutedOrd:5;
@@ -69,12 +67,12 @@ typedef struct SubsMenuData {
     word enqueueSample:1;
     short subsState:4;
     word frameCount;
-} SubsMenuData;
+};
 
-typedef struct FormationMenuData {
+struct FormationMenuData {
     uint selectedFormationEntry:5;
     uint enqueueSample:1;
-} FormationMenuData;
+};
 
 #pragma pack(pop)
 
@@ -417,11 +415,11 @@ static void EnqueueSubstituteSampleHook()
 
 static dword packSprite(dword spriteIndex, int x, int y, bool saveSprite)
 {
-    dword packedSprite = (x & 0x3ff) | (y & 0x3ff) << 10;
+    dword packedSprite = (x & 0x3ff) | ((y & 0x3ff) << 10);
     /* we don't have enough bits to transfer big shirt numbers as they are, so take special attention */
     if (spriteIndex >= 3000 + 1187)
         spriteIndex -= 3000 + 1187 - SPR_MAX;
-    return packedSprite | (saveSprite != 0) << 31 | (spriteIndex & 0x7ff) << 20;
+    return packedSprite | ((saveSprite != 0) << 31) | ((spriteIndex & 0x7ff) << 20);
 }
 
 
@@ -547,7 +545,7 @@ static int packBenchData(BenchInfo *benchInfo)
                 bPl[j].position = pl->position;
                 bPl[j].isMarked = j == teams[i]->inGameTeamPtr->markedPlayer;
                 bPl[j].isInjured = (*teams[i]->players)[j]->injuryLevel == -2;
-                bPl[j].injury = pl->injuriesBitfield >> 5 & 7;
+                bPl[j].injury = (pl->injuriesBitfield >> 5) & 7;
                 if ((*teams[i]->players)[j]->cards < 0)
                     bPl[j].cards = -1;
                 else if ((*teams[i]->players)[j]->cards > 0)
@@ -807,7 +805,6 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
     assert(teamNumber == 1 || teamNumber == 2);
     WriteToLog(LM_WATCHER, "Applying scorer list for team %d", teamNumber);
     for (i = 0; i < numScorers; i++) {
-        TeamGame *scorerTeam;
         uint index = *scorers >> 4;
         uint numGoals = *scorers++ & 0x0f;
         if (numGoals <= 4) {
@@ -821,7 +818,7 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
             goalTypes = *(dword *)scorers;
         }
         /* if it's own goal look up other team, otherwise this one */
-        scorerTeam = (teamNumber - 1) ^ ((goalTypes >> 2 * (numGoals - 1) & 3) != 2) ? leftTeamPtr : rightTeamPtr;
+        TeamGame *scorerTeam = (teamNumber - 1) ^ ((goalTypes >> ((2 * (numGoals - 1)) & 3) != 2)) ? leftTeamPtr : rightTeamPtr;
         WriteToLog(LM_WATCHER, "Scorer %d, index = %d, name = '%s', goals scored = %d",
             i, index, getSurname(scorerTeam, index), numGoals);
         assert(numGoals <= 10 && scorerSprites->pictureIndex != -1);
@@ -836,14 +833,14 @@ static byte *applyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
         goalTimes = (dword *)(scorers + goalTypesSize);
         for (uint j = 0; j < numGoals; j++) {
             static char ** const goalScoredPrefixTables[2] = { firstGoalScoredTable, alreadyScoredTable };
-            char *goalTimeStr = goalScoredPrefixTables[j != numGoals - 1][goalTypes >> 2 * (numGoals - j - 1) & 3];
+            char *goalTimeStr = goalScoredPrefixTables[j != numGoals - 1][(goalTypes >> (2 * (numGoals - j - 1))) & 3];
             *(dword *)goalTimeStr = *goalTimes++;
             if (*++goalTimeStr == '0')  /* skip leading zeros */
                 goalTimeStr++;
             if (*goalTimeStr == '0')
                 goalTimeStr++;
             WriteToLog(LM_WATCHER, "  Goal %d, type = %d, str = '%s', sprite = %d", j,
-                goalTypes >> 2 * (numGoals - j - 1) & 3, goalTimeStr, scorerSprites->pictureIndex);
+                (goalTypes >> (2 * (numGoals - j - 1))) & 3, goalTimeStr, scorerSprites->pictureIndex);
             /* update current offset */
             if ((x = Text2Sprite(x, 0, scorerSprites->pictureIndex, goalTimeStr, smallCharsTable)) < 0) {
                 D0 = (++scorerSprites)->pictureIndex;

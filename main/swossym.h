@@ -75,7 +75,7 @@ extern void (*DrawMenu[])() asm ("DrawMenu");
 extern void (*LoadDIYFile[])() asm ("LoadDIYFile");
 extern void (*PrimitivePrintf[])() asm ("PrimitivePrintf");
 extern word numSelectedTeams asm ("numSelectedTeams");
-extern byte selectedTeamsBuffer[] asm ("selectedTeamsBuffer");
+extern TeamFile selectedTeams[] asm ("selectedTeams");
 extern word gameType asm ("gameType");
 extern char pitchDatBuffer[] asm ("pitchDatBuffer");
 extern word inSubstitutesMenu asm ("inSubstitutesMenu");
@@ -249,6 +249,8 @@ extern void (*SetNextPlayerFrame[])() asm ("SetNextPlayerFrame");
 extern const word playerSpeedsGameInProgress[8] asm ("playerSpeedsGameInProgress");
 extern word goalScored asm ("goalScored");
 extern const char playerNormalStandingAnimTable[] asm ("playerNormalStandingAnimTable");
+extern void (*GetPlayerByOrdinal[])() asm ("GetPlayerByOrdinal");
+extern void (*InitIngameTeamStructure[])() asm ("InitIngameTeamStructure");
 /*
     Watcom C library
 */

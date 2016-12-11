@@ -1,7 +1,3 @@
-#include "swos.h"
-#include "util.h"
-
-
 /** DrawSprite
 
     saveSprite = -1 not saving, anything else to save background
@@ -53,12 +49,12 @@ static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
 
 /** getSmallNumberStringLength
 
-    num ->         null-terminated string of a number to measure, it's assumed it contains only ascii digits
+    num         -> null-terminated string of a number to measure, it's assumed it contains only ASCII digits
     digitWidths -> lengths of digits, assumed length 10 elements
     kerning     -  number of pixels to add between digits
     outWidths   -> array that will receive width of each digit when printed
 
-    Return what would be length of string in pixels when rendered.
+    Return what would be the length of string in pixels when rendered.
 */
 static int getSmallNumberStringLength(const char *num, const byte *digitWidths, int kerning, int *outWidths)
 {

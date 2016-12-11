@@ -3,9 +3,6 @@
     New menu entry to celebrate SWOS 20 years anniversary.
 */
 
-#include "swos.h"
-#include "util.h"
-
 static int counter;
 static int playersSettledCounter;
 
@@ -32,7 +29,7 @@ static const Position endPositions[kNumberOfPlayers] = {
 static SpriteGraphics *sprites[kNumberOfPlayers];
 static word spriteOffsets[kNumberOfImages];
 
-static Player players[kNumberOfPlayers];
+static Sprite players[kNumberOfPlayers];
 
 
 static void printString(int x, int y, const char *text)
@@ -61,11 +58,11 @@ static void printCredits()
         "\0"
         "\0"
         "EDITORS:\0"
-        "ANDIB, ARMANDO JIMENEZ, BB, BENNN54, BETICHUS, BOMB, COMBAT444,\0"
-        "DIMETRODON, DJOWGER, GORZO, JANKO4, LEMONHEADIV, MAHARAJA,\0"
-        "MARIN PARUSHEV, MICHAELS, PARANORMALJOE, PLAYAVELI,\0"
-        "ROCK AND ROLL, SAINTGAV, SALVA, SIDA79, SUPERHOOPS-1967,\0"
-        "THEOLOGISTIC, WHITEULVER, XFLEA\0"
+        "ANDIB, ARMANDO JIMENEZ, BB, BENNN54, BETICHUS, BOMB,\0"
+        "COMBAT444, DIMETRODON, DJOWGER, GORZO, JANKO4, LEMONHEADIV,\0"
+        "MAHARAJA, MARIN PARUSHEV, MICHAELS, PARANORMALJOE,\0"
+        "PLAYAVELI, ROCK AND ROLL, SAINTGAV, SALVA, SIDA79, SKAARJ,\0"
+        "SUPERHOOPS-1967, THEOLOGISTIC, WHITEULVER, XFLEA\0"
         "\0"
         "GRAPHICS:\0"
         "REDHAIR\0"
@@ -191,7 +188,7 @@ static void drawSprite(SpriteGraphics *sprite, int x, int y)
     spritesIndex[0] = savedSprite;
 }
 
-static void updatePlayerSpeed(Player& player)
+static void updatePlayerSpeed(Sprite& player)
 {
     const int MAX_SPEED = 1280;
     player.speed = playerSpeedsGameInProgress[min(max(kPlayerSpeed / 2, 0), sizeofarray(playerSpeedsGameInProgress) - 1)];
@@ -202,7 +199,7 @@ static void updatePlayerSpeed(Player& player)
 static void initializePlayers()
 {
     for (int i = 0; i < kNumberOfPlayers; i++) {
-        memset(&players[i], 0, sizeof(Player));
+        memset(&players[i], 0, sizeof(Sprite));
 
         players[i].teamNumber = 1;
         players[i].beenDrawn = true;
@@ -228,7 +225,7 @@ static bool playersSettled()
     return false;
 }
 
-static void updatePlayerDirection(Player& player, int direction)
+static void updatePlayerDirection(Sprite& player, int direction)
 {
     auto oldDirection = player.direction;
     player.fullDirection = direction;
@@ -241,7 +238,7 @@ static void updatePlayerDirection(Player& player, int direction)
     }
 }
 
-static bool playerArrived(const Player& player)
+static bool playerArrived(const Sprite& player)
 {
     return player.x.whole() == player.destX && player.y.whole() == player.destY;
 }

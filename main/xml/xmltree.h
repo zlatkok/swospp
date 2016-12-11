@@ -1,6 +1,6 @@
 #pragma once
 
-typedef enum XmlNodeType {
+enum XmlNodeType {
     XML_CHAR,
     XML_SHORT,
     XML_INT,
@@ -9,28 +9,28 @@ typedef enum XmlNodeType {
     XML_EMPTY,
     XML_FUNC,
     XML_TYPE_MAX,
-} XmlNodeType;
+};
 
 typedef void *(*XmlValueFunction)();
 
-typedef union XmlValue {
+union XmlValue {
     signed char *charVal;
     signed short *shortVal;
     signed int *intVal;
     char *ptr;
     XmlValueFunction func;
-} XmlValue;
+};
 
-typedef struct XmlAttribute {
+struct XmlAttribute {
     char *name;
     size_t nameLength;
     uint32_t nameHash;
     char *value;
     size_t valueLength;
     struct XmlAttribute *next;
-} XmlAttribute;
+};
 
-typedef struct XmlNode {
+struct XmlNode {
     char *name;
     size_t nameLength;
     uint32_t nameHash;
@@ -43,14 +43,14 @@ typedef struct XmlNode {
     XmlAttribute *attributes;
     struct XmlNode *children;   /* head of one-way circular list of this node's children */
     struct XmlNode *nextChild;
-} XmlNode;
+};
 
-typedef struct XmlAttributeInfo {
+struct XmlAttributeInfo {
     char *name;
     size_t nameLength;
     char *value;
     size_t valueLength;
-} XmlAttributeInfo;
+};
 
 #define XmlNodeGetName(node)        (assert(node), (node)->name)
 #define XmlNodeGetNameLength(node)  (assert(node), (node)->nameLength)

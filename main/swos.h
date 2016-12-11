@@ -1,7 +1,5 @@
 #pragma once
 
-#include "types.h"
-
 enum debugMessageClasses {
     LM_GAME_LOOP        = 1,
     LM_GAME_LOOP_STATE  = 2,
@@ -18,17 +16,9 @@ enum debugMessageClasses {
 /* screen width during the game */
 #define GAME_WIDTH 384
 
-#define TEAM_SIZE       684
 #define TACTIC_SIZE     370
 
 #define KEY_BUFFER_SIZE 10
-
-#ifndef min
-#define min(a,b) ((a) < (b) ? (a) : (b))
-#endif
-#ifndef max
-#define max(a,b) ((a) > (b) ? (a) : (b))
-#endif
 
 #pragma pack(push, 1) /* must pack them for file and SWOS memory access */
 
@@ -87,7 +77,7 @@ public:
 };
 
 /* Player structure used during the game */
-typedef struct Player {
+struct Sprite {
     word teamNumber;     /* 1 or 2 for player controls, 0 for CPU            */
     word shirtNumber;    /* 1-11 for players, 0 for other sprites            */
     word frameOffset;
@@ -133,9 +123,9 @@ typedef struct Player {
     short injuryLevel;
     word tacklingTimer;
     word sentAway;
-} Sprite;
+};
 
-typedef struct MenuEntry {
+struct MenuEntry {
     word drawn;
     word ordinal;
     word invisible;
@@ -158,14 +148,14 @@ typedef struct MenuEntry {
     word height;
     word type1;
     union {
-        void (*EntryFunc)(word, word);
+        void (*entryFunc)(word, word);
         word entryColor;
         word spriteIndex;
     } u1;
     word type2;
     word text_color;
     union {
-        void (*EntryFunc2)(word, word);
+        void (*entryFunc2)(word, word);
         char *string;
         word spriteIndex;
         void *stringTable;
@@ -177,25 +167,43 @@ typedef struct MenuEntry {
     word controlMask;
     void (*BeforeDraw)();
     void (*AfterDraw)();
-} MenuEntry;
+};
 
-
-typedef struct Menu {
+struct Menu {
     void (*onInit)();
     void (*afterDraw)();
     void (*onDraw)();
     MenuEntry *currentEntry;
     word numEntries;
     char *endOfMenuPtr;
-} Menu;
+};
 
+struct PlayerFile {
+    byte nationality;
+    byte unk1;
+    byte shirtNumber;
+    char name[23];
+    byte positionAndFace;
+    byte unk2;
+    byte passing;
+    byte shootingHeading;
+    byte tacklingBallControl;
+    byte speedFinishing;
+    byte price;
+    byte unk3;
+    byte unk4;
+    byte unk5;
+    byte unk6;
+    byte unkFlag;
+};
+static_assert(sizeof(PlayerFile) == 38, "PlayerFile is invalid");
 
-typedef struct TeamFile {
+struct TeamFile {
     byte teamFileNo;
     byte teamOrdinal;
     word globalTeamNumber;
     byte teamStatus;
-    char teamName[17];
+    char name[17];
     byte unk1;
     byte unk2;
     byte tactics;
@@ -212,8 +220,21 @@ typedef struct TeamFile {
     byte secSocksColor;
     char coachName[23];
     byte unk3;
-    byte playerNumbers[16];
-} TeamFile;
+    byte playerOrder[16];
+    PlayerFile players[16];
+
+    dword getId() const {
+        return ((globalTeamNumber >> 8) << 24) | ((globalTeamNumber & 0xff) << 16) | (teamOrdinal << 8) | teamFileNo;
+    }
+    void setId(dword id) {
+        teamFileNo = id & 0xff;
+        teamOrdinal = (id >> 8) & 0xff;
+        globalTeamNumber = id >> 16;
+    }
+};
+static_assert(sizeof(TeamFile) == 684, "TeamFile is invalid");
+#define TeamFileHeaderSize (offsetof(TeamFile, players))
+
 
 enum TeamColor {
     /* team colors using game palette */
@@ -242,7 +263,7 @@ enum TeamColor {
 };
 
 
-typedef struct TeamStatsData {
+struct TeamStatsData {
     word ballPossession;
     word cornersWon;
     word foulsConceded;
@@ -250,9 +271,9 @@ typedef struct TeamStatsData {
     word sendingsOff;
     word goalAttempts;
     word onTarget;
-} TeamStatsData;
+};
 
-typedef struct PlayerGame {
+struct PlayerGame {
     byte substituted;
     byte index;
     byte goalsScored;
@@ -278,7 +299,7 @@ typedef struct PlayerGame {
     byte hasPlayed;
     byte face2;
     char fullName[23];
-} PlayerGame;
+};
 
 enum PlayerFace {
     PL_FACE_WHITE = 0,
@@ -286,7 +307,7 @@ enum PlayerFace {
     PL_FACE_BLACK = 2,
 };
 
-typedef struct TeamGame {
+struct TeamGame {
     word prShirtType;
     word prShirtCol;
     word prStripesCol;
@@ -304,10 +325,10 @@ typedef struct TeamGame {
     byte unk_2;
     PlayerGame players[16];
     byte unknownTail[686];
-} TeamGame;
+};
 
-typedef struct TeamGeneralInfo {
-    struct TeamGeneralInfo *opponentsTeam;
+struct TeamGeneralInfo {
+    TeamGeneralInfo *opponentsTeam;
     word playerNumber;
     word plCoachNum;
     word isPlCoach;
@@ -378,32 +399,33 @@ typedef struct TeamGeneralInfo {
     word goalkeeperPlaying;
     word resetControls;
     byte joy1SecondaryFire;
-} TeamGeneralInfo;
+};
+static_assert(sizeof(TeamGeneralInfo) == 145, "TeamGeneralInfo is invalid");
 
-typedef struct GoalInfo {
+struct GoalInfo {
     word type;
     dword time;
-} GoalInfo;
+};
 
-typedef struct SWOS_ScorerInfo {
+struct SWOS_ScorerInfo {
     word shirtNum;
     word numSpritesTaken;
     word numGoals;
     GoalInfo goals[10];
-} SWOS_ScorerInfo;
+};
 
 /* Player destination quadrants for every possible ball position in quadrants */
-typedef struct PlayerPositions {
+struct PlayerPositions {
     /* hi nibble x, lo nibble y */
     byte positions[35];
-} PlayerPositions;
+};
 
-typedef struct Tactics {
+struct Tactics {
     char name[9];
     PlayerPositions playerPos[10];
     byte someTable[10];
     byte ballOutOfPlayTactics;
-} Tactics;
+};
 
 #pragma pack(pop)
 

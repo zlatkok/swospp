@@ -1,7 +1,3 @@
-#include "swos.h"
-#include "util.h"
-
-
 static char ball1[] = {
     0, 3, 2, 0,
     2, 2, 2, 3,

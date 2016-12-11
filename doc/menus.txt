@@ -48,10 +48,11 @@ Menu entries, following the header:
        22 ; y
        24 ; width
        26 ; height
-       28 ; type1 [0,1,2,3] (word)
-            0: NOP -- nothing is drawn in the first cycle
+       28 ; type1 [0,1,2,3] (word) -- this is something of a background type
+            0: NOP -- nothing is drawn in the first cycle (no background)
             1: custom draw function -- don't draw anything, but invoke function
                from offset 30 (dword) with x and y arguments in D0 and D1
+               (custom draw background function)
             2: standard entry -- has background and frame
                Low byte is background color, high byte is color of the internal
                frame. If the color of internal frame is zero, don't draw it.
@@ -63,42 +64,42 @@ Menu entries, following the header:
 
        30 ; switch(ofs28) {
             case 1:
-                ofs30 = ptr na funkciju koja prima x i y kao parametre
+                ofs30 = pointer to a function getting x and y as parameters
             case 2:
-                ofs30 = nizi nibble: boja pozadine stavke
-                        visi nibble: boja okvira
+                ofs30 = lo nibble: entry background color
+                        hi nibble: frame color
             case 3:
-                ofs30 = indeks sprajta
+                ofs30 = sprite index
             }
-            0 - nemoj da iscrtavas (nebitno)
+            0 - do not draw (nebitno)
 
-       34 ; tip2 [0,1,2,3,4,5,6,7]
+       34 ; tip2 [0,1,2,3,4,5,6,7] -- something of a foreground type
 
-            0: nema crtanja, null entry
-            1: na ofs38 je funkcija, pozovi je sa parametrima x i y
-               (D0 i D1)
-            2: na ofs38 je pointer na string.
-               Ukoliko je pointer-1, onda se za string odvaja dodatnih 70
-               bajtova na posle kraja menija i upisuje se STDMENUTEXT, sto
-               znaci da ce string kasnije biti popunjen od strane neke od
-               funkcija.
-            3: ofs38 je indeks sprajta koji se crta
-            4: ofs38 je pointer na string tabelu:
-                 0 - pointer na indeks promenljivu
-                 4 - word, vrednost pocetnog indeksa
-                 6 - dalje ide tabela pointera na stringove
-               ispisi string iz tabele koji indeksira indeksna promenljiva
-            5: multi-line tekst. Prvi bajt je broj linija, i zatim ide isto
-               toliko null-terminated stringova (ne pointera). Ofs36, donji
-               nibl, predstavlja boju teksta
-            6: ofs38 je broj (word). Konvertuje se u string i ispisuje
-               (koristi se kod za tip 2).
-            7: sprite copy. Ofs38 je pointer na sledecu strukturu:
+            0: NOP, no foreground
+            1: ofs38 contains a function pointer, invoke it with x and y
+               parameters (D0 and D1)
+            2: ofs38 contains pointer to string.
+               If this pointer has value -1 then additional 70 bytes is
+               allocated after the menu end and string "STDMENUTEXT" is written
+               there; this will be filled later by some of the entry functions
+            3: ofs38 is index of a sprite that will be drawn
+            4: ofs38 is a pointer to string table:
+                 0 - pointer to index variable (word)
+                 4 - word, value of starting index
+                 6 - further we have array of pointers to strings
+               write string from the table indexed by index variable
+            5: multi-line text. First byte is number of lines, followed by that
+               many null-terminated strings (not pointers). Ofs36, low nibble,
+               represents color of the text
+            6: ofs38 is a number (word). It's converted into string and
+               displayed (code for type 2 is used).
+            7: sprite copy with color conversion. offset 38 is a pointer to the
+               following structure:
                  0 - source sprite index
-                 2 - dest sprite index
-                 4 - tablica za konverziju boja, duzine 32 bajta
-               Kopira se prvi sprajt u drugi, drugi se konvertuje u 8 boja i na
-               kraju crta.
+                 2 - destination sprite index
+                 4 - color conversion table, 32 bytes long
+               First sprite is copied into second, second is converted to 8
+               colors and eventually drawn to screen.
 
        36 ; Donji nibl ofs36 predstavlja boju teksta. Ako je nula, onda upisi
             dvojku (bela boja). Nibl 1 oznacava da li se crta sa malim ili
@@ -119,8 +120,15 @@ Menu entries, following the header:
 Kordinate stavki su po x osi pomerene udesno za 8 piksela. Tako se stavka sa x
 koordinatom nula u stvari nalazi na osmom pikselu ekrana.
 
+beforeDraw function executes first, before anything has been drawn. afterDraw
+is executed after all the entry drawing has been done, but before flip so it's
+still possible to alter looks of the entry.
+
 Ukoliko tip1 ili tip2 nisu u propisanom opsegu, izdaje se int3 i ulece u
 beskonacnu petlju. Taj int3 ubija program ako nema debuggera.
+
+Type 1 is something of a background type, while type 2 relates to menu entry
+foreground (contents).
 
 Ovo gore se odnosi na (kako sam ih nazvao) "screen menije". Postoje i
 "staticki" (takodje moj naziv) meniji, koje procedura ConvertMenu
@@ -194,7 +202,7 @@ sledeca 4 bajta postavi na offsete:
 +10  up
 +11  down
 ---------------------------
-TIP 3:  (funkcija 1)
+TIP 3:  (funkcija 1 - custom background drawing function)
 
 ofs28 = 1
 ofs30 = dword
@@ -300,7 +308,7 @@ TIP 20: (donje preskakanje)
 ofs19 = byte
 ofs15 = byte
 ---------------------------
-TIP 21: (sprite copy)
+TIP 21: (color converted sprite)
 
 ofs34 = 7
 ofs36 = 0
@@ -768,6 +776,17 @@ else goto CallDrawMenuItem;
 
 @@out:
 retn
+
+
+Play match menu
+---------------
+Drawing player names: player names start from entry number 13 and end with
+entry 29 (16 entries + 1 invisible). These entries are only used for hit
+testing (for user interaction), drawing is done manually in afterDraw function.
+Entry 33 is player's name: background and text. Entry 31 is small x or check
+sprite. Entry 37 is the same sprite again, but it with different criteria it
+seems. Entry 34 is player's position (G, RB, D...). Entry 35 is that weird
+3-letter string that comes after player name and position.
 
 
 Multiplayer

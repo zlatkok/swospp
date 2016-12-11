@@ -4,9 +4,6 @@
 */
 
 #include <errno.h>
-#include "swos.h"
-#include "util.h"
-#include "dos.h"
 #include "qalloc.h"
 
 #pragma GCC diagnostic ignored "-Wparentheses"

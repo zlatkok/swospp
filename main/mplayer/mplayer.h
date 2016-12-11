@@ -13,16 +13,16 @@
 #define MAX_CHAT_LINE_LENGTH    25
 #define MAX_TEAM_NAME_LEN       17
 
-extern dword currentTeamId;                    /* id of current team           */
+extern dword currentTeamId;                    /* id of current team */
 
 /* structure used to communicate state of waiting games to GUI */
 #pragma pack(push, 1)
-typedef struct WaitingToJoinReport {
+struct WaitingToJoinReport {
     dword refreshing;
     char *waitingGames[MAX_GAMES_WAITING + 1];
-} WaitingToJoinReport;
+};
 
-typedef struct MP_Options {
+struct MP_Options {
     word size;
     word gameLength;
     word pitchType;
@@ -31,11 +31,18 @@ typedef struct MP_Options {
     byte skipFrames;
     byte padding[1];
     word networkTimeout;
-} MP_Options;
+};
+
+/* saved data for a team in play match menu (player positions & selected tactics) */
+struct SavedTeamData {
+    dword teamId;
+    dword tactics;
+    byte positions[16];
+};
 
 #define DEFAULT_MP_OPTIONS sizeof(MP_Options), 1, 4, 2, 5, 2, 'z', 8,
 
-typedef struct LobbyState {
+struct LobbyState {
     int numPlayers;
     MP_Options options;
     char *playerNames[MAX_PLAYERS];
@@ -43,7 +50,7 @@ typedef struct LobbyState {
     char *playerTeamsNames[MAX_PLAYERS];
     char *chatLines[MAX_CHAT_LINES];
     byte chatLineColors[MAX_CHAT_LINES];
-} LobbyState;
+};
 #pragma pack(pop)
 
 enum MP_Join_Game_Response {
@@ -62,6 +69,10 @@ typedef void (*SendWaitingToJoinReport)(const WaitingToJoinReport *report);
 typedef bool32 (*ModalFunction)(int status, const char *errorText);
 typedef void (*EnterGameLobbyFunction)();
 typedef void (*UpdateLobbyFunction)(const LobbyState *state);
+typedef void (*ShowTeamsMenuFunction)(TeamFile *, TeamFile *, int (*)());
+
+void ApplySavedTeamData(TeamFile *team);
+void StoreTeamData(const TeamFile *team);
 
 extern "C" {
     const char *InitMultiplayer();
@@ -100,9 +111,9 @@ extern "C" {
     void GoBackToLobby();
     void SetPlayerReadyState(bool isReady);
     void SetPlayerOrWatcher(bool isWatcher);
-    void SetupTeams(bool32 (*modalSyncFunc)(), void (*showTeamMenuFunc)(const char *, const char *));
+    void SetupTeams(bool32 (*modalSyncFunc)(), ShowTeamsMenuFunction showTeamMenuFunc);
     bool32 CanGameStart();
-    char *SetTeam(char *newTeamName, dword teamIndex);
+    char *SetTeam(TeamFile *newTeamName, dword teamId);
     void AddChatLine(const char *line);
     void StartGame();
     void GameFinished();
@@ -126,8 +137,7 @@ extern "C" {
     void LeaveWaitingToJoinState();
     void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
         void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(), bool32 (*modalSyncFunc)(),
-        void (*showTeamMenuFunc)(const char *, const char *), void (*onErrorFunc)(),
-        void (*onGameEndFunc)());
+        ShowTeamsMenuFunction showTeamsMenuFunc, void (*onErrorFunc)(), void (*onGameEndFunc)());
 
     /* Network loop during menus. Return false during blocking operations. */
     bool32 NetworkOnIdle();

@@ -29,30 +29,30 @@ byte). This is what the format of the SpriteGraphics structure looks like:
           21      1      nlines / 4, haven't seen it used anywhere so far
           22      2      sprite ordinal in sprite.dat file
 
-Fields 16 and 18 are used for example as a point in sprite from which ball
+For example fields 16 and 18 are used as a point in sprite from which ball
 bounces off.
 
 sprite.dat:
-227 pointera su podaci iz charset.dat (sprajtovi za vreme menija)
-114 pointera u score.dat
-303 pointera u team(1|2|3).dat (obicno 1)
-303       -||-                 (obicno 2)
-116 pointera u goal1.dat
+227 pointers are data from charset.dat (sprites used during the menu)
+114 pointers to score.dat
+303 pointers to team(1|2|3).dat (usually 1)
+303       -||-                  (usually 2)
+116 pointers to goal1.dat
 116       -||-
-155 pointera u bench.dat (ili benc2.dat ako se koristi samo 16 boja)
-1   dword - 0 - oznacava kraj fajla
+155 pointers to bench.dat (or benc2.dat if 16 color mode is on)
+1   dword - 0 - marks the end of the file
 
-team1.dat sadrzi slicice igraca sa vertikalnim prugama na majicama
-team2.dat sadrzi slicice igraca sa obojenim rukavima
-team3.dat sadrzi slicice igraca sa horizontalnim prugama na majicama
+team1.dat contains pictures of players with shirts with vertical stripes
+team2.dat contains pictures of players with colored sleeves
+team3.dat contains pictures of players with shirts with horizontal stripes
 
-Igraci sa jednobojnim majicama se crtaju tako sto se uzme team1.dat, i
-izjednaci boja pruga i pozadine.
+Players with solid color shirts are created from team1.dat, by using same color
+for stripes and shirt base.
 
 
-   sprite.dat:                   team1.dat - niz sprajt struktura
-(pointeri na sprajt
-     strukture)              ptr 0    +------+--------+
+   sprite.dat:                   team1.dat - array of sprite structures
+(pointers to sprite
+    structures)              ptr 0    +------+--------+
    +-----+-----+            +-------->|   x  |        |
    |  x  |  x  |            |         +---|--+--------+
    +--|--+--|--+            |      +--+---+           |
@@ -73,19 +73,19 @@ izjednaci boja pruga i pozadine.
                                       |               |
                                       +---------------+
 
-I pored toga sto se ovde koriste pointeri, sprajtovi su u stvari smesteni
-sekvencijalno. U svakom .dat fajlu koji sadrzi sprajtove redosled je sledeci:
-prvo sprajt struktura, pa odmah zatim pikseli sprajta. Pojedini fajlovi se
-razlikuju pri tretiranju offset polja, ali ona su tu samo radi boljih
-performansi pri citanju i iscrtavanju.
-Prvih 227 offset-a je relativno na charset.dat. Zatim offset-i krecu opet od
-nule, ali su sada relativni na memorijski blok koga cine score.dat, team1.dat
-(ili team2.dat), team3.dat, goal1.dat (dva puta), i bench ili benc.dat. Kraj
-sprite.dat-a oznacen je sa nula offsetom, koji takodje oznacava i kraj
-poslednjeg fajla (benc[h2].dat).
-Offset do podataka je uvek relativan u odnosu na pocetak fajla, izuzev u
-slucaju benc[h2].dat, gde su offseti relativni u odnosu na pocetak zbirnog
-memorijskog bloka.
+Despite pointers being used here, sprites are actually stored sequentially. In
+each .dat file that contains sprites the order is following: sprite structure
+first, immediately followed by sprite pixels. Some files differ slightly in
+handling the offset fields, but they are here only to improve loading and
+drawing performance.
+First 227 offsets are relative to charset.dat. After that offsets start from 0
+again, but now they are relative to memory block comprised of score.dat,
+team1.dat (or team2.dat), team3.dat, goal1.dat (two times) and bench or
+benc.dat. End of sprite.dat is marked with zero offset, which also marks the
+end of last file (benc[h2].dat).
+Offset to data is always relative to beginning of the file, except for
+benc[h2].dat file, where offsets are relative to beginning of the joint memory
+block.
 
 
 === Sprite map

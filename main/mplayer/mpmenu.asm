@@ -236,7 +236,6 @@ ReturnToMPMenuAfterTheGame:
         call SetMenuToReturnToAfterTheGame
         mov  byte [choosingTeam], 0
         calla ExitChooseTeams
-.out:
         calla SetExitMenuFlag
         popad
         retn
@@ -400,7 +399,7 @@ RequestListRefresh:
 ;
 ; Toggle refresh button between "REFRESH" and "SEARCHING" labels. While it's
 ; refreshing disable it, and switch to exit button.
-
+;
 ToggleRefreshing:
         push eax
         mov  [D0], word joinGameMenu_Refresh
@@ -454,7 +453,7 @@ ToggleRefreshing:
 
 ; EnterGameLobby [called from C++]
 ;
-; We have been granted the priviledge by the gaming gods.
+; We have been granted the privilege by the gaming gods.
 ;
 EnterGameLobby:
         pushad
@@ -471,7 +470,7 @@ EnterGameLobby:
 ;      eax -> pointer to state info structure, see below for details
 ;
 ; Refresh graphical state of the waiting to join games menu. We get called from
-; network loop, which sends us complete state in an array with following
+; network loop, which sends us complete state in an array with the following
 ; structure:
 ;   0 dword, boolean: true if we're still refreshing
 ;   4 dword, pointer to string: name of n-th game (note: there may be 0 games!)
@@ -541,7 +540,7 @@ JoinRemoteGame:
         push ShowPlayMatchMenu
         push SyncModalDialogProc
         push DisconnectedFromLobby
-        call JoinGame
+        call JoinGame           ; has stack frame, do not "optimize"
         retn
 
 
@@ -551,8 +550,7 @@ OnJoinGame:
         sub  eax, mpGamesStartIndex
         call JoinRemoteGame
         mov  word [D0], joinGameMenu_Exit
-        calla SetCurrentEntry
-        retn
+        jmpa SetCurrentEntry
 
 
 ; ExitSWOS
@@ -566,24 +564,34 @@ ExitSWOS:
         jmp  EndProgram
 
 
+; ExitIfInDirectMode
+;
+; Exit SWOS if we are in direct connect mode.
+;
+ExitIfInDirectMode:
+        call GetDirectGameName
+        mov  al, [eax]
+        test al, al
+        jz   .out
+
+        call DisbandGame
+        jmp  ExitSWOS
+
+.out:
+        retn
+
+
 ; DisconnectedFromLobby [called from C++]
 ;
 ; Called when we get disconnected from the lobby. Show error message and go
-; back to trying to find some games, unless in direct connect mode - in that
+; back to trying to find some games, unless in direct connect mode -- in that
 ; case exit SWOS.
 ;
 DisconnectedFromLobby:
         pushad
         movstr dword [A0], "DISCONNECTED FROM THE SERVER"
         calla ShowErrorMenu
-
-        call GetDirectGameName
-        mov  al, [eax]
-        test al, al
-        jz   .return_to_menu
-
-        call DisbandGame
-        jmp  ExitSWOS
+        call ExitIfInDirectMode
 
 .return_to_menu:
         call InitJoinGameMenu
@@ -620,8 +628,7 @@ MiniMenuLoop:
         calla WaitRetrace
         movzx ecx, word [PIT_countdown]
         mov  al, 110110b
-        calla ProgramPIT, ebx
-        retn
+        jmpa ProgramPIT
 
 
 ; JoinGameModalDialogProc [called from C++]
@@ -701,6 +708,8 @@ JoinGameModalDialogProc:
         jnz  .out
         inc  eax
         mov  byte [lastModalState], 0   ; reset this so we don't remain in error state forever ;)
+        call ExitIfInDirectMode         ; if we failed to connect while in direct connect mode, exit SWOS
+
 .out:
         mov  [esp + 28], eax
         popad
@@ -808,7 +817,6 @@ section .data
             EndEntry
             %assign prev index
             %assign index index + 1
-            ;%assign right -1
             %assign y y + 9
         %endrep
         RestoreTemplateEntry
@@ -924,7 +932,7 @@ section .data
             EntryString 0, aSubstitutes
         EndEntry
 
-        ; [48] num substitutes
+        ; [48] number of substitutes
         StartEntry 251, chat_y + 3 * 13, 11, 11, optNumSubstitutes
             EntryColor 13
             EntryString 0, -1
@@ -1021,6 +1029,7 @@ GetGameLobbyMenu:
 ;
 ; Unpatch everything and make a switch from game to menu display.
 ; Then show error menu and wait for player to press exit.
+; Only called in direct connect mode.
 ;
 extern ShowErrorAndQuit, FinishMultiplayerGame
 DisplayErrorAndExit:
@@ -1031,6 +1040,7 @@ DisplayErrorAndExit:
         mov  word [screenWidth], 320
         mov  word [cameraX], 0
         mov  word [cameraY], 0
+        mov  esi, playMatchMenu
         call UnpatchAfterSettingTeams   ; required to regain user input
         call FinishMultiplayerGame
         movstr eax, "GAME INTERRUPTED"
@@ -1128,13 +1138,42 @@ DisableServerOnlyEntries:
         jmp  .disable_next_entry
 
 
+; FixSelectedEntry
+;
+; After refreshing player list check if currently selected player may have been
+; disconnected or left on their own. If so, move cursor to entry above.
+; Must not modify edi.
+;
+FixSelectedEntry:
+        mov  ecx, currentMenu
+        mov  esi, [ecx + Menu.currentEntry]
+        test esi, esi
+        jz   short .out
+
+        cmp  word [esi + MenuEntry.isInvisible], 0
+        jz   short .out
+
+        movsx eax, byte [esi + MenuEntry.upEntry]
+        test eax, eax                               ; this should never happen, as there should always be
+        js   short .out                             ; at least 1 player above - us, but let's be safe
+
+        lea  ebx, [8 * eax - Menu_size]
+        shl  eax, 6
+        sub  eax, ebx                               ; eax = entry index * 56 (MenuEntry size) + Menu header size
+        add  eax, ecx                               ; eax -> up entry
+        mov  dword [ecx + Menu.currentEntry], eax
+
+.out:
+        retn
+
+
 ; UpdateGameLobby [called from C++]
 ;
 ; in:
 ;     eax -> LobbyState structure (described in mplayer.h)
 ;
 ; Update entire game lobby screen based on informations received from the
-; network module.
+; network module. Called each frame.
 ;
 extern currentTeamId, ApplyMPOptions
 UpdateGameLobby:
@@ -1147,7 +1186,7 @@ UpdateGameLobby:
 
         push byte glPlayerNamesStart
         pop  edx
-        mov  [D0], edx                                      ; edx - current entry number
+        mov  [D0], edx                                      ; edx - current player entry number
         push edx
         calla CalcMenuEntryAddress
         pop  edx
@@ -1157,6 +1196,7 @@ UpdateGameLobby:
         lea  ebx, [ebp + (glPlayerGoCheckboxesStart - glPlayerNamesStart) * MenuEntry_size]
                                                             ; ebx -> current player ready icon entry
 
+        ; set each player's name, team and ready icon
 .players_loop:
         xor  eax, eax
         dec  ecx
@@ -1206,6 +1246,8 @@ UpdateGameLobby:
         cmp  edx, byte glPlayerNamesEnd
         jb   .players_loop
 
+        call FixSelectedEntry
+
         mov  word [D0], glPlayerGoCheckboxesStart           ; fix our player, they're always at index 0
         calla CalcMenuEntryAddress
         mov  esi, [A0]
@@ -1224,7 +1266,7 @@ UpdateGameLobby:
         jnz  .apply_options
 
 .set_choose_team:
-        mov  dword [esi + MenuEntry.string], aChooseTeam    ; choose team if not chosen already
+        mov  dword [esi + MenuEntry.string], aChooseTeam    ; "choose team" if not chosen already
         mov  word [esi + MenuEntry.backAndFrameColor], 10   ; mark the entry as red
 
 .apply_options:
@@ -1239,12 +1281,14 @@ UpdateGameLobby:
         calla CalcMenuEntryAddress
         mov  esi, [A0]
 
+        ; fill chat lines
 .next_line:
-        mov  dword [esi + MenuEntry.isInvisible], -1        ; assume no line
+        mov  dword [esi + MenuEntry.isInvisible], -1        ; assume no chat line
         mov  byte [esi + MenuEntry.stringFlags], 0
         mov  eax, [ebp + 4 * ecx + LobbyState.chatLines]
         test eax, eax
         jz   .skip_line
+
         mov  bl, [eax]
         test bl, bl
         jz   .skip_line
@@ -1652,9 +1696,10 @@ ChangePlayerWatcher:
 extern SetupTeams
 OnStartGame:
         WriteToLog "Play match selected... going to synchronization..."
+        mov  word [showingCpuTeams], 0  ; just in case
         mov  eax, SyncModalDialogProc
         mov  edx, ShowPlayMatchMenu
-        jmp SetupTeams          ; let's rock'n'roll
+        jmp SetupTeams                  ; let's rock'n'roll
 
 
 ; SyncModalDialogProc [called from C++]
@@ -1677,13 +1722,72 @@ SyncModalDialogProc:
         retn
 
 
+; HookFindTeamInCache
+;
+; in:
+;     ecx -> get current team function
+;
+; Patch FindTeamsInCache since it blindly returns team from selectedTeams based on team id.
+; That causes horrible problems when both players are using same team. Make it return team of
+; player that's currently in control -- callback function will provide us with that.
+; Make sure esi is not touched.
+;
+HookFindTeamInCache:
+        mov  dword [ReturnCurrentTeam + 1], ecx
+
+        mov  al, [FindTeamInCache]
+        mov  [savedFindTeamInCacheBytes], al
+        mov  eax, [FindTeamInCache + 1]
+        mov  [savedFindTeamInCacheBytes + 1], eax
+
+        mov  byte [FindTeamInCache], 0xe9
+        mov  eax, ReturnCurrentTeam - 5
+        mov  ebx, FindTeamInCache
+        sub  eax, ebx
+        mov  [FindTeamInCache + 1], eax
+
+        retn
+
+
+; UnhookFindTeamInCache
+;
+; Return FindTeamInCache to its original state (since it won't work like this
+; during the menus).
+;
+UnhookFindTeamInCache:
+        mov  al, [savedFindTeamInCacheBytes]
+        mov  [FindTeamInCache], al
+        mov  eax, [savedFindTeamInCacheBytes + 1]
+        mov  [FindTeamInCache + 1], eax
+        retn
+
+
+; ReturnCurrentTeam
+;
+; Run in place of FindTeamInCache, and always return team of the controlling player
+; with a help of a patched in callback.
+;
+ReturnCurrentTeam:
+        db 0xb8, 0x90, 0x90, 0x90, 0x90
+        call eax                    ; it will only ever return 0 or 1
+        mov  word [D0], ax
+        neg  eax
+        and  eax, TEAM_SIZE
+        lea  eax, [eax + selectedTeams]
+        mov  [A0], eax
+        mov  word [D1], 0
+        xor  eax, eax
+        retn
+
+
 ; ShowPlayMatchMenu [called from C++]
 ;
 ; in:
 ;     eax -> team1
 ;     edx -> team2
+;     ecx -> get current team function
 ;
-; Caled when we're entering menu for players to set up their teams. Do all the
+; Called when we're entering menu for players to set up their teams. Do all the
 ; necessary patching of play match menu for multiplayer to work.
 ;
 extern lastFireState
@@ -1699,6 +1803,9 @@ ShowPlayMatchMenu:
         mov  dword [esi + 0x134], HookPlayMatchSelected
         mov  dword [esi + 0x10a], HookExitPlayMatch
 
+        mov  byte [eax + 4], 2
+        mov  byte [edx + 4], 2              ; hopefully "COACH" won't show up anymore
+
         mov  [A1], eax
         mov  [A2], edx
 %ifdef DEBUG
@@ -1707,6 +1814,7 @@ ShowPlayMatchMenu:
         WriteToLog "Left team is %s, right team is %s", eax, edx
 %endif
 
+        call HookFindTeamInCache
         movzx eax, byte [joyKbdWord]
         push byte 1
         cmp  al, convertControlsTableLen
@@ -1747,6 +1855,7 @@ UnpatchAfterSettingTeams:
         mov  byte [disabledInputCycles], 0
         mov  word [player2ClearFlag], 0
         mov  word [keyCount], 0
+        call UnhookFindTeamInCache
         retn
 
 
@@ -1755,7 +1864,7 @@ disabledPlayMatchMenuEntries:
 
 ; FixPlayMatchMenuAfterDraw/FixPlayMatchMenu
 ;
-; Make necessary changes on play match menu to accomodate multiplayer mode.
+; Make necessary changes on play match menu to accommodate multiplayer mode.
 ; Executing as on draw menu proc, and also on after draw to negate changes done
 ; by SWOS.
 ;
@@ -1970,3 +2079,5 @@ syncDialogInitialized:
         resb 1
 mainLoopRan:
         resb 1
+savedFindTeamInCacheBytes:
+        resb 5

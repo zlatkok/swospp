@@ -16,6 +16,7 @@ offset  length  description
  324      35    player 10 positions
  359      10    some table, unknown purpose, doesn't seem to be used
  369       1    index of a tactic that is applied when ball is out of play
+                this tactic is also used when displaying lineup in menus
 
 The pitch is divided into 35 quadrants, 5 rows and 7 columns. Those are
 quadrants to track the ball position. Position 0 corresponds to lower right

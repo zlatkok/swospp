@@ -6,8 +6,6 @@
     will be showing.
 */
 
-#include "swos.h"
-#include "util.h"
 #include "mptact.h"
 
 static const Tactics *pl1MPCustomTactics;   /* point to actual custom tactics */
@@ -29,8 +27,8 @@ void InitTacticsContextSwitcher(const Tactics *player1CustomTactics, const Tacti
     /* save real tactics first, they're swapped initially */
     pl1RealTactics = playMatchTeam2Ptr->tactics;
     pl2RealTactics = playMatchTeam1Ptr->tactics;
-    WriteToLog("Initial tactics: %s - %d (\"%s\"), %s - %d (\"%s\")", playMatchTeam1Ptr->teamName, pl1RealTactics, tacticsTable[pl1RealTactics],
-        playMatchTeam2Ptr->teamName, pl2RealTactics, tacticsTable[pl2RealTactics]);
+    WriteToLog("Initial tactics: %s - %d (\"%s\"), %s - %d (\"%s\")", playMatchTeam1Ptr->name, pl1RealTactics,
+        tacticsTable[pl1RealTactics], playMatchTeam2Ptr->name, pl2RealTactics, tacticsTable[pl2RealTactics]);
     pl1MPCustomTactics = player1CustomTactics;
     pl2MPCustomTactics = player2CustomTactics;
     pl1Tactics = pl1RealTactics;

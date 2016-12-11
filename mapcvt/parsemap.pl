@@ -91,11 +91,31 @@ print SWOS_INC <<EOF;
 ; screen width during the game
 %define GAME_WIDTH  384
 
-; size of tactics structure
-%define TACTICS_SIZE 370
-
-; size of SWOS main menu
 %define SWOS_MAIN_MENU_SIZE 480
+
+%define TEAM_SIZE 684
+%define TACTICS_SIZE 370
+%define TEAM_FILE_HEADER_SIZE 76
+
+struc PlayerFile
+    .nationality:           resb 1
+    .field_1:               resb 1
+    .shirtNumber:           resb 1
+    .name:                  resb 22
+    .field_19:              resb 1
+    .positionAndFace:       resb 1
+    .cardsInjuries:         resb 1
+    .passing:               resb 1
+    .shootingHeading:       resb 1
+    .tacklingBallControl:   resb 1
+    .speedFinishing:        resb 1
+    .price:                 resb 1
+    .field_21:              resb 1
+    .field_22:              resb 1
+    .field_23:              resb 1
+    .field_24:              resb 1
+    .some_flag:             resb 1
+endstruc
 
 ; Declare and put string into destination.
 ; %1 - destination, %2 - string
