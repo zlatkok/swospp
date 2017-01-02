@@ -1,5 +1,8 @@
 INTERNAL LIST OF STUFF DONE:
 2.0:
+- use BIOS for joystick handling, works like charm on DOSBox
+- implemented network timeout handler for sync & play match menu
+- added 2nd synchronization, right before play game, so it's not possible for other player to be left in menus
 - lineup and tactics from play match menu are now saved in options (for up to 5 different teams)
 - player shirt number range extended up to 255
 - fixed problem when both players play with the same team

@@ -74,6 +74,7 @@ HookMainKeysCheck:
         cmp  byte [aAsave_256], 'Z'
         jbe  .dump_it
         mov  byte [aAsave_256], 'A'
+
 .dump_it:
         calla DumpScreen
 
@@ -131,16 +132,16 @@ TestForPlayerKeys:
         retn
 
 
-; ControlsInit
+; ControlsMenuInit
 ;
 ; Called every time controls menu is entered. Sets entry that corresponds to
 ; controls configuration to red.
 ;
-ControlsInit:
+ControlsMenuInit:
         push byte 6
-        pop  ecx                ; ecx = counter, 6 entries
+        pop  ecx                    ; ecx = counter, 6 entries
         push byte 2
-        pop  edi                ; edi = starting entry number
+        pop  edi                    ; edi = starting entry number
 
 .set_green_loop:
         mov  [D0], edi
@@ -153,12 +154,13 @@ ControlsInit:
 
         cmp  byte [pl2Keyboard], 0  ; check if we have second pl. on keyboard
         jz   .not_pl2_keyboard
-        push byte 7              ; it is entry 7
+
+        push byte 7                 ; it is entry 7
         jmp  short .set_entry_color
 
 .not_pl2_keyboard:
-        mov  ax, [joyKbdWord]   ; else use joyKbdWord as entry index
-        inc  eax                ; entries start from 2 and are zero based
+        mov  ax, [g_joyKbdWord]     ; else use g_joyKbdWord as entry index
+        inc  eax                    ; entries start from 2 and are zero based
         push eax
 
 .set_entry_color:
@@ -175,13 +177,13 @@ ControlsInit:
 ; calibrating.
 ;
 ControlsOnSelectCommon:
-        mov  esi, [A5]          ; esi -> this entry
+        mov  esi, [A5]              ; esi -> this entry
         xor  ebx, ebx
         mov  bx, [esi + MenuEntry.ordinal] ; bx = this entry ordinal
         dec  ebx
         dec  ebx
-        mov  ecx, ebx           ; ecx = controls index zero based
-        cmp  ecx, 5             ; keyboard + keyboard?
+        mov  ecx, ebx               ; ecx = controls index zero based
+        cmp  ecx, 5                 ; keyboard + keyboard?
         jz   .2pl_kbd
 
         xor  eax, eax
@@ -189,104 +191,117 @@ ControlsOnSelectCommon:
         jmp  short .inc_ordinal
 
 .2pl_kbd:
-        sub  ecx, byte 2        ; make it look like keyboard + joystick
+        sub  ecx, byte 2            ; make it look like keyboard + joystick
 
 .inc_ordinal:
-        inc  ecx                ; joyKbdWord starts from 1, increase ordinal
-        mov  [joyKbdWord], cx
-        or   ecx, byte -1       ; ecx will be player number, init to -1
-        xor  eax, eax           ; clear eax so that we get zero when shifting
-        mov  ax, [calibrate_values + 2 * ebx] ; get control code
-        xor  esi, esi           ; esi will mark joystick number to calibrate
-        xor  edi, edi           ; edi will mark keyboard number to redefine
+        inc  ecx                    ; g_joyKbdWord starts from 1, increase ordinal
+        mov  [g_joyKbdWord], cx
+        or   ecx, byte -1           ; ecx will be player number, init to -1
+        xor  eax, eax               ; clear eax so that we get zero when shifting
+        mov  ax, [calibrateValues + 2 * ebx] ; get control code
+        xor  esi, esi               ; esi will mark joystick number to calibrate
+        xor  edi, edi               ; edi will mark keyboard number to redefine
 
 .next_control:
-        mov  word [scanCode], 0 ; reset last scan code to zero
-        inc  ecx                ; increase player number
-        mov  dl, al             ; get control code
+        mov  word [g_scanCode], 0   ; reset last scan code to zero
+        inc  ecx                    ; increase player number
+        mov  dl, al                 ; get control code
         shr  eax, 8
         test dl, dl
-        jz   .clear_controls_out ; if zero, no more controls
+        jz   .clear_controls_out    ; if zero, no more controls
 
-        mov  ebx, kbd_vars
         cmp  dl, 1
+        mov  ebx, kbdVars
         jnz  .not_kbd
 
-        mov  ebx, [ebx + 4 * edi] ; set ebx -> vars to set
-        call RedefineKeys       ; keyboard
+        mov  ebx, [ebx + 4 * edi]   ; set ebx -> vars to set
+        call RedefineKeys           ; keyboard
         test edi, edi
         jz   .keyboard1
 
         push eax
-        or   eax, -1            ; patch code for second keyboard player
+        or   eax, -1                ; patch code for second keyboard player
         call SetSecondPlayerOnKeyboard
         pop  eax
+
 .keyboard1:
-        inc  edi                ; next time it will be second keyboard
+        inc  edi                    ; next time it will be second keyboard
         jmp  short .next_control
 
 .not_kbd:
-        call CalibrateJoypad    ; joypad
-        jc   .out               ; check if error
+        call CalibrateJoystick      ; joystick
+        jc   .out                   ; check if error
 
-        inc  esi                ; next time it will be joypad 2
+        inc  esi                    ; next time it will be joystick 2
         jmp  short .next_control
 
 .clear_controls_out:
-        push byte 105           ; save changes to setup.dat
+        push byte 105               ; save changes to setup.dat
         mov  dword [A0], aSetup_dat
         mov  dword [A1], setupDatBuffer
         pop  dword [D1]
         calla WriteFile
-        call SaveOptionsIfNeeded    ; save options if needed :)
+        call SaveOptionsIfNeeded
+
 .out:
         xor  eax, eax
-        mov  [controlWord], ax  ; reset all control variables because int9
-        mov  [joy1Status], ax   ; could happen in the middle of this function,
-        mov  [joy2Status], ax   ; and variables could be erroneously set before
-                                ; new scan codes are set
-        call ControlsInit       ; set color of newly selected entry
-        WriteToLog "New controls set, joyKbdWord = %hd", dword [joyKbdWord]
-        WriteToLog "numLoopsJoy1 = %hd, numLoopsJoy2 = %hd", numLoopsJoy1, numLoopsJoy2
+        mov  [controlWord], ax      ; reset all control variables because int9 could happen
+        mov  [g_joy1Status], ax     ; in the middle of this function, and variables could be
+        mov  [g_joy2Status], ax     ; erroneously set before new scan codes
+        call ControlsMenuInit       ; set color of newly selected entry
+        WriteToLog "New controls set, g_joyKbdWord = %hd", dword [g_joyKbdWord]
+        WriteToLog "numLoopsJoy1 = %hd, numLoopsJoy2 = %hd", g_numLoopsJoy1, g_numLoopsJoy2
         retn
 
 
 ; Player2KeyProc
 ;
 ; When patched in, will be called directly from keyboard handler, from
-; SetControlWord. Updates second player control bitfields (joy2_status).
+; SetControlWord. Updates second player control bitfields (joy2Status).
 ;
 Player2KeyProc:
         push eax                ; ax contains scan code
-        movzx ebx, word [joy2Status]
+        movzx ebx, word [g_joy2Status]
         test al, 0x80           ; if high bit is set, key was released
         jnz  .key_released
+
         or   ebx, 0x80          ; hi bit of status is 1 if any key was pressed
         cmp  al, [codeFire1]
         jnz  .not_fire1
+
         or   ebx, 0x20
+
 .not_fire1:
         cmp  al, [codeFire2]
         jnz  .not_fire2
+
         or   ebx, 0x40
+
 .not_fire2:
         cmp  al, [codeRight]
         jnz  .not_right
+
         or   ebx, 8
         and  ebx, ~4
+
 .not_right:
         cmp  al, [codeLeft]
         jnz  .not_left
+
         or   ebx, 4
         and  ebx, ~8
+
 .not_left:
         cmp  al, [codeDown]
         jnz  .not_down
+
         or   ebx, 2
         and  ebx, ~1
+
 .not_down:
         cmp  al, [codeUp]
         jnz  .return
+
         or   ebx, 1
         and  ebx, ~2
         jmp  short .return
@@ -296,36 +311,46 @@ Player2KeyProc:
         and  ebx, 0x7f          ; also clear status high bit - key released
         cmp  al, [codeFire1]
         jnz  .not_fire1_rel
+
         and  ebx, ~32
+
 .not_fire1_rel:
         cmp  al, [codeFire2]
         jnz  .not_fire2_rel
+
         and  ebx, ~64
+
 .not_fire2_rel:
         cmp  al, [codeRight]
         jnz  .not_right_rel
+
         and  ebx, ~8
+
 .not_right_rel:
         cmp  al, [codeLeft]
         jnz  .not_left_rel
+
         and  ebx, ~4
+
 .not_left_rel:
         cmp  al, [codeDown]
         jnz  .not_down_rel
+
         and  ebx, ~2
+
 .not_down_rel:
         cmp  al, [codeUp]
         jnz  .return
+
         and  ebx, ~1
 
 .return:
-        mov  [joy2Status], bx
+        mov  [g_joy2Status], bx
         mov  bx, [controlWord]
         pop  eax                ; restore scan code
         retn
 
 
-global SetSecondPlayerOnKeyboard
 ; SetSecondPlayerOnKeyboard
 ;
 ; in:
@@ -333,6 +358,7 @@ global SetSecondPlayerOnKeyboard
 ;
 ; Turns support for second player on keyboard on or off.
 ;
+global SetSecondPlayerOnKeyboard
 SetSecondPlayerOnKeyboard:
         push esi
         push edi
@@ -356,15 +382,15 @@ SetSecondPlayerOnKeyboard:
         pop  ecx
         rep  movsb
 .out:
-        sti                     ; restore interrupts
+        sti                             ; restore interrupts
         xor  eax, eax
-        call InstallKeyboardHandler ; return old keyboard handler
+        call InstallKeyboardHandler     ; return old keyboard handler
         pop  ecx
         pop  edi
         pop  esi
         retn
 
-.patch_it_back:                 ; restore as it was
+.patch_it_back:                         ; restore as it was
         mov  byte [pl2Keyboard], 0
         push byte 7
         mov  byte [Joy2SetStatus], 0x66
@@ -375,7 +401,7 @@ SetSecondPlayerOnKeyboard:
         rep  movsb
         jmp  short .out
 
-PatchSetControlWord:            ; just a data to patch
+PatchSetControlWord:                    ; just a data to patch
         calla Player2KeyProc, ebx
 
 UnpatchSetControlWord:
@@ -402,7 +428,7 @@ RedefineKeys:
 
 .redefine_keys:
         xor  esi, esi           ; esi = current number of selected keys
-        mov  word [scanCode], 0
+        mov  word [g_scanCode], 0
 
 .next_key:
         cmp  esi, edx
@@ -418,6 +444,7 @@ RedefineKeys:
 .draw_selected_keys:
         cmp  edi, esi
         jz   .check_flip
+
         mov  al, [ebx + edi]
         push edx
         call ScanCode2String
@@ -435,6 +462,7 @@ RedefineKeys:
 .check_flip:
         cmp  esi, edx
         jae  .flip_it
+
         mov  eax, edi
         shl  edi, 3
         shl  eax, 1
@@ -459,6 +487,7 @@ RedefineKeys:
         push edi
         call IsScanCodeValid
         jc   .next_key
+
         mov  [ebx + esi], al
 
 .dont_get_key:
@@ -469,7 +498,7 @@ RedefineKeys:
         mov  word [D1], 160
         mov  word [D2], 140
         mov  word [D3], 2
-        mov  dword [A0], redefine_str
+        mov  dword [A0], redefineStr
         mov  dword [A1], smallCharsTable
         pushad
         calla DrawMenuTextCentered
@@ -477,9 +506,10 @@ RedefineKeys:
         popad
 
 .get_key:
-        mov   al, [scanCode]
+        mov   al, [g_scanCode]
         cmp   al, 0x31          ; 'n'
         jz    .redefine_keys
+
         cmp   al, 0x15          ; 'y'
         jnz   .get_key
 
@@ -499,9 +529,9 @@ RedefineKeys:
 ;      esi - number of scan codes in table
 ;      edi - keyboard number (0 or 1)
 ; out:
-;      carry flag: set = scan code invalid, clear = ok
+;      carry flag: set = scan code invalid, clear = OK
 ;
-; Checks if scan code has been used before.
+; Checks kbdVars array if scan code has been used before.
 ;
 IsScanCodeValid:
         push ecx
@@ -515,18 +545,18 @@ IsScanCodeValid:
         jnz  .keyboard2
 
         inc  edi                ; clear zero flag in case ecx = 0
-        mov  edi, [kbd_vars]
+        mov  edi, [kbdVars]
         repnz scasb
         setnz al
         jmp  short .out
 
 .keyboard2:
-        mov  edi, [kbd_vars + 4] ; zero flag already clear because edi != 0
+        mov  edi, [kbdVars + 4] ; zero flag already clear because edi != 0
         repnz scasb
         setnz bl
         inc  edi                ; clear zero flag in case ecx = 0
         push byte 5
-        mov  edi, [kbd_vars]
+        mov  edi, [kbdVars]
         pop  ecx
         repnz scasb
         setnz al
@@ -545,7 +575,7 @@ IsScanCodeValid:
 ;
 ; in:
 ;      ecx - player number (0 or 1)
-;      edi - keyboard nmber (0 or 1)
+;      edi - keyboard number (0 or 1)
 ;
 ; Draws menu for selecting keys.
 ;
@@ -553,7 +583,7 @@ DrawSelectKeysMenu:
         pushad
         push edi
         add  cl, '1'
-        mov  [select_keys_str + 23], cl
+        mov  [aSelectKeysForPlayer + 23], cl
         mov  ecx, edx
         mov  esi, [lin_adr_384k]
         mov  edi, esi
@@ -564,32 +594,32 @@ DrawSelectKeysMenu:
         mov  word [D1], 160
         mov  word [D2], 30
         mov  word [D3], 2
-        mov  dword [A0], select_keys_str
+        mov  dword [A0], aSelectKeysForPlayer
         mov  [A1], edx
         calla DrawMenuTextCentered
         mov  word [D1], 82
         add  word [D2], 40
-        mov  dword [A0], up_str
+        mov  dword [A0], aUp
         mov  [A1], edx
         calla DrawMenuText
         mov  word [D1], 82
         add  word [D2], 10
-        mov  dword [A0], down_str
+        mov  dword [A0], aDown
         mov  [A1], edx
         calla DrawMenuText
         mov  word [D1], 82
         add  word [D2], 10
-        mov  dword [A0], left_str
+        mov  dword [A0], aLeft
         mov  [A1], edx
         calla DrawMenuText
         mov  word [D1], 82
         add  word [D2], 10
-        mov  dword [A0], right_str
+        mov  dword [A0], aRight
         mov  [A1], edx
         calla DrawMenuText
         mov  word [D1], 82
         add  word [D2], 10
-        mov  dword [A0], fire_str
+        mov  dword [A0], aFire
         mov  [A1], edx
         calla DrawMenuText
         pop  ecx
@@ -598,7 +628,7 @@ DrawSelectKeysMenu:
 
         mov  word [D1], 82
         add  word [D2], 10
-        mov  dword [A0], sec_fire_str
+        mov  dword [A0], aBench
         mov  [A1], edx
         calla DrawMenuText
 
@@ -625,17 +655,18 @@ GetScanCode:
         or   eax, byte -1
         mov  edx, KeyboardHandler
         call InstallKeyboardHandler
-        mov  byte [scan_code], 0
+        mov  byte [g_scanCode], 0
 
 .get_code_loop:
-        mov  al, [scan_code]
+        mov  al, [g_scanCode]
         or   al, al
         jz   .get_code_loop
 
 .key_up_loop:
         or   al, al
         jge  .return_old_handler
-        mov  al, [scan_code]
+
+        mov  al, [g_scanCode]
         jmp  short .key_up_loop
 
 .return_old_handler:
@@ -646,6 +677,7 @@ GetScanCode:
         pop  ecx
         cmp  al, 0x2a
         jnz  .out
+
         dec  ecx
         jnz  .get_code
 .out:
@@ -657,8 +689,11 @@ GetScanCode:
 
 ; KeyboardHandler
 ;
-; Reads a scan code from keyboard controller and puts it into scan_code
-; variable.
+; out:
+;      g_scanCode - last pressed key scan code
+;
+; Reads a scan code from keyboard controller in response to keyboard interrupt
+; and puts it into g_scanCode variable.
 ;
 KeyboardHandler:
         push eax
@@ -669,7 +704,7 @@ KeyboardHandler:
         in   al, 0x61
         or   al, 0x80           ; disable keyboard
         out  0x61, al
-        mov  [scan_code], ah
+        mov  [g_scanCode], ah
         mov  al, 0x20
         out  0x20, al
         sti
@@ -692,267 +727,302 @@ DummyInt9:                      ; to be sure when patching SWOS int9 handler
 ScanCode2String:
         push esi
         push ebx
-        mov  esi, key_table
+        mov  esi, keyTable
         xor  ebx, ebx
         mov  bl, al
+
 .search:
         lodsb
         cmp  al, 0xff
         jz   .not_found
+
         cmp  al, bl
         jz   .found_it
+
         xor  eax, eax
         lodsb
         add  esi, eax
         jmp  .search
 
-.found_it:                      ; got it!
-        lodsb                   ; skip length byte
+.found_it:                          ; got it!
+        lodsb                       ; skip length byte
         mov  edx, esi
         jmp  short .out
 
 .not_found:
         sub  bl, 2
         mov  al, bl
-        mov  esi, one_char_table
+        mov  esi, oneCharTable
         and  al, 0x7f
-        cmp  al, one_char_table_size
+        cmp  al, oneCharTableSize
         ja   .unknown
+
         mov  al, [esi + ebx]
         test al, al
         jz   .unknown
-        mov  [key_str_buf], al
-        mov  byte [key_str_buf + 1], 0
-        mov  edx, key_str_buf
+
+        mov  [keyStrBuf], al
+        mov  byte [keyStrBuf + 1], 0
+        mov  edx, keyStrBuf
         jmp  short .out
 
 .unknown:
-        mov  edx, unknown       ; don't know this scan code
+        mov  edx, aUnknownKey       ; don't know this scan code
+
 .out:
         pop  ebx
         pop  esi
         retn
 
 
-; CalibrateJoypad
+; VerifyJoysticks
+;
+; Test joysticks for disconnection, and if any is found update g_joyKbdWord not to use it.
+;
+global VerifyJoysticks
+VerifyJoysticks:
+        xor  ebx, ebx
+        call ReadJoystickValues
+        test ebp, ebp
+        jz   .out
+
+        cmp ebp, 3                          ; joystick timeout, check is it just one or both
+        jb  .at_least_one_joystick_alive
+
+        WriteToLog "Both joysticks disconnected, setting controls to keyboard only"
+        mov  word [g_joyKbdWord], 1
+        retn
+
+.at_least_one_joystick_alive:
+        cmp  word [g_joyKbdWord], 5
+        jnz  .out
+
+        WriteToLog "One joystick still connected, setting controls to keyboard+joystick"
+        dec  word [g_joyKbdWord]
+
+.out:
+        retn
+
+
+; CheckIfJoystickDisconnected
+;
+; Prevent controls locking in case any joystick has been disconnected, and fix g_joyKbdWord accordingly.
+; If down+right combination was running continuously for 3 seconds do full test for disconnection.
+; Do the test at most once per second. This is executed each frame while in menus.
+;
+declareStatic m_joy1BottomRightFrames, 1
+declareStatic m_joy2BottomRightFrames, 1
+declareStatic m_lastJoystickTestTick, 2
+kJoystickCheckTimeout equ 3 * 70
+
+global CheckIfJoystickDisconnected
+CheckIfJoystickDisconnected:
+        cmp  word [g_joyKbdWord], 1
+        jz   .out
+
+        mov  ax, [g_currentTick]
+        sub  ax, [m_lastJoystickTestTick]
+        cmp  ax, 70                     ; run at most once per second
+        jl   .out
+
+        mov  ax, [g_joy1X]              ; check if we had maximum bottom right joystick values last frame
+        cmp  ax, [g_joy1MaxX]
+        jb   .reset_joy1_timer
+
+        mov  ax, [g_joy1Y]
+        cmp  ax, [g_joy1MaxY]
+        jb   .reset_joy1_timer
+
+        inc  byte [m_joy1BottomRightFrames]     ; increase consecutive timer and test if past 3 seconds
+        cmp  byte [m_joy1BottomRightFrames], kJoystickCheckTimeout
+        jb   .test_joy2
+
+.test_if_connected:
+        call VerifyJoysticks
+        mov  ax, [g_currentTick]
+        mov  [m_lastJoystickTestTick], ax
+        xor  eax, eax
+        mov  [m_joy1BottomRightFrames], al
+        mov  [m_joy2BottomRightFrames], al
+        retn
+
+.reset_joy1_timer:
+        mov  byte [m_joy1BottomRightFrames], 0
+
+.test_joy2:
+        mov  ax, [g_joy2X]
+        cmp  ax, [g_joy2MaxX]
+        jb   .reset_joy2_timer
+
+        mov  ax, [g_joy2Y]
+        cmp  ax, [g_joy2MaxY]
+        jb   .reset_joy2_timer
+
+        inc  byte [m_joy2BottomRightFrames]
+        cmp  byte [m_joy2BottomRightFrames], kJoystickCheckTimeout
+        jae  .test_if_connected
+
+        jmp  .out
+
+.reset_joy2_timer:
+        mov  byte [m_joy2BottomRightFrames], 0
+
+.out:
+        retn
+
+
+defaultValues:
+        dw 127, 127     ; center values
+        dd 0
+        dw 1, 1         ; minimum values
+        dw 254, 254     ; maximum values
+        dw 126, 127     ; divisor for left/right values
+        dw 126, 127     ; divisor for top/bottom values
+defaultValuesLength equ $ - defaultValues
+
+; SetDefaultCalibrationValues
+;
+; Apply default calibration values to SWOS that work well with DOSBox.
+;
+extern memcpy
+SetDefaultCalibrationValues:
+        push byte defaultValuesLength
+        pop  ecx
+        mov  eax, g_joy1CenterX
+        mov  edx, defaultValues
+        push edx
+        push ecx
+        call memcpy
+        pop  ecx
+        pop  edx
+        mov  eax, g_joy2CenterX
+        call memcpy
+        mov  dword [g_numLoopsJoy1], 0xfe00fe00
+        mov  dword [g_joy1Fire1], 0xfefffeff        ; set both joystick fire buttons to -1 and -2 respectively
+        retn
+
+
+; CalibrateJoystick
 ;
 ; in:
 ;      ecx - player number (0 or 1)
-;      esi - joypad number (0 or 1) to calibrate
+;      esi - joystick number (0 or 1) to calibrate
 ; out:
-;      carry flag: set = error, clear = ok
+;      carry flag: set = error, clear = OK
 ;
-; Draws menu and calibrates joypad. Joypad number decides which joypad.
+; Draws menu and calibrates joystick. Joystick number decides which joystick are we calibrating.
+; Player number is only for display. Doesn't change any of the registers.
 ;
-CalibrateJoypad:
+extern GetCalibrateJoysticksOption, DOSBoxDetected
+CalibrateJoystick:
         push eax
-        push edx
-        push ebp
         push edi
-        push esi                        ; esi must be pushed one before last
-        push ecx                        ; ecx must be pushed last
+        push esi                                ; esi must be pushed one before last
+        push ecx                                ; ecx must be pushed last
+
+        call GetCalibrateJoysticksOption
+        test al, al
+        jnz  .recalibrate
+
+        call ReadJoystickValues
+        call CheckJoystickTimeout
+        jc   .joy_error                         ; even if we're not calibrating still check if a joystick is connected
+
+        call DOSBoxDetected
+        test eax, eax
+        jz   .out
+
+        call SetDefaultCalibrationValues
+        jmp  .out
 
 .recalibrate:
-        mov  word [scanCode], 0
-        mov  bl, [joy_buttons_mask + esi]
+        mov  word [g_scanCode], 0
+        mov  bl, [joyButtonsMask + esi]
         push byte 4
-        mov  esi, joy_values + 8
-        pop  ecx                        ; undefine 4 values
+        mov  esi, joyCalibrationValues + 8
+        pop  ecx                                ; skipping 4 values
 
-.undefine_values_loop:
-        or   dword [esi], 0x8000        ; undefine all values except first two
+.init_skip_values_loop:
+        or   dword [esi], 0x8000                ; skip all values except first two
         add  esi, byte 4
         dec  ecx
-        jnz  .undefine_values_loop
+        jnz  .init_skip_values_loop
 
-        mov  eax, joy_values
-        sub  esi, byte 24
-        and  dword [esi], ~0x8000       ; set first two values as defined - they will
-        and  dword [esi + 4], ~0x8000   ; be read now
+        mov  eax, joyCalibrationValues
+        sub  esi, byte 3 * 8
+        and  dword [esi], ~0x8000               ; mark first two values for reading - they will be read now
+        and  dword [esi + 4], ~0x8000
         mov  edx, smallCharsTable
-        call MyReadGamePort
-        jc   .joy_error
-        call ClearJoystickButtons       ; get rid of possible previous button press
+        call ClearJoystickButtons               ; get rid of possible previous button press
+        add  esi, 8                             ; esi -> current calibration value
+        xor  edx, edx                           ; current value ordinal
+        mov  edi, calibrationTitleStrings
 
-.up_left_loop:
-        pop  ecx
-        push ecx                        ; restore ecx for DrawJoypadMenu
-        push ebx
-        call DrawJoypadMenu
-        mov  word [D1], 160
-        mov  word [D2], 55
-        mov  word [D3], 13
-        mov  dword [A0], move_up_left_str
-        mov  [A1], edx
-        calla DrawMenuTextCentered
-        calla FlipInMenu
-        pop  ebx
-        call MyReadGamePort
+.calibrate_axis_input_loop:
+        call ReadJoystickValuesForCalibration
+        call CheckJoystickTimeout
         jc   .joy_error
-        mov  ecx, [esp + 4]             ; get joypad number
-        shl  ecx, 2
-        mov  ebp, [joy_vars + ecx]
-        mov  ax, [joy_x_read + ecx]
-        mov  [joy_x_left], ax
-        mov  esi, [ebp + joy_x_left_ptr]
-        mov  [esi], ax
-        mov  ax, [joy_y_read + ecx]
-        mov  [joy_y_up], ax
-        mov  esi, [ebp + joy_y_up_ptr]
-        mov  [esi], ax
-        mov  al, [joy_buttons]
+
+        call SetupJoystickMenuValues
+        mov  eax, [edi]
+        call DrawJoystickAxisCalibrationMenu
+        mov  al, [joyButtons]
         and  al, bl
-        jz   .up_left_loop
+        jz   .calibrate_axis_input_loop
 
-        mov  esi, joy_values
-        and  dword [esi + 8], ~0x8000
-        and  dword [esi + 12], ~0x8000
         call ClearJoystickButtons
+        add  edi, 4
+        and  dword [esi], ~0x8000
+        and  dword [esi + 4], ~0x8000
+        add  esi, 8
+        inc  edx
+        cmp  edx, 3
+        jb   .calibrate_axis_input_loop
 
-.down_right_loop:
-        pop  ecx
-        push ecx
-        push ebx
-        call DrawJoypadMenu
-        mov  word [D1], 160
-        mov  word [D2], 55
-        mov  word [D3], 13
-        mov  dword [A0], move_down_right_str
-        mov  [A1], edx
-        calla DrawMenuTextCentered
-        calla FlipInMenu
-        pop  ebx
-        call MyReadGamePort
+        mov  ecx, [esp + 4]                     ; get joystick number
+        lea  esi, [joyButtonPointers + 8 * ecx] ; select joy 1 or 2
+        xor  edx, edx                           ; button index
+
+.calibrate_buttons_loop:
+        call ReadJoystickValuesForCalibration
+        call CheckJoystickTimeout
         jc   .joy_error
-        mov  ecx, [esp + 4]             ; get joypad number
-        shl  ecx, 2
-        mov  ebp, [joy_vars + ecx]
-        mov  ax, [joy_x_read + ecx]
-        mov  [joy_x_right], ax
-        mov  esi, [ebp + joy_x_right_ptr]
-        mov  [esi], ax
-        mov  ax, [joy_y_read + ecx]
-        mov  [joy_y_down], ax
-        mov  esi, [ebp + joy_y_down_ptr]
-        mov  [esi], ax
-        mov  al, [joy_buttons]
-        and  al, bl
-        jz   .down_right_loop
 
-        mov  esi, joy_values
-        and  dword [esi + 16], ~0x8000
-        and  dword [esi + 20], ~0x8000
-        call ClearJoystickButtons
-
-.center_loop:
-        pop  ecx
-        push ecx
-        push ebx
-        call DrawJoypadMenu
-        mov  word [D1], 160
-        mov  word [D2], 55
-        mov  word [D3], 13
-        mov  dword [A0], move_center_str
-        mov  [A1], edx
-        calla DrawMenuTextCentered
-        calla FlipInMenu
-        pop  ebx
-        call MyReadGamePort
-        jc   .joy_error
-        mov  ecx, [esp + 4]             ; get joypad number
-        shl  ecx, 2
-        mov  ebp, [joy_vars + ecx]
-        mov  ax, [joy_x_read + ecx]
-        mov  [joy_x_center], ax
-        mov  esi, [ebp + joy_x_center_ptr]
-        mov  [esi], ax
-        mov  ax, [joy_y_read + ecx]
-        mov  [joy_y_center], ax
-        mov  esi, [ebp + joy_y_center_ptr]
-        mov  [esi], ax
-        mov  al, [joy_buttons]
-        and  al, bl
-        jz   .center_loop
-
-        mov  ecx, [esp + 4]             ; get joypad number
-        push edx                        ; edx must be saved; it points to chars table
-        lea  esi, [joy_button_pointers + 8 * ecx] ; select joy 1 or 2
-        xor  edx, edx
-
-.set_buttons_loop:
-        call ClearJoystickButtons       ; clear superfluous button presses
-        call MyReadGamePort
-        jc   .joy_error2
-        call DrawJoypadMenu
-        call ConvertJoystickButtons
-        push edx
-        push ecx
-        push esi
-        calla FlipInMenu, edx
-        pop  esi
-        pop  ecx
-        pop  edx
+        call PromptForJoystickButton
         test al, al
-        jz   .set_buttons_loop
+        jz   .calibrate_buttons_loop
 
 .save_button:
-        mov  edi, [esi + 4 * edx]       ; select button 1 or 2
-        mov  [edi], al                  ; write selected button value
+        mov  edi, [esi + 4 * edx]               ; select button 1 or 2
+        mov  [edi], al                          ; write selected button value
 
         inc  edx
+        call ClearJoystickButtons
         cmp  edx, byte 2
-        jl   .set_buttons_loop
+        jl   .calibrate_buttons_loop
 
-        pop  edx                        ; restore chars table pointer
-
-        ; write out divisors and number of loops
-        mov  esi, [joy_vars + 4 * ecx]
-        mov  ebp, [esi + joy_x_neg_div_ptr]
-        mov  ax, [joy_x_center]
-        sub  ax, [joy_x_left]
-        mov  [ebp], ax
-        mov  ebp, [esi + joy_x_pos_div_ptr]
-        mov  ax, [joy_x_right]
-        sub  ax, [joy_x_center]
-        mov  [ebp], ax
-        mov  ebp, [esi + joy_y_neg_div_ptr]
-        mov  ax, [joy_y_center]
-        sub  ax, [joy_y_up]
-        mov  [ebp], ax
-        mov  ebp, [esi + joy_y_pos_div_ptr]
-        mov  ax, [joy_y_down]
-        sub  ax, [joy_y_center]
-        mov  [ebp], ax
-        mov  ebp, [esi + joy_num_loops_ptr]
-        xor  eax, eax
-        xor  ecx, ecx
-        mov  ax, [joy_y_down]
-        mov  cx, [joy_x_right]
-        sub  eax, ecx
-        sbb  ebx, ebx                   ; ebx = eax < ecx ? -1 : 0
-        neg  ebx                        ; ebx = eax < ecx ? 0 : -1
-        and  ebx, eax                   ; ebx = eax < ecx ? 0 : eax - ecx
-        add  ecx, ebx                   ; ecx = eax < ecx ? ecx : eax
-        mov  [ebp], cx                  ; cx = max(ax, bx) for number of loops
-
-        call ClearJoystickButtons       ; get rid of left over button presses
+        mov  ecx, [esp + 4]
+        mov  esi, [joyVars + 4 * ecx]           ; write out divisors and number of loops
+        call ApplyCalibrationValues
+        call ClearJoystickButtons               ; get rid of left over button presses
         pop  ecx
         push ecx
-        call DrawJoypadMenu             ; get rid of "press special fire" message
+        call DrawJoystickCalibrationMenuBase    ; get rid of "press special fire" message
         mov  word [D1], 160
-        mov  word [D2], 55
+        mov  word [D2], 50
         mov  word [D3], 2
-        mov  dword [A0], calibrate_again_str
+        mov  dword [A0], aCalibrateAgain
+        mov  edx, smallCharsTable
         mov  [A1], edx
-        calla DrawMenuTextCentered      ; ask user if (s)he wishes to do calibration again
+        calla DrawMenuTextCentered              ; ask user if (s)he wishes to do calibration again
         calla FlipInMenu
-        mov  esi, [esp + 4]             ; restore esi for another possible loop
+        mov  esi, [esp + 4]                     ; restore esi for another possible loop
 
 .get_key:
-        mov  al, [scanCode]             ; get answer to recalibrate question
-        cmp  al, 0x15                   ; 'y'
+        mov  al, [g_scanCode]                   ; get answer to recalibrate question
+        cmp  al, 0x15                           ; 'y'
         jz   .recalibrate
-        cmp  al, 0x31                   ; 'n'
+        cmp  al, 0x31                           ; 'n'
         jnz  .get_key
         clc
 
@@ -960,60 +1030,207 @@ CalibrateJoypad:
         pop  ecx
         pop  esi
         pop  edi
-        pop  ebp
-        pop  edx
         pop  eax
         retn
 
-.joy_error2:
-        pop  edx
-
 .joy_error:
-        mov  word [joyKbdWord], 1       ; set to keyboard only
-        cmp  word [scanCode], 0x01      ; if user pressed escape, than there
-        jz   .out                       ; is no need for showing error menu
-        mov  dword [A0], joy_error_str
+        mov  word [g_joyKbdWord], 1             ; set to keyboard only
+        cmp  word [g_scanCode], 0x01            ; if user pressed escape, than there
+        stc                                     ; is no need for showing error menu
+        jz   .out
+
+        mov  dword [A0], aJoystickError
         calla ShowErrorMenu
         stc
         jmp  short .out
 
 
-; DrawJoypadMenu
+; SetupJoystickMenuValues
+;
+; in:
+;     [esp + 4] - joystick number
+;     edx       - offset in joyCalibrationValues of variables to set:
+;                     x   |   y    | value
+;                 --------+--------+-------
+;                  left   | up     |   0
+;                  right  | down   |   1
+;                  center | center |   2
+;
+SetupJoystickMenuValues:
+        mov  ecx, [esp + 4]             ; get joystick number
+        push esi
+        shl  ecx, 2
+        mov  ebp, [joyVars + ecx]       ; ebp -> variable pointer list for a given joystick
+        mov  ax, [joyXRead + ecx]
+        mov  [joyCalibrationValues + 2 + 8 * edx], ax
+        mov  esi, [ebp + 4 * edx]
+        mov  [esi], ax
+        mov  ax, [joyYRead + ecx]
+        mov  [joyCalibrationValues + 6 + 8 * edx], ax
+        mov  esi, [ebp + 4 * edx + 4]
+        mov  [esi], ax
+        pop  esi
+        retn
+
+
+; CheckJoystickTimeout
+;
+; in:
+;      ebp       - timeout flags:
+;                    bit 0 set: joystick 1 timed out
+;                    bit 1 set: joystick 2 timed out
+;      [esp + 8] - joystick number, 0 or 1
+; out:
+;      carry flag: set if error, clear if OK
+;
+; Helper routine of CalibrateJoystick. Checks if given joystick readings have
+; resulted with a timeout, or escape was pressed. Sets carry flag if any of it happened.
+;
+CheckJoystickTimeout:
+        cmp  word [g_scanCode], 0x01
+        jnz  .check_timeout
+
+        stc
+        retn
+
+.check_timeout:
+        push ecx
+        mov  ecx, [esp + 8]
+        inc  ecx
+        shr  ebp, cl            ; shift timed-out bit into carry
+        pop  ecx
+        retn
+
+
+; ApplyCalibrationValues
+;
+; in:
+;     esi - pointer into joyCalibrationValues
+;
+; Applies values obtained from calibration to SWOS.
+;
+ApplyCalibrationValues:
+        mov  ebp, [esi + joyXCenterPtr]
+        mov  ax, [joyCalibrationXCenter]
+        mov  [ebp], ax
+        mov  ebp, [esi + joyXLeftPtr]
+        mov  bx, [joyCalibrationXLeft]
+        mov  [ebp], bx
+        sub  ax, bx
+        mov  ebp, [esi + joyXLeftDivPtr]
+        mov  [ebp], ax
+
+        mov  ebp, [esi + joyXRightPtr]
+        mov  ax, [joyCalibrationXRight]
+        mov  [ebp], ax
+        mov  ebp, [esi + joyXRightDivPtr]
+        sub  ax, [joyCalibrationXCenter]
+        mov  [ebp], ax
+
+        mov  ebp, [esi + joyYCenterPtr]
+        mov  ax, [joyCalibrationYCenter]
+        mov  [ebp], ax
+        mov  ebp, [esi + joyYUpPtr]
+        mov  bx, [joyCalibrationYUp]
+        mov  [ebp], bx
+        sub  ax, bx
+        mov  ebp, [esi + joyYTopDivPtr]
+        mov  [ebp], ax
+
+        mov  ebp, [esi + joyYDownPtr]
+        mov  ax, [joyCalibrationYDown]
+        mov  [ebp], ax
+        mov  ebp, [esi + joyYBottomDivPtr]
+        sub  ax, [joyCalibrationYCenter]
+        mov  [ebp], ax
+
+        mov  ebp, [esi + joyNumLoopsPtr]
+        xor  eax, eax
+        xor  ecx, ecx
+        mov  ax, [joyCalibrationYDown]
+        mov  cx, [joyCalibrationXRight]
+        sub  eax, ecx
+        sbb  ebx, ebx                   ; ebx = eax < ecx ? -1 : 0
+        neg  ebx                        ; ebx = eax < ecx ? 0 : -1
+        and  ebx, eax                   ; ebx = eax < ecx ? 0 : eax - ecx
+        add  ecx, ebx                   ; ecx = eax < ecx ? ecx : eax
+        mov  [ebp], cx                  ; cx = max(ax, bx) for number of loops
+        retn
+
+
+; DrawJoystickAxisCalibrationMenu
+;
+; in:
+;      eax       -> menu title string
+;      [esp + 4] -  player number
+;
+; Draws joystick calibration menu and flips it to the screen.
+;
+DrawJoystickAxisCalibrationMenu:
+        push ebx
+        push esi
+        push edi
+        push edx
+        push eax
+        mov  ecx, [esp + 24]
+        call DrawJoystickCalibrationMenuBase
+        mov  word [D1], 160
+        mov  word [D2], 55
+        mov  word [D3], 13
+        mov  edx, smallCharsTable
+        pop  dword [A0]
+        mov  [A1], edx
+        calla DrawMenuTextCentered
+        mov  word [D1], 160
+        mov  word [D2], 67
+        mov  eax, aPressEscapeToCancel
+        mov  dword [A0], eax
+        mov  [A1], edx
+        calla DrawMenuTextCentered
+        calla FlipInMenu
+        pop  edx
+        pop  edi
+        pop  esi
+        pop  ebx
+        retn
+
+
+; DrawJoystickCalibrationMenuBase
 ;
 ; in:
 ;      ecx - player number (0 or 1)
 ;
-; Draws joypad calibration menu, drawing values for extreme readings if
-; defined.
+; Draws joystick calibration menu main part, drawing values for extreme readings
+; depending on joyCalibrationValues table. Does not do the flip.
 ;
-DrawJoypadMenu:
+kCalibrationMenuBaseY equ 82
+DrawJoystickCalibrationMenuBase:
         push ecx
         push ebx
         push edx
-        push esi
 
         add  cl, '1'
-        mov  byte [joy_menu_title + 30], cl
+        mov  byte [joyMenuTitle + 30], cl
         mov  esi, [lin_adr_384k]
         mov  edi, esi
         add  esi, 131072
         mov  ecx, 16000
-        rep  movsd              ; draw background
+        rep  movsd                  ; draw background
         mov  edx, smallCharsTable
         mov  word [D1], 160
         mov  word [D2], 30
         mov  word [D3], 2
-        mov  dword [A0], joy_menu_title
+        mov  dword [A0], joyMenuTitle
         mov  [A1], edx
         calla DrawMenuTextCentered
         push byte 82
         xor  eax, eax
-        mov  esi, joy_left_strings ; first draw left strings
+        mov  esi, joyLeftStrings    ; first draw left strings
         pop  edi
 
 .prepare_loop:
         push byte 3
-        mov  word [D2], 70
+        mov  word [D2], kCalibrationMenuBaseY
         pop  ecx
 
 .draw_strings_loop:
@@ -1039,13 +1256,13 @@ DrawJoypadMenu:
         jnz  .write_joy_values
 
         inc  eax
-        mov  esi, joy_right_strings ; then draw right strings
+        mov  esi, joyRightStrings ; then draw right strings
         mov  edi, 162
         jmp  short .prepare_loop
 
 .write_joy_values:
         push byte 6
-        mov  esi, joy_values
+        mov  esi, joyCalibrationValues
         pop  ecx
 
 .joy_values_loop:
@@ -1076,127 +1293,354 @@ DrawJoypadMenu:
         dec  ecx
         jnz  .joy_values_loop
 
-        pop  esi
         pop  edx
         pop  ebx
         pop  ecx
         retn
 
 
-; MyReadGamePort
+; ReadJoystickValuesForCalibration
 ;
 ; out:
-;      carry flag: set = error, clear = ok
+;      ebp - bit 0 clear, bit 1 set if joystick 2 timed out, 0 if no error
 ;
-; Reads game port and writes values to joy_readings array. My is because of
-; name clash with SWOS. Also checks keyboard on start, if escape is pressed
-; returns as if joypad error was detected.
+; Reads current joystick values and writes them to joy?Read array, but only if
+; the readings are valid.
 ;
-MyReadGamePort:
-        pushad
+ReadJoystickValuesForCalibration:
+        push ebx
+        push ecx
+        push edx
+        push esi
+        push edi
 
-        cmp  word [scanCode], 0x01
-        jz   .err_out
+        mov  bl, 1                  ; full loop range
+        call ReadJoystickValues
+        cmp  ebp, 3
+        jz   .out
 
-        xor  ecx, ecx
-        xor  ebx, ebx
+        test ebp, 1
+        jnz   .test_joy2
+
+        mov  [joyXRead], ax
+        mov  [joyYRead], bx
+
+.test_joy2:
+        test ebp, 2
+        jnz  .set_buttons
+
+        mov  [joyXRead + 4], cx
+        mov  [joyYRead + 4], dx
+
+.set_buttons:
+        mov  [joyButtons], si
+
+.out:
+        pop  edi
+        pop  esi
+        pop  edx
+        pop  ecx
+        pop  ebx
+        retn
+
+
+; ReadGamePort2
+;
+; in:
+;     ebx - expected to be zero
+;
+; Get joystick readings and update SWOS internal variables. Meant to be used as a
+; replacement for SWOS joystick reading routine.
+;
+global ReadGamePort2
+ReadGamePort2:
+        call ReadJoystickValues
+        mov  [g_joy1X], ax
+        mov  [g_joy1Y], bx
+        mov  [g_joy2X], cx
+        mov  [g_joy2Y], dx
+        retn
+
+
+; CheckDOSBoxJoystick2Values
+;
+; in:
+;      ax  - joy1 x
+;      bx  - joy1 y
+;      cx  - joy2 x
+;      dx  - joy2 y
+;      si  - buttons bitfield
+; out:
+;      input unchanged, except for cx and dx which might get corrected
+;      ebp - bit 0 clear, bit 1 set if joystick 2 timed out, 0 if no error
+;      carry flag: set = error, clear = OK
+;
+; If second joystick is disconnected but first isn't, DOSBox will not set carry flag and
+; will return some bogus values. Luckily those values are unique and we can detect them --
+; basically any value greater than zero outside of positive byte range means second joystick
+; is off. Bad thing is that DOSBox only updates joystick connected state at startup, so if the
+; joystick is disconnected later we will have no way of detecting it. It will keep returning
+; last values it had, and carry flag would be clear. Same goes for first joystick.
+;
+CheckDOSBoxJoystick2Values:
+        push eax
+        call DOSBoxDetected
+        test eax, eax
+        pop  eax
+        jz   .out_ok
+
+        cmp  cx, 127
+        ja   .joy2_failure
+
+        test cx, cx
+        jz   .joy2_failure
+
+        cmp  dx, 127
+        ja   .joy2_failure
+
+        test dx, dx
+        jz   .joy2_failure
+
+.out_ok:
+        xor  ebp, ebp       ; all seems in order here
+        retn
+
+.joy2_failure:
+        push 2
+        pop  ebp
+        and  esi, ~1100b
+        retn
+
+
+; ReadJoystickValues
+;
+; in:
+;      ebx - if zero use number of loops values from calibration, otherwise go through full 16-bit range
+;            (ignored if using BIOS routines)
+; out:
+;      ax  - joy1 x
+;      bx  - joy1 y
+;      cx  - joy2 x
+;      dx  - joy2 y
+;      si  - buttons bitfield, in lower nibble
+;      ebp - bit 0 set if joystick 1 timed out, bit 1 set if joystick 2 timed out, everything 0 if no error
+;            (if we're using BIOS both bits will be set if error, we can't differentiate between them,
+;             although we handle some cases with DOSBox)
+;
+; Refresh joystick readings for both joysticks x/y axis. Use BIOS or read from
+; the port directly depending on the option set.
+;
+extern GetUseBIOSJoystickRoutineOption
+ReadJoystickValues:
+        call GetUseBIOSJoystickRoutineOption
+        test al, al
+        jz   ReadGamePort
+
         xor  ebp, ebp
+        xor  edx, edx               ; get buttons first
+        mov  ah, 0x84
+        push eax
+        int  0x15
+        mov  esi, eax
+        pop  eax
+        jc   .err_out
+
+        inc  edx                    ; get values, this works so good on DOSBox :)
+        int  0x15
+        jc   .err_out               ; carry will be set only if both joysticks are disconnected
+
+        not  esi
+        shr  esi, 4                 ; place button bits into lower nibble
+        and  esi, 0x0f              ; remove axis values
+        jmp  CheckDOSBoxJoystick2Values
+
+.err_out:
+        mov  ax, [g_joy1CenterX]
+        mov  bx, [g_joy1CenterY]
+        mov  cx, [g_joy2CenterX]
+        mov  dx, [g_joy2CenterY]
         xor  esi, esi
+        mov  ebp, 11b               ; sadly we don't know which joystick was disconnected
+        retn
+
+
+; ReadGamePort
+;
+; in:
+;      ebx - if zero use number of loops values from calibration, otherwise go through full 16-bit range
+; out:
+;      ax  - joy1 x
+;      bx  - joy1 y
+;      cx  - joy2 x
+;      dx  - joy2 y
+;      si  - buttons bitfield
+;      ebp - bit 0 set if joystick 1 timed out, bit 1 set if joystick 2 timed out, 0 if no timeouts
+;
+; Replacement for SWOS' game port reading routine. Return center values in case joystick was disconnected.
+;
+ReadGamePort:
+        xor  ecx, ecx
+        dec  cx
+        test ebx, ebx
+        jnz  .init_poll_loop
+
+        movzx ecx, word [g_numLoopsJoy2]
+        cmp  word [g_joyKbdWord], 5     ; two joysticks
+        jz   .init_poll_loop
+
+        movzx ecx, word [g_numLoopsJoy1]
+
+.init_poll_loop:
+        mov  ah, 1                  ; do one "fake" loop, to make sure that the monostable vibrators have stabilized
+        xor  esi, esi               ; it also helps ensure entire loop is in the cache
+        xor  ebx, ebx
         xor  edi, edi
-        mov  dx, 0x201
-        or   cx, byte -1
+        xor  ebp, ebp
+        test ah, ah
+        mov  dx, 0x201              ; game port
         cli
-        out  dx, al                 ; trigger timer chip
+        jnz  .poll_loop
+
+.trigger_the_timer:
+        out  dx, al                 ; trigger the timer chip
 
         jmp  $ + 2
         jmp  $ + 2
 
-.read_loop:
+.poll_loop:
         in   al, dx
-        shr  al, 1
-        adc  ebx, 0
-        shr  al, 1
-        adc  ebp, 0
+        test al, 0x0f
+        jz   .poll_done             ; once the counters hit zero we're done
+
         shr  al, 1
         adc  esi, 0
         shr  al, 1
+        adc  ebx, 0
+        shr  al, 1
         adc  edi, 0
-        loop .read_loop
+        shr  al, 1
+        adc  ebp, 0
+        dec  ecx                    ; do not use loop instruction here, because if ecx
+        jns  .poll_loop             ; happens to be zero we might get into 2^32 loop :<
+
+        shl  al, 4                  ; put button bits back to hi nibble
+
+.poll_done:
+        dec  ah
+        jz   .trigger_the_timer
+
         sti
+        not  al                     ; reverse button logic (make it 1 = pressed, 0 = depressed)
+        shr  al, 4                  ; return button bits in lower nibble
+        mov  edx, ebp
+        xor  ebp, ebp               ; ebp will be success flag
 
-        cmp  bx, -1                 ; if bx is -1 then joypad is not connected
-        jz   .err_out
+        cmp  esi, 0xffff            ; check if joystick was disconnected
+        jb   .test_joy2
 
-.set_values:
-        mov  [joy_x_read], bx       ; joy1 x
-        mov  [joy_y_read], bp       ; joy1 y
-        mov  [joy_x_read + 4], si   ; joy2 x
-        mov  [joy_y_read + 4], di   ; joy2 y
-        not  al
-        and  al, 0x0f
-        mov  [joy_buttons], al      ; buttons in low nibble
-        clc
-        jmp  short .out
+        mov  si, [g_joy1CenterX]    ; if disconnected set to some neutral values so it doesn't
+        mov  bx, [g_joy1CenterY]    ; effectively prevent us from using menus
+        and  al, 11111100b
+        or   ebp, 1
 
-.err_out:
-        or   eax, byte -1           ; error, set al to -1
-        mov  [joy_x_read], eax
-        mov  [joy_x_read + 4], eax
-        mov  [joy_buttons], al
-        stc
+.test_joy2:
+        cmp  edi, 0xffff
+        jb   .out
+
+        mov  di, [g_joy2CenterX]
+        mov  dx, [g_joy2CenterY]
+        and  al, 11110011b
+        or   ebp, 2
 
 .out:
-        popad
+        xchg eax, esi
+        and  esi, 0xff
+        mov  ecx, edi
+        retn
+
+
+; ReadJoystickButtons
+;
+; out:
+;      al - joystick buttons bitfield (bits 4-7) with inverted (proper) logic (1=on, 0=off)
+;      carry flag: set = error, clear = OK (although in practice there shouldn't be an error)
+;
+; Read joystick buttons directly or using BIOS depending on options. Replace SWOS'
+; game port access with this routine.
+;
+global ReadJoystickButtons
+ReadJoystickButtons:
+        push edx
+        call GetUseBIOSJoystickRoutineOption
+        test al, al
+        jnz  .use_bios
+
+        mov  dx, 0x201
+        in   al, dx
+        jmp  .out
+
+.use_bios:
+        mov  ah, 0x84
+        xor  edx, edx
+        int  0x15
+        jnc  .out
+
+        or   al, -1
+
+.out:
+        not  al
+        and  al, 0xf0       ; don't shift as SWOS will do it
+        pop  edx
         retn
 
 
 ; ClearJoystickButtons
 ;
+; in:
+;      bl - joystick button mask
 ; out:
-;      carry flag: set = error, clear = ok
+;      carry flag: set = error, clear = OK
 ;
 ; Waits for joystick buttons to be depressed.
 ;
 ClearJoystickButtons:
-        mov  al, [joy_buttons]
-        test al, al
-        jz   .out_ok
-
-        call MyReadGamePort
+        call ReadJoystickButtons
         jc   .out
 
-        jmp  short ClearJoystickButtons
-
-.out_ok:
-        clc
+        shr  al, 4
+        and  al, bl
+        jnz  ClearJoystickButtons
 
 .out:
+        mov  byte [joyButtons], 0
         retn
 
 
-; ConvertJoystickButtons
+; PromptForJoystickButton
 ;
 ; in:
-;      ebx - joystick buttons mask
+;       bl - joystick buttons mask
 ;      ecx - joystick number (0 or 1)
 ;      edx - button number (0 or 1)
 ; out:
 ;      eax - button pressed: 0 = none, -1 = button 1, -2 = button 2
 ;
-; Converts joystick buttons presses into negative button indices. Also draw
-; "press ... button" string.
+; Asks user for joystick buttons presses and converts them into negative button
+; indices we store them as. Also draw "press ... button" string.
 ;
-ConvertJoystickButtons:
+PromptForJoystickButton:
+        push edx
         push ecx
-        call DrawJoypadMenu
+        push esi
+        call DrawJoystickCalibrationMenuBase    ; first redraw without the title
         mov  word [D1], 160
         mov  word [D2], 130
         mov  word [D3], 13
-        mov  dword [A0], press_normal_fire_str
+        mov  dword [A0], aPressNormalFire
         test edx, edx
         jz   .normal_fire
 
-        mov  dword [A0], press_special_fire_str
+        mov  dword [A0], aPressSpecialFire
 
 .normal_fire:
         mov  dword [A1], smallCharsTable
@@ -1209,26 +1653,33 @@ ConvertJoystickButtons:
         pop  ebx
         pop  ecx
         pop  edx
-        mov  al, [joy_buttons]
+        call ReadJoystickButtons
+        shr  al, 4
         and  al, bl             ; mask button bits
         shl  ecx, 1             ; ecx is 0 or 2
         shr  al, cl             ; put button bits into lower two bits
         test al, 1              ; first button?
         jz   .no_button1
+
         or   eax, -1
         jmp  short .out
 
 .no_button1:
         test al, 2              ; second button?
         jz   .no_button2
+
         or   eax, -1
         dec  eax
         jmp  short .out
 
 .no_button2:
         xor  eax, eax           ; nothing
+
 .out:
+        calla FlipInMenu, edx
+        pop  esi
         pop  ecx
+        pop  edx
         retn
 
 
@@ -1254,9 +1705,9 @@ InstallKeyboardHandler:
         jz   .uninstall
 
         mov  ax, 0x3509
-        int  0x21                   ; get old kbd handler, es:ebx
-        mov  [old_int9_ofs], ebx    ; save it for later
-        mov  [old_int9_seg], es
+        int  0x21                   ; get old keyboard handler, es:ebx
+        mov  [oldInt9Ofs], ebx      ; save it for later
+        mov  [oldInt9Seg], es
         mov  ax, cs
         mov  ds, ax
         mov  ax, 0x2509             ; now setup new one
@@ -1266,8 +1717,8 @@ InstallKeyboardHandler:
 .uninstall:
         cli
         mov  ax, 0x2509
-        mov  edx, [old_int9_ofs]
-        mov  ds, [old_int9_seg]
+        mov  edx, [oldInt9Ofs]
+        mov  ds, [oldInt9Seg]
         int  0x21
 
 .out:
@@ -1282,7 +1733,7 @@ InstallKeyboardHandler:
 
 ; EnableShiftSupport
 ;
-; Patch existing int 9 keyboard handler with support for detecting wether shift
+; Patch existing int 9 keyboard handler with support for detecting whether shift
 ; key is held down or not.
 ;
 global EnableShiftSupport
@@ -1297,15 +1748,20 @@ EnableShiftSupport:
         sti
         retn
 
+
 CheckShiftCode:
-        cmp  al, 0x2a   ; lshift down
+        cmp  al, 0x2a   ; left shift down
         jz   .shift_on
-        cmp  al, 0x36   ; rshift down
+
+        cmp  al, 0x36   ; right shift down
         jz   .shift_on
-        cmp  al, 0xaa   ; lshift up
+
+        cmp  al, 0xaa   ; left shift up
         jz   .shift_off
-        cmp  al, 0xb6   ; rshift up
+
+        cmp  al, 0xb6   ; right shift up
         jz   .shift_off
+
 .out:
         cmp  al, 0x80
         retn
@@ -1340,12 +1796,15 @@ additionalKeys:
 ; TestAdditionalKeys
 ;
 ; in:
-;     ax - converted key, from scan code to ascii
+;     ax - ASCII code of a key that is being tested whether to be allowed as input or not
+;
+; Patch FilterKeys and allow additional keys to go through when typing.
 ;
 TestAdditionalKeys:
         and  eax, 0xffff
         test eax, eax
         jz   .out
+
         xor  ebx, ebx
         mov  esi, shiftVersions
         mov  edi, additionalKeys
@@ -1374,6 +1833,7 @@ TestAdditionalKeys:
         or   eax, eax
         pop  eax            ; return directly to the caller
         retn
+
 .out:                       ; no match return as usual
         cmp  eax, 'A'
         retn
@@ -1429,7 +1889,7 @@ FilterKeysOrigBytesSize equ $ - FilterKeysOrigBytes
 
 section .data
 
-    StartMenu controlsMenu, ControlsInit, 0, 0, 2
+    StartMenu controlsMenu, ControlsMenuInit, 0, 0, 2
         ; title
         StartEntry  92, 0, 120, 15
             EntryColor  0x17
@@ -1508,30 +1968,28 @@ codeFire2:
 ;
 ; high byte = player 2
 ; low byte  = player 1
-calibrate_values:
+calibrateValues:
     dw 0x0001, 0x0002, 0x0102, 0x0201, 0x0202, 0x0101
 
-select_keys_str:
+aSelectKeysForPlayer:
     db "SELECT KEYS FOR PLAYER 1", 0
-up_str:
+aUp:
     db "UP:", 0
-down_str:
+aDown:
     db "DOWN:", 0
-left_str:
+aLeft:
     db "LEFT:", 0
-right_str:
+aRight:
     db "RIGHT:", 0
-fire_str:
+aFire:
     db "FIRE:", 0
-sec_fire_str:
+aBench:
     db "BENCH:", 0
-invalid_key_str:
-    db "INVALID KEY", 0
 
 ; scan codes to strings - first scan code, than length of string
 ; (+ terminator), and then the string itself
 ; table ends with 0xff scan code
-key_table:
+keyTable:
     db 0x01, 7,  "ESCAPE", 0
     db 0x0f, 4,  "TAB", 0
     db 0x1c, 6,  "ENTER", 0
@@ -1572,162 +2030,168 @@ key_table:
     db 0x51, 10, "PAGE DOWN", 0
     db 0xff
 
-unknown:
+aUnknownKey:
     db "UNKNOWN KEY", 0
 
-one_char_table:
+oneCharTable:
     db "1234567890-=", 0, 0, "QWERTYUIOP[]", 0, 0, "ASDFGHJKL;'`", 0
     db "\ZXCVBNM,./"
-one_char_table_size equ $ - one_char_table
+oneCharTableSize equ $ - oneCharTable
 
-redefine_str:
+redefineStr:
     db "SATISFIED WITH THE CHOICE? (Y/N)", 0
 
-joy_menu_title:
+joyMenuTitle:
     db "CALIBRATE JOYSTICK FOR PLAYER 1", 0
 
-joy_left_strings:
-    dd joy_leftx, joy_rightx, joy_centerx
+joyLeftStrings:
+    dd aJoyLeftX, aJoyRightX, aJoyCenterX
 
-joy_right_strings:
-    dd joy_topy, joy_bottomy, joy_centery
+joyRightStrings:
+    dd aJoyLeftY, aJoyBottomY, aJoyCenterY
 
-joy_leftx:
+aJoyLeftX:
     db "LEFT X:", 0
 
-joy_topy:
+aJoyLeftY:
     db "TOP Y:", 0
 
-joy_rightx:
+aJoyRightX:
     db "RIGHT X:", 0
 
-joy_bottomy:
+aJoyBottomY:
     db "BOTTOM Y:", 0
 
-joy_centerx:
+aJoyCenterX:
     db "CENTER X:", 0
 
-joy_centery:
+aJoyCenterY:
     db "CENTER Y:", 0
 
-kbd_vars:
+kbdVars:
     dd UP, pl2Codes
 
-; high words will be values read
-; if high bit in lo word is set, values are undefined
+; Matrix of x and y axis readings that will be drawn by joystick calibration menu.
+; High words get filled with values read from joystick. If high bit in lo word is set,
+; values are skipped (not read and displayed). Keep in sync with start of joyVars.
 ; lo word: (except hi bit)
-; lo byte - x
-; hi byte - y
-joy_values:
-    dd 0x8000 | 80 << 8 | 132, 0x8000 | 80 << 8 | 212
-    dd 0x8000 | 90 << 8 | 132, 0x8000 | 90 << 8 | 212
-    dd 0x8000 | 100 << 8 | 132, 0x8000 | 100 << 8 | 212
+;  lo byte - x position on screen
+;  hi byte - y        -//-
+joyCalibrationValues:
+    dd 0x8000 | kCalibrationMenuBaseY + 10 << 8 | 132, 0x8000 | kCalibrationMenuBaseY + 10 << 8 | 212   ; joyXLeft, joyYUp
+    dd 0x8000 | kCalibrationMenuBaseY + 20 << 8 | 132, 0x8000 | kCalibrationMenuBaseY + 20 << 8 | 212   ; joyXRight, joyYDown
+    dd 0x8000 | kCalibrationMenuBaseY + 30 << 8 | 132, 0x8000 | kCalibrationMenuBaseY + 30 << 8 | 212   ; joyXCenter, joyYCenter
 
-joy_x_left   equ joy_values + 2
-joy_y_up     equ joy_values + 6
-joy_x_right  equ joy_values + 10
-joy_y_down   equ joy_values + 14
-joy_x_center equ joy_values + 18
-joy_y_center equ joy_values + 22
 
-move_up_left_str:
+joyCalibrationXLeft   equ joyCalibrationValues + 2
+joyCalibrationYUp     equ joyCalibrationValues + 6
+joyCalibrationXRight  equ joyCalibrationValues + 10
+joyCalibrationYDown   equ joyCalibrationValues + 14
+joyCalibrationXCenter equ joyCalibrationValues + 18
+joyCalibrationYCenter equ joyCalibrationValues + 22
+
+aMoveUpLeftStr:
     db "MOVE JOYSTICK UP AND LEFT AND PRESS FIRE", 0
 
-move_down_right_str:
+aMoveDownRightStr:
     db "MOVE JOYSTICK DOWN AND RIGHT AND PRESS FIRE", 0
 
-move_center_str:
+aMoveCenterStr:
     db "MOVE JOYSTICK TO CENTER AND PRESS FIRE", 0
 
+calibrationTitleStrings:
+    dd aMoveUpLeftStr, aMoveDownRightStr, aMoveCenterStr
+
+aPressEscapeToCancel:
+    db "(PRESS ESCAPE TO CANCEL)", 0
+
 ; masks for joystick buttons
-joy_buttons_mask:
+joyButtonsMask:
     db 3, 12
 
-joy_error_str:
+aJoystickError:
     db "JOYSTICK ERROR", 0
 
-calibrate_again_str:
+aCalibrateAgain:
     db "CALIBRATE AGAIN? (Y/N)", 0
 
-joy_vars:
-    dd joy1_vars, joy2_vars
+joyVars:
+    dd joy1Vars, joy2Vars
 
-joy_x_left_ptr    equ 0
-joy_y_up_ptr      equ 4
-joy_x_right_ptr   equ 8
-joy_y_down_ptr    equ 12
-joy_x_center_ptr  equ 16
-joy_y_center_ptr  equ 20
-joy_x_neg_div_ptr equ 24
-joy_x_pos_div_ptr equ 28
-joy_y_neg_div_ptr equ 32
-joy_y_pos_div_ptr equ 36
-joy_num_loops_ptr equ 40
+joyXLeftPtr         equ 0
+joyYUpPtr           equ 4
+joyXRightPtr        equ 8
+joyYDownPtr         equ 12
+joyXCenterPtr       equ 16
+joyYCenterPtr       equ 20
+joyXLeftDivPtr      equ 24
+joyXRightDivPtr     equ 28
+joyYTopDivPtr       equ 32
+joyYBottomDivPtr    equ 36
+joyNumLoopsPtr      equ 40
 
-joy1_vars:
-    dd joy1_min_X
-    dd joy1_min_Y
-    dd joy1_max_X
-    dd joy1_max_Y
-    dd joy1_center_X
-    dd joy1_center_Y
-    dd joy1_X_negative_divisor
-    dd joy1_X_positive_divisor
-    dd joy1_Y_negative_divisor
-    dd joy1_Y_positive_divisor
-    dd numLoopsJoy1
+joy1Vars:
+    dd g_joy1MinX
+    dd g_joy1MinY
+    dd g_joy1MaxX
+    dd g_joy1MaxY
+    dd g_joy1CenterX
+    dd g_joy1CenterY
+    dd g_joy1XLeftDivisor
+    dd g_joy1XRightDivisor
+    dd g_joy1YTopDivisor
+    dd g_joy1YBottomDivisor
+    dd g_numLoopsJoy1
 
-joy2_vars:
-    dd joy2_min_X
-    dd joy2_min_Y
-    dd joy2_max_X
-    dd joy2_max_Y
-    dd joy2_center_X
-    dd joy2_center_Y
-    dd joy2_X_negative_divisor
-    dd joy2_X_positive_divisor
-    dd joy2_Y_negative_divisor
-    dd joy2_Y_positive_divisor
-    dd numLoopsJoy2
+joy2Vars:
+    dd g_joy2MinX
+    dd g_joy2MinY
+    dd g_joy2MaxX
+    dd g_joy2MaxY
+    dd g_joy2CenterX
+    dd g_joy2CenterY
+    dd g_joy2XLeftDivisor
+    dd g_joy2XRightDivisor
+    dd g_joy2YTopDivisor
+    dd g_joy2YBottomDivisor
+    dd g_numLoopsJoy2
 
-press_normal_fire_str:
+aPressNormalFire:
     db "PRESS NORMAL FIRE", 0
 
-press_special_fire_str:
+aPressSpecialFire:
     db "PRESS SPECIAL FIRE (NORMAL FIRE SKIPS)", 0
 
-joy_button_pointers:        ; points to SWOS variables
-    dd joy1_fire_1
-    dd joy1_fire_2
-    dd joy2_fire_1
-    dd joy2_fire_2
+joyButtonPointers:        ; points to SWOS variables
+    dd g_joy1Fire1
+    dd g_joy1Fire2
+    dd g_joy2Fire1
+    dd g_joy2Fire2
 
 
 section .bss
 
-old_int9_ofs:
+oldInt9Ofs:
     resd 1
-old_int9_seg:
+oldInt9Seg:
     resw 1
-key_str_buf:
+keyStrBuf:
     resb 2
-scan_code:
-    resb 1
 global shiftDown
 shiftDown:
     resb 1
 
 ; to select values add player number * 4 to corresponding address
-; values for joypad 1
-joy_x_read:
+; values for joystick 1
+joyXRead:
     resw 1
-joy_y_read:
+joyYRead:
     resw 1
-; values for joypad 2
+; values for joystick 2
     resw 1
     resw 1
 
-joy_buttons:
+joyButtons:
     resb 1
 
 ; previous player 2 on keyboard flag

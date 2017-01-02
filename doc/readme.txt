@@ -54,7 +54,7 @@ but I do welcome comments and suggestions.
 
 === Copyright
 
-The contents of this archive are copyright (c) 2002-2016. Zlatko Karakas.
+The contents of this archive are copyright (c) 2002-2017. Zlatko Karakas.
 The games SWOS, SWOS '95/'96, SWOS Euro Edition, SWOS '96/'97 and their data
 files are (c) 1995, 1996, 1997. Sensible Software Ltd.
 
@@ -62,7 +62,7 @@ You may freely use and distribute this archive as long as the contents remain
 intact.
 
 Zlatko Karakas,
-zkz#eunet.rs
 zlatko.karakas#gmail.com
+zkz#eunet.rs
 
-(replace `#' with `@' when posting ;-)
+(replace `#' with `@' when posting ;-))

@@ -9,21 +9,21 @@
 #include "mplayer.h"
 #include "mppacket.h"
 
-static const int PACKET_SIZE = 3 * 1024;
+const int kPacketSize = 3 * 1024;
 
 static union {
-    char data[PACKET_SIZE];
-    word wordData[PACKET_SIZE / sizeof(word)];
+    char data[kPacketSize];
+    word wordData[kPacketSize / sizeof(word)];
 
     operator void *() {
         return data;
     }
-} packet;
+} m_packet;
 
-static_assert(PACKET_SIZE % sizeof(word) == 0, "Packet size must contain whole number of words.");
+static_assert(kPacketSize % sizeof(word) == 0, "Packet size must contain whole number of words.");
 
 
-word getRequestType(const char *packet, int length)
+word GetRequestType(const char *packet, int length)
 {
     if (length < (int)sizeof(word))
         return PT_NONE;
@@ -31,28 +31,31 @@ word getRequestType(const char *packet, int length)
     return *(word *)packet;
 }
 
-char *createGetGameInfoPacket(int *length)
+
+char *CreateGetGameInfoPacket(int *length)
 {
-    *packet.wordData = PT_GET_GAME_INFO;
+    *m_packet.wordData = PT_GET_GAME_INFO;
     *length = sizeof(word);
-    return packet.data;
+    return m_packet.data;
 }
 
-char *createGameInfoPacket(int *length, int numPlayers, const char *gameName, byte id)
+
+char *CreateGameInfoPacket(int *length, int numPlayers, const char *gameName, byte id)
 {
     char *p;
-    word *w = packet.wordData;
+    word *w = m_packet.wordData;
     w[0] = PT_GAME_INFO_DATA;
     w[1] = NETWORK_VERSION;
     w[2] = NETWORK_SUBVERSION;
     w[3] = (numPlayers & 255) | (MAX_PLAYERS << 8);
-    *(p = strcpy(packet.data + 8, gameName)) = id;
-    *length = p - packet.data + 1;
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    *(p = strcpy(m_packet.data + 8, gameName)) = id;
+    *length = p - m_packet.data + 1;
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackGameInfoPacket(const char *data, int length, int *networkVersion, int *networkSubversion,
+
+bool UnpackGameInfoPacket(const char *data, int length, int *networkVersion, int *networkSubversion,
     int *numPlayers, int *maxPlayers, char *gameName, int maxGameNameLen, byte *id)
 {
     word *w = (word *)data;
@@ -73,20 +76,22 @@ bool unpackGameInfoPacket(const char *data, int length, int *networkVersion, int
     return true;
 }
 
-char *createJoinGamePacket(int *length, byte joinId, byte gameId, const char *name, const char *teamName)
+
+char *CreateJoinGamePacket(int *length, byte joinId, byte gameId, const char *name, const char *teamName)
 {
-    word *w = packet.wordData;
+    word *w = m_packet.wordData;
     w[0] = PT_JOIN_GAME;
     w[1] = NETWORK_VERSION;
     w[2] = NETWORK_SUBVERSION;
-    packet.data[6] = joinId;
-    packet.data[7] = gameId;
-    *length = strcpy(strcpy(packet.data + 8, name) + 1, teamName) - packet.data;
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    m_packet.data[6] = joinId;
+    m_packet.data[7] = gameId;
+    *length = strcpy(strcpy(m_packet.data + 8, name) + 1, teamName) - m_packet.data;
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackJoinGamePacket(const char *data, int length, word *networkVersion,
+
+bool UnpackJoinGamePacket(const char *data, int length, word *networkVersion,
     word *networkSubversion, byte *joinId, byte *gameId, char *name, char *teamName)
 {
     const char *p = data + 8, *limit = data + 8 + min(NICKNAME_LEN + 1, length - 8);
@@ -116,16 +121,18 @@ bool unpackJoinGamePacket(const char *data, int length, word *networkVersion,
     return true;
 }
 
-char *createRefuseJoinGamePacket(int *length, byte errorCode)
+
+char *CreateRefuseJoinGamePacket(int *length, byte errorCode)
 {
-    *packet.wordData = PT_JOIN_GAME_REFUSED;
-    packet.data[2] = errorCode;
+    *m_packet.wordData = PT_JOIN_GAME_REFUSED;
+    m_packet.data[2] = errorCode;
     assert(errorCode != GR_OK);
     *length = 3;
-    return packet.data;
+    return m_packet.data;
 }
 
-bool unpackRefuseJoinGamePacket(const char *data, int length, byte *errorCode)
+
+bool UnpackRefuseJoinGamePacket(const char *data, int length, byte *errorCode)
 {
     if (length < 3)
         return false;
@@ -134,9 +141,10 @@ bool unpackRefuseJoinGamePacket(const char *data, int length, byte *errorCode)
     return true;
 }
 
-char *createJoinedGameOkPacket(int *length, const LobbyState *state, const IPX_Address **addresses)
+
+char *CreateJoinedGameOkPacket(int *length, const LobbyState *state, const IPX_Address **addresses)
 {
-    char *p = packet.data;
+    char *p = m_packet.data;
     *(word *)p = PT_JOIN_GAME_ACCEPTED;
     p[2] = state->numPlayers;
     p += 3;
@@ -149,12 +157,13 @@ char *createJoinedGameOkPacket(int *length, const LobbyState *state, const IPX_A
     }
 
     memcpy(p, &state->options, sizeof(MP_Options));
-    *length = p - packet.data + sizeof(MP_Options);
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    *length = p - m_packet.data + sizeof(MP_Options);
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, IPX_Address **addresses)
+
+bool UnpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, IPX_Address **addresses)
 {
 
     if (length < (int)(3 + 3 + sizeof(IPX_Address) + sizeof(MP_Options)))
@@ -173,31 +182,38 @@ bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, I
         char *q = state->playerNames[i];
         assert(q);
         limit = p + min(NICKNAME_LEN + 1, length - (p - data));
+
         while (p < limit && *p)
             *q++ = *p++;
+
         if (p >= limit)
             return false;
+
         *q = *p++;
 
         /* player team name */
         q = state->playerTeamsNames[i];
         assert(q);
         limit = p + min(MAX_TEAM_NAME_LEN + 1, length - (p - data));
+
         while (p < limit && *p)
             *q++ = *p++;
+
         if (p >= limit)
             return false;
+
         *q = *p++;
 
         /* player flags */
         limit = data + length;
         if (p >= limit)
             return false;
+
         state->playerFlags[i] = *p++;
 
         /* player address */
         if (p + sizeof(IPX_Address) <= limit) {
-            copyAddress(addresses[i], (IPX_Address *)p);
+            CopyAddress(addresses[i], (IPX_Address *)p);
             p += sizeof(IPX_Address);
         } else
             return false;
@@ -211,16 +227,18 @@ bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, I
     return true;
 }
 
-char *createOptionsPacket(int *length, const MP_Options *options)
+
+char *CreateOptionsPacket(int *length, const MP_Options *options)
 {
-    assert(sizeof(packet) >= sizeof(MP_Options) + sizeof(word));
-    *packet.wordData = PT_OPTIONS;
-    memcpy(packet.data + 2, options, sizeof(MP_Options));
+    assert(sizeof(m_packet) >= sizeof(MP_Options) + sizeof(word));
+    *m_packet.wordData = PT_OPTIONS;
+    memcpy(m_packet.data + 2, options, sizeof(MP_Options));
     *length = sizeof(MP_Options) + sizeof(word);
-    return packet.data;
+    return m_packet.data;
 }
 
-bool unpackOptionsPacket(const char *data, int length, MP_Options *options)
+
+bool UnpackOptionsPacket(const char *data, int length, MP_Options *options)
 {
     assert(*(word *)data == PT_OPTIONS);
 
@@ -231,15 +249,17 @@ bool unpackOptionsPacket(const char *data, int length, MP_Options *options)
     return true;
 }
 
-char *createPlayerJoinedPacket(int *length, const char *playerName, const char *playerTeamName)
+
+char *CreatePlayerJoinedPacket(int *length, const char *playerName, const char *playerTeamName)
 {
-    *packet.wordData = PT_PLAYER_JOINED;
-    *length = strcpy(strcpy(packet.data + 2, playerName) + 1, playerTeamName) - packet.data;
-    assert(*length + 1 <= (int)sizeof(packet));
-    return packet.data;
+    *m_packet.wordData = PT_PLAYER_JOINED;
+    *length = strcpy(strcpy(m_packet.data + 2, playerName) + 1, playerTeamName) - m_packet.data;
+    assert(*length + 1 <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackPlayerJoinedPacket(const char *data, int length, char *playerName, char *playerTeamName)
+
+bool UnpackPlayerJoinedPacket(const char *data, int length, char *playerName, char *playerTeamName)
 {
     assert(*(word *)data == PT_PLAYER_JOINED);
     const char *p = data + 2, *limit = data + 2 + min(NICKNAME_LEN + 1, length - 2);
@@ -263,17 +283,19 @@ bool unpackPlayerJoinedPacket(const char *data, int length, char *playerName, ch
     return true;
 }
 
-char *createPlayerFlagsPacket(int *length, int flags, int playerIndex)
+
+char *CreatePlayerFlagsPacket(int *length, int flags, int playerIndex)
 {
-    *packet.wordData = PT_PLAYER_FLAGS;
-    packet.data[2] = playerIndex;
-    packet.data[3] = flags;
+    *m_packet.wordData = PT_PLAYER_FLAGS;
+    m_packet.data[2] = playerIndex;
+    m_packet.data[3] = flags;
     *length = 4;
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackPlayerFlagsPacket(const char *data, int length, int *playerIndex, int *flags)
+
+bool UnpackPlayerFlagsPacket(const char *data, int length, int *playerIndex, int *flags)
 {
     assert(*(word *)data == PT_PLAYER_FLAGS);
 
@@ -285,16 +307,18 @@ bool unpackPlayerFlagsPacket(const char *data, int length, int *playerIndex, int
     return true;
 }
 
-char *createPlayerTeamChangePacket(int *length, int playerIndex, char *teamName)
+
+char *CreatePlayerTeamChangePacket(int *length, int playerIndex, char *teamName)
 {
-    *packet.wordData = PT_PLAYER_TEAM;
-    packet.data[2] = playerIndex;
-    *length = strcpy(packet.data + 3, teamName) - packet.data;
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    *m_packet.wordData = PT_PLAYER_TEAM;
+    m_packet.data[2] = playerIndex;
+    *length = strcpy(m_packet.data + 3, teamName) - m_packet.data;
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackPlayerTeamChangePacket(const char *data, int length, int *playerIndex, char *teamName)
+
+bool UnpackPlayerTeamChangePacket(const char *data, int length, int *playerIndex, char *teamName)
 {
     const char *p = data + 3;
     assert(*(word *)data == PT_PLAYER_TEAM);
@@ -311,22 +335,25 @@ bool unpackPlayerTeamChangePacket(const char *data, int length, int *playerIndex
     return true;
 }
 
-void setPlayerIndex(char *data, int playerIndex)
+
+void SetPlayerIndex(char *data, int playerIndex)
 {
     assert(*(word *)data == PT_PLAYER_TEAM || *(word *)data == PT_PLAYER_FLAGS ||
         *(word *)data == PT_PLAYER_LEFT);
     data[2] = playerIndex;
 }
 
-char *createPlayerLeftPacket(int *length, int playerIndex)
+
+char *CreatePlayerLeftPacket(int *length, int playerIndex)
 {
-    *packet.wordData = PT_PLAYER_LEFT;
-    packet.data[2] = playerIndex;
+    *m_packet.wordData = PT_PLAYER_LEFT;
+    m_packet.data[2] = playerIndex;
     *length = 3;
-    return packet.data;
+    return m_packet.data;
 }
 
-bool unpackPlayerLeftPacket(const char *data, int length, int *playerIndex)
+
+bool UnpackPlayerLeftPacket(const char *data, int length, int *playerIndex)
 {
     assert(*(word *)data == PT_PLAYER_LEFT);
 
@@ -337,16 +364,18 @@ bool unpackPlayerLeftPacket(const char *data, int length, int *playerIndex)
     return true;
 }
 
-char *createPlayerChatPacket(int *length, const char *text, byte color)
+
+char *CreatePlayerChatPacket(int *length, const char *text, byte color)
 {
-    *packet.wordData = PT_CHAT_LINE;
-    packet.data[2] = color;
-    *length = strncpy(packet.data + 3, text, MAX_CHAT_LINE_LENGTH) - packet.data;
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    *m_packet.wordData = PT_CHAT_LINE;
+    m_packet.data[2] = color;
+    *length = strncpy(m_packet.data + 3, text, MAX_CHAT_LINE_LENGTH) - m_packet.data;
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackPlayerChatPacket(const char *data, int length, char *text, byte *color)
+
+bool UnpackPlayerChatPacket(const char *data, int length, char *text, byte *color)
 {
     assert(*(word *)data == PT_CHAT_LINE);
 
@@ -359,11 +388,12 @@ bool unpackPlayerChatPacket(const char *data, int length, char *text, byte *colo
     return true;
 }
 
-char *createSyncPacket(int *length, const IPX_Address **addresses, int numPlayers,
+
+char *CreateSyncPacket(int *length, const IPX_Address **addresses, int numPlayers,
     const byte *randomVars, int randomVarsLength)
 {
-    *packet.wordData = PT_SYNC;
-    char *p = packet.data + 2;
+    *m_packet.wordData = PT_SYNC;
+    char *p = m_packet.data + 2;
 
     for (int i = 0; i < numPlayers; i++) {
         memcpy(p, addresses[i], sizeof(IPX_Address));
@@ -371,13 +401,14 @@ char *createSyncPacket(int *length, const IPX_Address **addresses, int numPlayer
     }
 
     memcpy(p, randomVars, randomVarsLength);
-    *length = p + randomVarsLength - packet.data;
-    assert(*length <= (int)sizeof(packet));
+    *length = p + randomVarsLength - m_packet.data;
+    assert(*length <= (int)sizeof(m_packet));
 
-    return packet.data;
+    return m_packet.data;
 }
 
-bool unpackSyncPacket(const char *data, int length, IPX_Address **addresses, int numPlayers,
+
+bool UnpackSyncPacket(const char *data, int length, IPX_Address **addresses, int numPlayers,
     byte *randomVars, int *randomVarsLength)
 {
     assert(*(word *)data == PT_SYNC);
@@ -395,17 +426,19 @@ bool unpackSyncPacket(const char *data, int length, IPX_Address **addresses, int
     return true;
 }
 
-char *createTeamAndTacticsPacket(int *length, const TeamFile *team, const Tactics *tactics)
+
+char *CreateTeamAndTacticsPacket(int *length, const TeamFile *team, const Tactics *tactics)
 {
-    *packet.wordData = PT_TEAM_AND_TACTICS;
-    memcpy(packet.data + 2, team, sizeof(TeamFile));
-    memcpy(packet.data + 2 + sizeof(TeamFile), tactics, sizeof(Tactics) * 6);
+    *m_packet.wordData = PT_TEAM_AND_TACTICS;
+    memcpy(m_packet.data + 2, team, sizeof(TeamFile));
+    memcpy(m_packet.data + 2 + sizeof(TeamFile), tactics, sizeof(Tactics) * 6);
     *length = 2 + sizeof(TeamFile) + sizeof(Tactics) * 6;
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackTeamAndTacticsPacket(const char *data, int length, TeamFile *team, Tactics *tactics)
+
+bool UnpackTeamAndTacticsPacket(const char *data, int length, TeamFile *team, Tactics *tactics)
 {
     assert(*(word *)data == PT_TEAM_AND_TACTICS);
     assert(team);
@@ -427,18 +460,20 @@ bool unpackTeamAndTacticsPacket(const char *data, int length, TeamFile *team, Ta
     return true;
 }
 
-char *createControlsPacket(int *length, byte scanCode, word longFireFlag)
+
+char *CreateControlsPacket(int *length, byte scanCode, word longFireFlag)
 {
-    *packet.wordData = PT_CONTROLS;
-    packet.data[2] = scanCode;
-    packet.data[3] = longFireFlag & 0xff;
-    packet.data[4] = longFireFlag >> 8;
+    *m_packet.wordData = PT_CONTROLS;
+    m_packet.data[2] = scanCode;
+    m_packet.data[3] = longFireFlag & 0xff;
+    m_packet.data[4] = longFireFlag >> 8;
     *length = sizeof(word) + sizeof(byte) + sizeof(word);
-    assert(*length <= (int)sizeof(packet));
-    return packet.data;
+    assert(*length <= (int)sizeof(m_packet));
+    return m_packet.data;
 }
 
-bool unpackControlsPacket(const char *data, int length, byte *scanCode, word *longFireFlag)
+
+bool UnpackControlsPacket(const char *data, int length, byte *scanCode, word *longFireFlag)
 {
     assert(*(word *)data == PT_CONTROLS);
     if (length != sizeof(word) + sizeof(byte) + sizeof(word))

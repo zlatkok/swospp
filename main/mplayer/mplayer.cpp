@@ -5,51 +5,54 @@
 #include "qalloc.h"
 #include "options.h"
 #include "mplayer.h"
+#include "mplobby.h"
+#include "mpdirect.h"
 
-static char playerNick[NICKNAME_LEN + 1];   /* player name for online games  */
-static char gameName[GAME_NAME_LENGTH + 1]; /* name of current game          */
+static char m_playerNick[NICKNAME_LEN + 1];     /* player name for online games  */
+static char m_gameName[GAME_NAME_LENGTH + 1];   /* name of current game          */
 
-static const MP_Options defaultOptions = { DEFAULT_MP_OPTIONS };
-static MP_Options mpOptions;
-static MP_Options *savedClientOptions;
+static const MP_Options m_defaultOptions = { DEFAULT_MP_OPTIONS };
+static MP_Options m_mpOptions;
+static MP_Options *m_savedClientOptions;
 
-SavedTeamData savedTeamData[5];             /* we will keep saved positions for a few teams */
+SavedTeamData m_savedTeamData[5];               /* we will keep saved positions for a few teams */
 
-static byte numSubstitutes;
-static byte maxSubstitutes;
+static byte m_numSubstitutes;
+static byte m_maxSubstitutes;
 
-static byte mpActive;
+static byte m_mpActive;
+static dword m_currentTeamId = -1;
 
 const char *InitMultiplayer()
 {
     if (auto failureReason = InitializeNetwork())
         return failureReason;
 
-    if (mpActive)
+    if (m_mpActive)
         return nullptr;
 
     calla_ebp_safe(SaveOptions);    /* save options here and not in menu to cover for alt-f1 exit */
     autoReplays = 0;                /* force auto-replays off */
     allPlayerTeamsEqual = 0;        /* force equal teams off  */
-    gameType = 0;
+    g_gameType = 0;
 
-    if (!mpOptions.size)
-        mpOptions = defaultOptions;
+    if (!m_mpOptions.size)
+        m_mpOptions = m_defaultOptions;
 
     MP_Options options;
     ApplyMPOptions(GetMPOptions(&options));
 
     InitMultiplayerLobby();
-    seed = currentTick;
+    seed = g_currentTick;
 
     InitPlayerNick();
     InitGameName();
 
     /* assumes options have been loaded from the XML */
-    SetSkipFrames(mpOptions.skipFrames);
-    SetNetworkTimeout(mpOptions.networkTimeout);
+    SetSkipFrames(m_mpOptions.skipFrames);
+    SetNetworkTimeout(m_mpOptions.networkTimeout);
 
-    mpActive = true;
+    m_mpActive = true;
 
     return nullptr;
 }
@@ -57,14 +60,14 @@ const char *InitMultiplayer()
 
 void FinishMultiplayer()
 {
-    if (mpActive) {
+    if (m_mpActive) {
         calla_ebp_safe(RestoreOptions);
         FinishMultiplayerLobby();
         ShutDownNetwork();
         ReleaseClientMPOptions();
     }
 
-    mpActive = false;
+    m_mpActive = false;
 }
 
 
@@ -73,13 +76,13 @@ const char *GetGameName()
     auto directGameName = GetDirectGameName();
     if (directGameName[0])
         return directGameName;
-    return gameName;
+    return m_gameName;
 }
 
 
 void SetGameName(const char *newGameName)
 {
-    *strncpy(gameName, newGameName, sizeof(gameName) - 1) = '\0';
+    *strncpy(m_gameName, newGameName, sizeof(m_gameName) - 1) = '\0';
 }
 
 
@@ -88,24 +91,24 @@ const char *GetPlayerNick()
     auto directGameNickname = GetDirectGameNickname();
     if (directGameNickname[0])
         return directGameNickname;
-    return playerNick;
+    return m_playerNick;
 }
 
 
 void SetPlayerNick(const char *newPlayerNick)
 {
-    *strncpy(playerNick, newPlayerNick, sizeof(playerNick) - 1) = '\0';
+    *strncpy(m_playerNick, newPlayerNick, sizeof(m_playerNick) - 1) = '\0';
 }
 
 
 void ApplySavedTeamData(TeamFile *team)
 {
-    for (size_t i = 0; i < sizeofarray(savedTeamData); i++) {
+    for (size_t i = 0; i < sizeofarray(m_savedTeamData); i++) {
         dword teamId = *(dword *)team;
-        if (teamId == savedTeamData[i].teamId) {
+        if (teamId == m_savedTeamData[i].teamId) {
             WriteToLog("Found saved team data for %s", team->name);
-            memcpy(team->playerOrder, savedTeamData[i].positions, sizeof(savedTeamData[i].positions));
-            team->tactics = savedTeamData[i].tactics;
+            memcpy(team->playerOrder, m_savedTeamData[i].positions, sizeof(m_savedTeamData[i].positions));
+            team->tactics = m_savedTeamData[i].tactics;
             return;
         }
     }
@@ -117,42 +120,42 @@ void ApplySavedTeamData(TeamFile *team)
 void StoreTeamData(const TeamFile *team)
 {
     size_t i;
-    const size_t kNumTeams = sizeofarray(savedTeamData);
+    const size_t kNumTeams = sizeofarray(m_savedTeamData);
 
     for (i = 0; i < kNumTeams; i++)
-        if (team->getId() == savedTeamData[i].teamId)
+        if (team->getId() == m_savedTeamData[i].teamId)
             break;
 
     /* if all slots are taken, just overwrite any */
     if (i >= kNumTeams)
-        i = currentTick % kNumTeams;
+        i = g_currentTick % kNumTeams;
 
     assert(i < kNumTeams);
     WriteToLog("Storing data for team %s, %s", team->name, team->coachName);
-    memcpy(savedTeamData[i].positions, team->playerOrder, sizeof(team->playerOrder));
-    savedTeamData[i].tactics = team->tactics;
-    savedTeamData[i].teamId = team->getId();
+    memcpy(m_savedTeamData[i].positions, team->playerOrder, sizeof(team->playerOrder));
+    m_savedTeamData[i].tactics = team->tactics;
+    m_savedTeamData[i].teamId = team->getId();
 }
 
 
 char *InitGameName()
 {
-    if (!gameName[0]) {
+    if (!m_gameName[0]) {
         unsigned short year;
         unsigned char month, day, hour, minute, second, hundred;
         GetDosDate(&year, &month, &day);
         GetDosTime(&hour, &minute, &second, &hundred);
 
-        char *p = strcpy(strcpy(strcpy(gameName, "SWPP-"), int2str(year)), "-");
+        char *p = strcpy(strcpy(strcpy(m_gameName, "SWPP-"), int2str(year)), "-");
         p = strcpy(strcpy(p, int2str(month)), "-");
         p = strcpy(strcpy(p, int2str(day)), "-");
         p = strcpy(strcpy(p, int2str(hour)), ":");
         p = strcpy(strcpy(p, int2str(minute)), ":");
         p = strcpy(p, int2str(second));
-        WriteToLog("Generated game name: %s", gameName);
+        WriteToLog("Generated game name: %s", m_gameName);
     }
 
-    return gameName;
+    return m_gameName;
 }
 
 
@@ -171,11 +174,11 @@ void registerMPOptions(RegisterOptionsFunc registerOptions)
 
 void registerPlayMatchMenuOptions(RegisterOptionsFunc registerOptions)
 {
-    static_assert(sizeof(SavedTeamData) == 24 && sizeofarray(savedTeamData) == 5, "Saved positions changed.");
-    memset(savedTeamData, -1, sizeof(savedTeamData));      /* default to -1 team ids */
+    static_assert(sizeof(SavedTeamData) == 24 && sizeofarray(m_savedTeamData) == 5, "Saved positions changed.");
+    memset(m_savedTeamData, -1, sizeof(m_savedTeamData));      /* default to -1 team ids */
     registerOptions("playMatch", 9, "Saved settings from play match menu", 35,
         "%n" "%24b/team1" "%24b/team2" "%24b/team3" "%24b/team4" "%24b/team5",
-        &savedTeamData[0], &savedTeamData[1], &savedTeamData[2], &savedTeamData[3], &savedTeamData[4]);
+        &m_savedTeamData[0], &m_savedTeamData[1], &m_savedTeamData[2], &m_savedTeamData[3], &m_savedTeamData[4]);
 }
 
 
@@ -186,8 +189,8 @@ void registerPlayMatchMenuOptions(RegisterOptionsFunc registerOptions)
 extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions)
 {
     registerOptions("multiplayer", 11, "Options for multiplayer games", 29,
-        "%*s/playerNick%*s/gameName%4d/team", sizeof(playerNick), playerNick,
-        sizeof(gameName), gameName, &currentTeamId);
+        "%*s/playerNick%*s/gameName%4d/team", sizeof(m_playerNick), m_playerNick,
+        sizeof(m_gameName), m_gameName, &m_currentTeamId);
     registerMPOptions(registerOptions);
     registerPlayMatchMenuOptions(registerOptions);
 
@@ -233,14 +236,14 @@ void InitPlayerNick()
         "WIZARD"
     };
 
-    if (!playerNick[0]) {
+    if (!m_playerNick[0]) {
         calla(Rand);
         int index = (dword)D0 * (sizeof(defaultNicks) / sizeof(defaultNicks[0]) - 1) / 255;
         WriteToLog("Random index = %d", index);
-        char *p = strcpy(strcpy(playerNick, "SWOS "), defaultNicks[index]);
+        char *p = strcpy(strcpy(m_playerNick, "SWOS "), defaultNicks[index]);
         calla(Rand);
         strcpy(strcpy(p, " "), int2str(D0));
-        WriteToLog("Random name generated: %s", playerNick);
+        WriteToLog("Random name generated: %s", m_playerNick);
     }
 }
 
@@ -255,8 +258,8 @@ void InitPlayerNick()
 
 MP_Options *SetMPOptions(const MP_Options *newOptions)
 {
-    assert(newOptions->size == sizeof(mpOptions));
-    memcpy(&mpOptions, newOptions, sizeof(mpOptions));
+    assert(newOptions->size == sizeof(m_mpOptions));
+    memcpy(&m_mpOptions, newOptions, sizeof(m_mpOptions));
 
     return const_cast<MP_Options *>(newOptions);
 }
@@ -265,10 +268,11 @@ MP_Options *SetMPOptions(const MP_Options *newOptions)
 /* Return currently active MP options for options manager. */
 static MP_Options *GetMPOptionsPtr()
 {
-    if (!mpOptions.size)
-        mpOptions = defaultOptions;
-    assert(mpOptions.size == sizeof(mpOptions));
-    return savedClientOptions ? savedClientOptions : &mpOptions;
+    if (!m_mpOptions.size)
+        m_mpOptions = m_defaultOptions;
+
+    assert(m_mpOptions.size == sizeof(m_mpOptions));
+    return m_savedClientOptions ? m_savedClientOptions : &m_mpOptions;
 }
 
 
@@ -280,8 +284,8 @@ static MP_Options *GetMPOptionsPtr()
 */
 MP_Options *GetMPOptions(MP_Options *destOptions)
 {
-    assert(mpOptions.size == sizeof(mpOptions));
-    return (MP_Options *)memcpy(destOptions, &mpOptions, sizeof(mpOptions));
+    assert(m_mpOptions.size == sizeof(m_mpOptions));
+    return (MP_Options *)memcpy(destOptions, &m_mpOptions, sizeof(m_mpOptions));
 }
 
 
@@ -300,8 +304,8 @@ void ApplyMPOptions(const MP_Options *options)
     assert(options && options->size == sizeof(*options));
     gameLength = options->gameLength;
     pitchType = options->pitchType;
-    numSubstitutes = options->numSubs;
-    maxSubstitutes = options->maxSubs;
+    m_numSubstitutes = options->numSubs;
+    m_maxSubstitutes = options->maxSubs;
     SetSkipFrames(options->skipFrames);
     SetNetworkTimeout(options->networkTimeout);
 }
@@ -319,8 +323,8 @@ MP_Options *GetFreshMPOptions(MP_Options *options)
     options->size = sizeof(*options);
     options->gameLength = gameLength;
     options->pitchType = pitchType;
-    options->numSubs = numSubstitutes;
-    options->maxSubs = maxSubstitutes;
+    options->numSubs = m_numSubstitutes;
+    options->maxSubs = m_maxSubstitutes;
     options->skipFrames = GetSkipFrames();
     options->networkTimeout = GetNetworkTimeout();
     return options;
@@ -329,9 +333,9 @@ MP_Options *GetFreshMPOptions(MP_Options *options)
 
 bool CompareMPOptions(const MP_Options *newOptions)
 {
-    assert(newOptions->size <= mpOptions.size && mpOptions.size == sizeof(mpOptions));
-    return memcmp(savedClientOptions ? savedClientOptions : &mpOptions,
-        newOptions, min(newOptions->size, sizeof(mpOptions))) == 0;
+    assert(newOptions->size <= m_mpOptions.size && m_mpOptions.size == sizeof(m_mpOptions));
+    return memcmp(m_savedClientOptions ? m_savedClientOptions : &m_mpOptions,
+        newOptions, min(newOptions->size, sizeof(m_mpOptions))) == 0;
 }
 
 
@@ -342,51 +346,64 @@ bool CompareMPOptions(const MP_Options *newOptions)
 */
 void SaveClientMPOptions()
 {
-    if (!savedClientOptions)
-        savedClientOptions = (MP_Options *)qAlloc(sizeof(mpOptions));
-    if (savedClientOptions)
-        memcpy(savedClientOptions, &mpOptions, sizeof(mpOptions));
+    if (!m_savedClientOptions)
+        m_savedClientOptions = (MP_Options *)qAlloc(sizeof(m_mpOptions));
+
+    if (m_savedClientOptions)
+        memcpy(m_savedClientOptions, &m_mpOptions, sizeof(m_mpOptions));
 }
 
 
 void ReleaseClientMPOptions()
 {
-    qFree(savedClientOptions);
-    savedClientOptions = nullptr;
+    qFree(m_savedClientOptions);
+    m_savedClientOptions = nullptr;
 }
 
 
 int GetNumSubstitutes()
 {
-    return numSubstitutes;
+    return m_numSubstitutes;
 }
 
 
 int SetNumSubstitutes(byte newNumSubs)
 {
-    return numSubstitutes = newNumSubs;
+    return m_numSubstitutes = newNumSubs;
 }
 
 
 int GetMaxSubstitutes()
 {
-    return maxSubstitutes;
+    return m_maxSubstitutes;
 }
 
 
-int SetMaxSubstitutes(byte newMaxSubs)
+int SetMaxSubstitutes(byte maxSubs)
 {
-    return maxSubstitutes = newMaxSubs;
+    return m_maxSubstitutes = maxSubs;
 }
 
 
 void UpdateSkipFrames(int frames)
 {
-    mpOptions.skipFrames = frames;
+    m_mpOptions.skipFrames = frames;
 }
 
 
 void UpdateNetworkTimeout(word networkTimeout)
 {
-    mpOptions.networkTimeout = networkTimeout;
+    m_mpOptions.networkTimeout = networkTimeout;
+}
+
+
+dword GetCurrentTeamId()
+{
+    return m_currentTeamId;
+}
+
+
+void SetCurrentTeamId(dword teamId)
+{
+    m_currentTeamId = teamId;
 }

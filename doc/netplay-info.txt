@@ -1,4 +1,4 @@
-Accompanying SWOS++ version: 1.9.2.0
+Accompanying SWOS++ version: 1.9.2.1
 
 DISCLAIMER:
 

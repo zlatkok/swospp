@@ -6,7 +6,7 @@
 
 #pragma pack(push, 1)
 struct RM_Info {
-    long edi, esi, ebp, resv, ebx, edx, ecx, eax;
+    long edi, esi, ebp, reserved, ebx, edx, ecx, eax;
     ushort flags, es, ds, fs, gs, ip, cs, sp, ss;
 };
 
@@ -68,10 +68,11 @@ extern "C" void ShutDownNetwork();
 word GetNetworkTimeout();
 word SetNetworkTimeout(word newTimeout);
 void GetOurAddress(IPX_Address *dest);
-bool addressMatch(const IPX_Address *a, const IPX_Address *b);
-void copyAddress(IPX_Address *dest, const IPX_Address *source);
+bool AddressMatch(const IPX_Address *a, const IPX_Address *b);
+void CopyAddress(IPX_Address *dest, const IPX_Address *source);
 
 UnAckPacket *ResendUnacknowledgedPackets();
+bool UnacknowledgedPacketsPending();
 void ResendTimedOutPacket(UnAckPacket *packet);
 
 bool ConnectTo(const IPX_Address *dest);
@@ -79,10 +80,10 @@ void DisconnectFrom(const IPX_Address *dest);
 void SendBroadcastPacket(const char *data, int length);
 void SendSimplePacket(const IPX_Address *dest, const char *data, int length);
 bool SendImportantPacket(const IPX_Address *dest, const char *data, int length);
-bool SendUnaknowledged();
 char *ReceivePacket(int *length, IPX_Address *node);
 void CancelSendingPackets();
 void CancelPackets();
+void DismissIncomingPackets();
 
 /* Raw IPX interface */
 extern "C" {

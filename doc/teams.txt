@@ -12,8 +12,8 @@ size is 38 bytes each
 
 team header:
 ------------
-offset:  size:  desc.
--------  -----  -----
+offset:  size:  description:
+-------  -----  ------------
    0       1    country number - number of team file (team.nnn), used as an
                 index into some kind of translation table, 2nd byte is added to
                 the result
@@ -63,51 +63,50 @@ offset:  size:  desc.
                   2 - second
                   3 - third
                   4 - non-league
-                primarni set:
-  26       1    tip majice:
-                  0 - obicna
-                  1 - obojeni rukavi
-                  2 - vertikalne pruge
-                  3 - horizontalne pruge
-  27       1    boja pozadine majice
-                  0 - siva
-                  1 - bela
-                  2 - crna
-                  3 - narandzasta
-                  4 - crvena
-                  5 - plava
-                  6 - braon
-                  7 - svetlo plava
-                  8 - zelena
-                  9 - zuta
-  28        1   boja sara na majici
-  29        1   boja sortsa
-  30        1   boja carapa
-                sekundarni set:
-  31        1   tip majice
-  32        1   boja pozadine majice
-  33        1   boja sara na majici
-  34        1   boja sortsa
-  35        1   boja carapa
-  36       23   ime trenera, null-terminated
-  59        1   nekakav fleg (za fajl nebitan) mozda 0 - levi tim,
-                1 - desni tim
-                edit tactics meni pri inicijalizaciji upise 1
-  60       16   redni brojevi igraca, brojevi koji ce biti ispisani iznad njih
-                za vreme utakmice; takodje se po ovim brojevima ispisuju igraci
-                pre utakmice; po ovim brojevima se odlucuje i ko ce igrati
-                (1..11), a ko ce biti na klupi (12..16); po ovom redosledu se i
-                dodeljuju pozicije (verovatno se jos gleda i taktika)
-                <indeks je pozicija, a sadrzaj je broj igraca u fajlu - ovaj
-                niz kazuje koji igrac se nalazi na kojoj poziciji>
+                primary set:
+  26       1    shirt type:
+                  0 - plain
+                  1 - colored sleeves
+                  2 - vertical stripes
+                  3 - horizontal stripes
+  27       1    shirt color (first color)
+                  0 - gray
+                  1 - white
+                  2 - black
+                  3 - orange
+                  4 - red
+                  5 - blue
+                  6 - brown
+                  7 - light blue
+                  8 - green
+                  9 - yellow
+  28        1   stripe color (second color)
+  29        1   shorts color
+  30        1   socks color
+                secondary set:
+  31        1   shirt type
+  32        1   shirt color (first color)
+  33        1   stripe color (second color)
+  34        1   shorts color
+  35        1   socks color
+  36       23   coach name, null-terminated
+  59        1   some sort of flag (unimportant for file), maybe 0 - left team,
+                1 - right team
+                edit tactics menu writes here during initialization
+  60       16   player indices -- this array tells us where the player is
+                inside the team file
+                also players are listed before the match according to these
+                numbers; they also decide who gets to play (1..11), and who
+                goes to bench (12..16); this order is used to assign positions
+                (with tactic influencing it of course)
 
-  Velicina 76 bajtova.
+  Size 76 bytes.
 
-struktura igraca:
+Player structure:
 ----
-offset:  size:  desc.
--------  -----  -----
-   0       1    nacionalnost:
+offset:  size:  description:
+-------  -----  ------------
+   0       1    nationality:
 
     0  - ALB        51  - CRC         102 - ANG
     1  - AUT        52  - SAL1        103 - TOG

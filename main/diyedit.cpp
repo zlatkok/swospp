@@ -10,20 +10,21 @@ struct DIY_File {  /* info about diy file found in game directory    */
 
 /* we'll use famous pitch.dat buffer to save bss memory,
    keep it the only reference in initialization to avoid GCC emitting additional sections */
-static DIY_File *diyFiles = (DIY_File *)pitchDatBuffer;
-static byte *sortedFiles = (byte *)pitchDatBuffer + MAX_DIY_FILES * sizeof(DIY_File);
-static byte *sortedTeams = (byte *)pitchDatBuffer + (MAX_DIY_FILES + 1) * sizeof(DIY_File);
-static int totalFiles;
-static byte readFiles;
-static byte lineOffset, showEntries;
-static byte fileLoaded;
-static const char diyExt[] = "*.DIY";
+static DIY_File *m_diyFiles = (DIY_File *)g_pitchDatBuffer;
+static byte *m_sortedFiles = (byte *)g_pitchDatBuffer + MAX_DIY_FILES * sizeof(DIY_File);
+static byte *m_sortedTeams = (byte *)g_pitchDatBuffer + (MAX_DIY_FILES + 1) * sizeof(DIY_File);
+static int m_totalFiles;
+static byte m_readFiles;
+static byte m_lineOffset, m_showEntries;
+static byte m_fileLoaded;
+static const char kDiyExt[] = "*.DIY";
+
 
 /** GetDIYFilenames
 
-    Reads diy file names from game directory and fills diyFiles array of
+    Reads DIY file names from game directory and fills diyFiles array of
     structures. Sets variable totalFiles to total number of files read, and
-    readFiles to actual number of files read. Does simple diy file validity
+    readFiles to actual number of files read. Does simple DIY file validity
     test by checking if name of competition in file is ASCII.
 */
 void GetDIYFilenames()
@@ -31,19 +32,19 @@ void GetDIYFilenames()
     DTA dta;
     int i = 0;
 
-    totalFiles = readFiles = 0;
+    m_totalFiles = m_readFiles = 0;
 
     SetDTA(&dta);
-    if (!FindFirstFile(diyExt))
+    if (!FindFirstFile(kDiyExt))
         return;
 
     do {
         dword handle;
         char *p, *q;
 
-        totalFiles++;
+        m_totalFiles++;
         p = dta.fileName;
-        q = diyFiles[i].fileName;
+        q = m_diyFiles[i].fileName;
         do {
             if (*p == '.') {
                 *q = '\0';
@@ -61,14 +62,14 @@ void GetDIYFilenames()
             /* check if file was opened successfully */
             if (!handle)
                 break;
-            /* seek to offset 4 - name of diy competition */
+            /* seek to offset 4 - name of DIY competition */
             if (SeekFile(handle, SEEK_START, 0, 4) < 0)
                 break;
-            if (ReadFile(handle, diyFiles[i].longName, 23) != 23)
+            if (ReadFile(handle, m_diyFiles[i].longName, 23) != 23)
                 break;
             /* check for presence of non-ASCII characters */
-            diyFiles[i].longName[22] = '\0';
-            for (p = diyFiles[i].longName; *p; p++)
+            m_diyFiles[i].longName[22] = '\0';
+            for (p = m_diyFiles[i].longName; *p; p++)
                 if (!isalpha(*p) && *p != ' ')
                     break;
             if (*p)
@@ -83,10 +84,11 @@ void GetDIYFilenames()
     } while (i < MAX_DIY_FILES && FindNextFile());
 
     while (FindNextFile())
-        totalFiles++;
+        m_totalFiles++;
 
-    readFiles = i;
+    m_readFiles = i;
 }
+
 
 extern "C" void EditDIYFile()
 {
@@ -100,26 +102,26 @@ extern "C" void EditDIYFile()
     GetDIYFilenames();
 
     /* init index list */
-    for (int i = 0; i < readFiles; i++)
-        sortedFiles[i] = i;
+    for (int i = 0; i < m_readFiles; i++)
+        m_sortedFiles[i] = i;
 
     /* sort filenames */
     bool sortFlag;
     do {
         sortFlag = false;
-        for (int i = 0; i < readFiles - 1; i++) {
-            if (stricmp(diyFiles[sortedFiles[i]].fileName, diyFiles[sortedFiles[i + 1]].fileName) > 0) {
-                int tmp = sortedFiles[i];
-                sortedFiles[i] = sortedFiles[i + 1];
-                sortedFiles[i + 1] = tmp;
+        for (int i = 0; i < m_readFiles - 1; i++) {
+            if (stricmp(m_diyFiles[m_sortedFiles[i]].fileName, m_diyFiles[m_sortedFiles[i + 1]].fileName) > 0) {
+                int tmp = m_sortedFiles[i];
+                m_sortedFiles[i] = m_sortedFiles[i + 1];
+                m_sortedFiles[i + 1] = tmp;
                 sortFlag = true;
             }
         }
     } while (sortFlag);
 
-    showEntries = min(readFiles, 15);
+    m_showEntries = min(m_readFiles, 15);
 
-    if (totalFiles > MAX_DIY_FILES) {
+    if (m_totalFiles > MAX_DIY_FILES) {
         char buf[128];
         A1 = (dword)buf;
         D0 = MAX_DIY_FILES;
@@ -130,34 +132,35 @@ extern "C" void EditDIYFile()
         return;
     }
 
-    lineOffset = 0;
+    m_lineOffset = 0;
     A6 = (dword)&edit_DIY_Menu;
     calla(ShowMenu);
 }
+
 
 extern "C" void DIYUpdateList()
 {
     int i, y;
     MenuEntry *m;
 
-    D0 = 4 + lineOffset;
+    D0 = 4 + m_lineOffset;
     calla(CalcMenuEntryAddress);
-    m = (MenuEntry *)A0 + showEntries;
+    m = (MenuEntry *)A0 + m_showEntries;
 
     /* make unneeded entries invisible */
-    for (i = showEntries + lineOffset; i < MAX_DIY_FILES; i++, m++) {
+    for (i = m_showEntries + m_lineOffset; i < MAX_DIY_FILES; i++, m++) {
         m->invisible = true;
         (m + MAX_DIY_FILES)->invisible = true;
     }
 
     /* fill entries with filenames and set next entries */
-    for (i = lineOffset, m = (MenuEntry *)A0, y = 42; i < showEntries + lineOffset; i++, m++, y += 9) {
-        m->u2.string = diyFiles[sortedFiles[i]].fileName;
-        (m + MAX_DIY_FILES)->u2.string = diyFiles[sortedFiles[i]].longName;
+    for (i = m_lineOffset, m = (MenuEntry *)A0, y = 42; i < m_showEntries + m_lineOffset; i++, m++, y += 9) {
+        m->u2.string = m_diyFiles[m_sortedFiles[i]].fileName;
+        (m + MAX_DIY_FILES)->u2.string = m_diyFiles[m_sortedFiles[i]].longName;
         m->invisible = false;
         (m + MAX_DIY_FILES)->invisible = false;
         m->rightEntry = -1;
-        m->leftEntry = 3 - (i > (showEntries + lineOffset) / 2);
+        m->leftEntry = 3 - (i > (m_showEntries + m_lineOffset) / 2);
         m->upEntry = 3 + i;
         m->downEntry = 5 + i;
         m->y = y;
@@ -167,21 +170,21 @@ extern "C" void DIYUpdateList()
     m = (MenuEntry *)A0;
     m->upEntry = 3;
     /* last visible entry */
-    (m + showEntries - 1)->downEntry = 1;
-    (m + showEntries - 1)->rightEntry = 1;
-    (m + showEntries - 1)->leftEntry = 2;
+    (m + m_showEntries - 1)->downEntry = 1;
+    (m + m_showEntries - 1)->rightEntry = 1;
+    (m + m_showEntries - 1)->leftEntry = 2;
     /* exit */
-    (m - lineOffset - 3)->leftEntry = 4 + showEntries + lineOffset - 1;
-    (m - lineOffset - 3)->upEntry = 4 + showEntries + lineOffset - 1;
+    (m - m_lineOffset - 3)->leftEntry = 4 + m_showEntries + m_lineOffset - 1;
+    (m - m_lineOffset - 3)->upEntry = 4 + m_showEntries + m_lineOffset - 1;
     /* up arrow */
-    (m - lineOffset - 1)->rightEntry = 4 + lineOffset;
+    (m - m_lineOffset - 1)->rightEntry = 4 + m_lineOffset;
     /* down arrow */
-    (m - lineOffset - 2)->rightEntry = 4 + showEntries + lineOffset - 1;
+    (m - m_lineOffset - 2)->rightEntry = 4 + m_showEntries + m_lineOffset - 1;
 
     /* center entries, if less than 15 */
-    if (readFiles < 15) {
-        y = 42 + 9 * (15 - readFiles) / 2 - 10;
-        for (i = 0; i < readFiles; i++, m++) {
+    if (m_readFiles < 15) {
+        y = 42 + 9 * (15 - m_readFiles) / 2 - 10;
+        for (i = 0; i < m_readFiles; i++, m++) {
             m->y = y;
             (m + MAX_DIY_FILES)->y = y;
             y += 9;
@@ -189,17 +192,18 @@ extern "C" void DIYUpdateList()
     }
 }
 
+
 extern "C" void DIYFileSelected()
 {
     MenuEntry *m = (MenuEntry *)A5;
     int ord = m->ordinal - 4;
     char fname[13];
 
-    strcpy(strcpy(fname, diyFiles[sortedFiles[ord]].fileName), diyExt + 1);
+    strcpy(strcpy(fname, m_diyFiles[m_sortedFiles[ord]].fileName), kDiyExt + 1);
     A0 = (dword)fname;
     calla(LoadDIYFile);
 
-    if (D1 < 5189 + 2 + sizeof(TeamFile) * numSelectedTeams || gameType != 1) {
+    if (D1 < 5189 + 2 + sizeof(TeamFile) * g_numSelectedTeams || g_gameType != 1) {
         char buf[128];
         A1 = (dword)buf;
         A2 = (dword)fname;
@@ -207,47 +211,50 @@ extern "C" void DIYFileSelected()
         calla(PrimitivePrintf);
         A0 = (dword)buf;
         calla(ShowErrorMenu);
-        gameType = 0;
+        g_gameType = 0;
         return;
     }
-    for (int i = 0; i < numSelectedTeams; i++)   /* init sorted teams list */
-        sortedTeams[i] = i;
+    for (int i = 0; i < g_numSelectedTeams; i++)   /* init sorted teams list */
+        m_sortedTeams[i] = i;
 
     bool sortFlag;
     do {                                           /* sort teams, bubble sort */
         sortFlag = false;
-        for (int i = 0; i < numSelectedTeams - 1; i++) {
-            if (stricmp(selectedTeams[sortedTeams[i]].name, selectedTeams[sortedTeams[i + 1]].name) > 0) {
-                int tmp = sortedTeams[i];
-                sortedTeams[i] = sortedTeams[i + 1];
-                sortedTeams[i + 1] = tmp;
+        for (int i = 0; i < g_numSelectedTeams - 1; i++) {
+            if (stricmp(g_selectedTeams[m_sortedTeams[i]].name, g_selectedTeams[m_sortedTeams[i + 1]].name) > 0) {
+                int tmp = m_sortedTeams[i];
+                m_sortedTeams[i] = m_sortedTeams[i + 1];
+                m_sortedTeams[i + 1] = tmp;
                 sortFlag = true;
             }
         }
     } while (sortFlag);
 
-    fileLoaded = sortedFiles[ord];
+    m_fileLoaded = m_sortedFiles[ord];
     A6 = (dword)&teamListMenu;
     calla(ShowMenu);
 }
 
+
 extern "C" void DIYEditScrollUp()
 {
-    if (lineOffset > 0) {
-        lineOffset--;
+    if (m_lineOffset > 0) {
+        m_lineOffset--;
         DIYUpdateList();
         calla(DrawMenu);
     }
 }
 
+
 extern "C" void DIYEditScrollDown()
 {
-    if (lineOffset + 15 < readFiles) {
-        lineOffset++;
+    if (m_lineOffset + 15 < m_readFiles) {
+        m_lineOffset++;
         DIYUpdateList();
         calla(DrawMenu);
     }
 }
+
 
 extern "C" void DIYTeamsListInit()
 {
@@ -266,7 +273,7 @@ extern "C" void DIYTeamsListInit()
     legendHeight = m[68].height;
     entryWidth = m->width;
 
-    n = numSelectedTeams;
+    n = g_numSelectedTeams;
 
     for (i = 0; i < 66; i++)        /* all teams invisible in advance        */
         m[i].invisible = true;
@@ -319,12 +326,12 @@ extern "C" void DIYTeamsListInit()
                 m->rightEntry = m->ordinal + columnSize + add;
             m->invisible = false;
             m->type1 = 2;
-            auto controls = selectedTeams[sortedTeams[teamIndex]].teamStatus;
+            auto controls = g_selectedTeams[m_sortedTeams[teamIndex]].teamStatus;
             m->u1.entryColor = 9 + controls;
             m->u1.entryColor += controls == 3;
             /* we'll use upEntryDis to keep original controls, and downEntryDis to keep current controls */
             m->upEntryDis = m->downEntryDis = controls;
-            m->u2.string = selectedTeams[sortedTeams[teamIndex++]].name;
+            m->u2.string = g_selectedTeams[m_sortedTeams[teamIndex++]].name;
             if (j >= columnSize) {
                 mod--;
                 if ((signed char)mExit->upEntry == -1)
@@ -345,10 +352,11 @@ extern "C" void DIYTeamsListInit()
         mExit->upEntry = columnSize - 1;
 }
 
+
 extern "C" void DIYTeamsOnSelect()
 {
     MenuEntry *m = (MenuEntry *)A5;
-    auto *control = &selectedTeams[sortedTeams[m->ordinal]].teamStatus;
+    auto *control = &g_selectedTeams[m_sortedTeams[m->ordinal]].teamStatus;
 
     *control = (*control + 1) % 4;
     *control += !*control;
@@ -357,6 +365,7 @@ extern "C" void DIYTeamsOnSelect()
     m->u1.entryColor += *control == 3;
     m->downEntryDis = *control;
 }
+
 
 extern "C" void DIYTeamsExit()
 {
@@ -367,7 +376,7 @@ extern "C" void DIYTeamsExit()
     calla(CalcMenuEntryAddress);
     m = (MenuEntry *)A0;
 
-    for (i = 0; i < numSelectedTeams; i++, m++)
+    for (i = 0; i < g_numSelectedTeams; i++, m++)
         if (m->downEntryDis != m->upEntryDis)
             break;
 
@@ -381,10 +390,10 @@ extern "C" void DIYTeamsExit()
     calla(PrepareMenu);
 
     /* set fileName for save and title */
-    strcpy(strcpy(saveFileName, diyFiles[fileLoaded].fileName), diyExt + 1);
-    strcpy(saveFileTitle, diyFiles[fileLoaded].longName);
+    strcpy(strcpy(saveFileName, m_diyFiles[m_fileLoaded].fileName), kDiyExt + 1);
+    strcpy(saveFileTitle, m_diyFiles[m_fileLoaded].longName);
 
-    if (i < numSelectedTeams)
+    if (i < g_numSelectedTeams)
         calla(SaveCareerSelected);
     calla(StartContest);
 }

@@ -11,7 +11,7 @@
 Tactics MP_Tactics[6];
 
 
-/** initMpTactic
+/** InitMpTactic
 
     tactic -> tactic to initialize
     name   -> name of the tactic
@@ -19,29 +19,30 @@ Tactics MP_Tactics[6];
     Initialize single user tactic to "factory settings". That means copy it
     from 4-4-2, and set name to USER_[A-F].
 */
-static void initMpTactic(Tactics *tactic, const char *name)
+static void InitMpTactic(Tactics *tactic, const char *name)
 {
     memcpy(tactic, tact_4_4_2, sizeof(Tactics));
     strcpy((char *)tactic, name);
 }
 
 
-/** initMpTactics
+/** InitMpTactics
 
     Put user tactics for multiplayer in initial state. We duplicate SWOS initialization
     but we must wait, since it's not run until menu initialization.
 */
-static void initMpTactics()
+static void InitMpTactics()
 {
     for (int i = 0; i < TACTICS_USER_F - TACTICS_USER_A + 1; i++)
-        initMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
+        InitMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
+
     calla_ebp_safe(InitializeTacticsPositions);
 }
 
 
 extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions)
 {
-    initMpTactics();
+    InitMpTactics();
     registerOptions("tactics", 7, "User tactics in multiplayer games", 33, "%n"
         "%370b/USER_A" "%370b/USER_B" "%370b/USER_C"
         "%370b/USER_D" "%370b/USER_E" "%370b/USER_F",
@@ -55,11 +56,11 @@ Tactics *GetUserMpTactics()
 }
 
 
-/** validateUserMpTactic
+/** ValidateUserMpTactic
 
     Validate single user tactic, return true if it passes.
 */
-static bool validateUserMpTactic(const Tactics *tactics)
+static bool ValidateUserMpTactic(const Tactics *tactics)
 {
     char c = 0;
 
@@ -96,24 +97,27 @@ static bool validateUserMpTactic(const Tactics *tactics)
 /** ValidateUserMpTactics
 
     Validate all user tactics. Call it right after saved user tactics are loaded.
-    Return true if tactics are ok, false if there had to be some changes.
+    Return true if tactics are OK, false if there had to be some changes.
 */
 bool ValidateUserMpTactics()
 {
     bool modified = true;
+
     for (size_t i = 0; i < sizeofarray(MP_Tactics); i++) {
-        if (!validateUserMpTactic(MP_Tactics + i)) {
-            initMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
+        if (!ValidateUserMpTactic(MP_Tactics + i)) {
+            InitMpTactic(MP_Tactics + i, tacticsStringTable[TACTICS_USER_A + i]);
             modified = false;
         }
     }
+
     return modified;
 }
 
 
 static char *LoadTeam()
 {
-    int teamNo = currentTeamId & 0xff, ordinal = currentTeamId >> 8 & 0xff;
+    auto teamId = GetCurrentTeamId();
+    int teamNo = teamId & 0xff, ordinal = teamId >> 8 & 0xff;
     D0 = teamNo;
     calla_ebp_safe(LoadTeamFile);
     assert(D0);
@@ -123,7 +127,7 @@ static char *LoadTeam()
 
 void InitializeMPOptionsMenu()
 {
-    /* stoopid DrawSprite16Pixels has hardcoded width of 384, patch it temporarily so we can draw player icons */
+    /* stoopid DrawSprite16Pixels has hard-coded width of 384, patch it temporarily so we can draw player icons */
     static const byte patchDrawSprite[9] = { 0xb8, 0x40, 0x01, 0x00, 0x00, 0xf7, 0xe7, 0x8b, 0xf8 };
     memcpy((char *)SWOS_DrawSprite16Pixels + 0x116, patchDrawSprite, sizeof(patchDrawSprite));
     MPOptionsMenuAfterDraw();
@@ -186,7 +190,7 @@ extern char aTeamNotChosen[] asm("aTeamNotChosen");
 void mpOptSelectTeamBeforeDraw()
 {
     MenuEntry *entry = (MenuEntry *)A5;
-    entry->u2.string = currentTeamId == (dword)-1 ? aTeamNotChosen : LoadTeam() + 5;
+    entry->u2.string = GetCurrentTeamId() == (dword)-1 ? aTeamNotChosen : LoadTeam() + 5;
 }
 
 
@@ -197,7 +201,7 @@ void mpOptSelectTeamBeforeDraw()
 void ChooseMPTactics()
 {
     MenuEntry *entry = (MenuEntry *)A5;
-    if (currentTeamId == (dword)-1) {
+    if (GetCurrentTeamId() == (dword)-1) {
         A0 = (dword)"PLEASE CHOOSE A TEAM FIRST";
         calla(ShowErrorMenu);
         return;

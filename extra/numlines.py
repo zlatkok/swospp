@@ -240,15 +240,17 @@ def getDir():
 
 
 def getFiles(root):
+    generatedFiles = { 'swos.asm', 'swos.inc', 'swossym.h', }
     files = []
 
     for dirpath, dirnames, filenames in os.walk(root):
         for file in filenames:
-            ext = os.path.splitext(file)[1][1:].lower()
-            category = extCategories.get(ext)
-            if category:
-                path = os.path.join(dirpath, file)
-                files.append(SrcFile(path, ext, category))
+            if file not in generatedFiles:
+                ext = os.path.splitext(file)[1][1:].lower()
+                category = extCategories.get(ext)
+                if category:
+                    path = os.path.join(dirpath, file)
+                    files.append(SrcFile(path, ext, category))
 
     return files
 

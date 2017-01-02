@@ -3,16 +3,16 @@ version 1.4: (19.07.2004)
 - now lastgame.rpl is properly saved even if game is aborted (e.g. alt+f1)
 - replays can be speeded up by pressing 'f'
 - screenshots by pressing 'f2'
-- fixed higlights crashing after saving replay - now both can be watched
+- fixed highlights crashing after saving replay - now both can be watched
 - joypad auto-detection at startup, so controls won't get blocked if joypad is not present
 
 version 1.3: (30.05.2004)
-- new load diy menu added, with long competition names and ability to change team controls
+- new load DIY menu added, with long competition names and ability to change team controls
 - startup Windows version check
 
 version 1.2.3: (03.05.2004)
 - fixed player number display when getting booked
-- player number is hidden in substitutes menu when player is booked (if not, it would be seen behing card sprite, which looks bad)
+- player number is hidden in substitutes menu when player is booked (if not, it would be seen behind card sprite, which looks bad)
 
 version 1.2.2: (25.04.2004)
 - fixed bench player numbers getting set to 12..16 regardless of real number
@@ -34,5 +34,5 @@ version 1.0: (06.09.2003)
 - auto-replays are off by default
 - spinning "S" is off by default
 - auto-save options
-- partial support for serbian latin letters
+- partial support for Serbian Latin letters
 - save and replay complete game

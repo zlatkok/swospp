@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mplobby.h"
+
 /* start them from higher number so they can be more distinctive in a packet */
 enum MP_Packet_Type {
     PT_NONE = 0x2456,
@@ -25,36 +27,36 @@ enum MP_Packet_Type {
     PT_GAME_SPRITES
 };
 
-word getRequestType(const char *packet, int length);
-char *createGetGameInfoPacket(int *length);
-char *createGameInfoPacket(int *length, int numPlayers, const char *gameName, byte id);
-bool unpackGameInfoPacket(const char *data, int length, int *networkVersion, int *networkSubversion,
+word GetRequestType(const char *packet, int length);
+char *CreateGetGameInfoPacket(int *length);
+char *CreateGameInfoPacket(int *length, int numPlayers, const char *gameName, byte id);
+bool UnpackGameInfoPacket(const char *data, int length, int *networkVersion, int *networkSubversion,
     int *numPlayers, int *maxPlayers, char *gameName, int maxGameNameLen, byte *id);
-char *createJoinGamePacket(int *length, byte joinId, byte gameId, const char *name, const char *teamName);
-bool unpackJoinGamePacket(const char *data, int length, word *networkVersion,
+char *CreateJoinGamePacket(int *length, byte joinId, byte gameId, const char *name, const char *teamName);
+bool UnpackJoinGamePacket(const char *data, int length, word *networkVersion,
     word *networkSubversion, byte *joinId, byte *gameId, char *name, char *teamName);
-char *createRefuseJoinGamePacket(int *length, byte errorCode);
-bool unpackRefuseJoinGamePacket(const char *data, int length, byte *errorCode);
-char *createJoinedGameOkPacket(int *length, const LobbyState *state, const IPX_Address **addresses);
-bool unpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, IPX_Address **addresses);
-char *createOptionsPacket(int *length, const MP_Options *options);
-bool unpackOptionsPacket(const char *data, int length, MP_Options *options);
-char *createPlayerJoinedPacket(int *length, const char *playerName, const char *playerTeamName);
-bool unpackPlayerJoinedPacket(const char *data, int length, char *playerName, char *playerTeamName);
-char *createPlayerFlagsPacket(int *length, int flags, int playerIndex);
-bool unpackPlayerFlagsPacket(const char *data, int length, int *playerIndex, int *flags);
-char *createPlayerTeamChangePacket(int *length, int playerIndex, char *teamName);
-bool unpackPlayerTeamChangePacket(const char *data, int length, int *playerIndex, char *teamName);
-void setPlayerIndex(char *data, int playerIndex);
-char *createPlayerLeftPacket(int *length, int playerIndex);
-bool unpackPlayerLeftPacket(const char *data, int length, int *playerIndex);
-char *createPlayerChatPacket(int *length, const char *text, byte color);
-bool unpackPlayerChatPacket(const char *data, int length, char *text, byte *color);
-char *createSyncPacket(int *length, const IPX_Address **addresses, int numPlayers,
+char *CreateRefuseJoinGamePacket(int *length, byte errorCode);
+bool UnpackRefuseJoinGamePacket(const char *data, int length, byte *errorCode);
+char *CreateJoinedGameOkPacket(int *length, const LobbyState *state, const IPX_Address **addresses);
+bool UnpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, IPX_Address **addresses);
+char *CreateOptionsPacket(int *length, const MP_Options *options);
+bool UnpackOptionsPacket(const char *data, int length, MP_Options *options);
+char *CreatePlayerJoinedPacket(int *length, const char *playerName, const char *playerTeamName);
+bool UnpackPlayerJoinedPacket(const char *data, int length, char *playerName, char *playerTeamName);
+char *CreatePlayerFlagsPacket(int *length, int flags, int playerIndex);
+bool UnpackPlayerFlagsPacket(const char *data, int length, int *playerIndex, int *flags);
+char *CreatePlayerTeamChangePacket(int *length, int playerIndex, char *teamName);
+bool UnpackPlayerTeamChangePacket(const char *data, int length, int *playerIndex, char *teamName);
+void SetPlayerIndex(char *data, int playerIndex);
+char *CreatePlayerLeftPacket(int *length, int playerIndex);
+bool UnpackPlayerLeftPacket(const char *data, int length, int *playerIndex);
+char *CreatePlayerChatPacket(int *length, const char *text, byte color);
+bool UnpackPlayerChatPacket(const char *data, int length, char *text, byte *color);
+char *CreateSyncPacket(int *length, const IPX_Address **addresses, int numPlayers,
     const byte *randomVars, int randomVarsLength);
-bool unpackSyncPacket(const char *data, int length, IPX_Address **addresses, int numPlayers,
+bool UnpackSyncPacket(const char *data, int length, IPX_Address **addresses, int numPlayers,
     byte *randomVars, int *randomVarsLength);
-char *createTeamAndTacticsPacket(int *length, const TeamFile *teamData, const Tactics *tacticsData);
-bool unpackTeamAndTacticsPacket(const char *data, int length, TeamFile *teamData, Tactics *tacticsData);
-char *createControlsPacket(int *length, byte controls, word longFireFlag);
-bool unpackControlsPacket(const char *data, int length, byte *controls, word *longFireFlag);
+char *CreateTeamAndTacticsPacket(int *length, const TeamFile *teamData, const Tactics *tacticsData);
+bool UnpackTeamAndTacticsPacket(const char *data, int length, TeamFile *teamData, Tactics *tacticsData);
+char *CreateControlsPacket(int *length, byte controls, word longFireFlag);
+bool UnpackControlsPacket(const char *data, int length, byte *controls, word *longFireFlag);

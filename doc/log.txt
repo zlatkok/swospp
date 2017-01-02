@@ -1,3 +1,17 @@
+01.01.2017.
+- all bugs should be fixed, preparing the release
+- GAH! just found out that the watchers were broken ever since port to GCC :(
+  it was caused by parentheses added stupidly to wrong place when sign
+  extending coordinates from 10 bits to full int... Parentheses ARE evil!
+31.12.2016.
+- implemented joystick reading via BIOS, it made wonders in DOSBox, as it just
+  gets the value directly instead of polling game port in loop; still a bit
+  buggy but getting there
+19.12.2016.
+- broke 5000 fixups limit... raising to 6000
+18.12.2016.
+- refactored variable names to use `m_' prefix if internal to module, `g_` if
+  global (still converting those, only heavily used for now)
 11.12.2016.
 - 1.9.2.0 sent to Playa; did some fixed for "coach" bug blindly, but can't
   reproduce, so just hoping for the best

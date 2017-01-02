@@ -146,8 +146,8 @@
  0001:00009940       RingABell
  0001:0000995F       ProgramPIT
  0001:00009977       WaitRetrace
- 0001:00009982       FadeOut
- 0001:00009987       FadePal1ToPal2Entry2
+ 0001:00009982       FadeOutToBlack
+ 0001:00009987       FadeOut
  0001:000099D4       SetPalette
  0001:00009A0C       VerifyJoypadControls
  0001:00009A72       ReadGamePort
@@ -246,7 +246,7 @@
  0001:0000D622       PrepareMenuForFadeIn
  0001:0000D65C       LoadTitleAndSomeMoreStuff
  0001:0000D672       ShowMenu
- 0001:0000D6F3       CallAfterDraw
+ 0001:0000D6F3       RestorePreviousMenu
  0001:0000D782       SetCurrentEntry
  0001:0000D7A0       SetExitMenuFlag
  0001:0000D7AA       LoadFillAndSwtitle
@@ -3192,7 +3192,7 @@
  0002:00020049       season_playing
  0002:0002004A       in_friendly_menu
  0002:0002004C       is_national_team
- 0002:0002004E       gameType
+ 0002:0002004E       g_gameType
  0002:00020050       contest_started
  0002:00020054       USER_A
  0002:000201C6       USER_B
@@ -3216,8 +3216,8 @@
  0002:00020928       selTeamsPtr
  0002:00020937       inEditTactics
  0002:00020939       training_game_copy
- 0002:0002093B       numSelectedTeams
- 0002:0002093D       selectedTeams
+ 0002:0002093B       g_numSelectedTeams
+ 0002:0002093D       g_selectedTeams
  0002:0003146D       D0
  0002:00031471       D1
  0002:00031475       D2
@@ -3241,49 +3241,49 @@
  0002:000314CB       setupDatBuffer
  0002:000314CD       soundOff
  0002:000314CF       musicOff
- 0002:000314D1       joyKbdWord
+ 0002:000314D1       g_joyKbdWord
  0002:000314D7       videoSpeedIndex
- 0002:000314DF       joy1_X_value
- 0002:000314E0       joy1_Y_value
- 0002:000314E1       joy1_X
- 0002:000314E3       joy1_Y
- 0002:000314E9       joy1_center_X
- 0002:000314EB       joy1_center_Y
- 0002:000314F1       joy1_min_Y
- 0002:000314F3       joy1_min_X
- 0002:000314F5       joy1_max_X
- 0002:000314F7       joy1_max_Y
- 0002:000314F9       joy1_X_negative_divisor
- 0002:000314FB       joy1_X_positive_divisor
- 0002:000314FD       joy1_Y_negative_divisor
- 0002:000314FF       joy1_Y_positive_divisor
- 0002:00031501       joy2_X_value
- 0002:00031502       joy2_Y_value
- 0002:00031503       joy2_X
- 0002:00031505       joy2_Y
- 0002:0003150B       joy2_center_X
- 0002:0003150D       joy2_center_Y
- 0002:00031513       joy2_min_Y
- 0002:00031515       joy2_min_X
- 0002:00031517       joy2_max_X
- 0002:00031519       joy2_max_Y
- 0002:0003151B       joy2_X_negative_divisor
- 0002:0003151D       joy2_X_positive_divisor
- 0002:0003151F       joy2_Y_negative_divisor
- 0002:00031521       joy2_Y_positive_divisor
- 0002:00031523       joy1Status
- 0002:00031525       joy2Status
- 0002:00031527       numLoopsJoy1
- 0002:00031529       numLoopsJoy2
+ 0002:000314DF       g_joy1XValue
+ 0002:000314E0       g_joy1YValue
+ 0002:000314E1       g_joy1X
+ 0002:000314E3       g_joy1Y
+ 0002:000314E9       g_joy1CenterX
+ 0002:000314EB       g_joy1CenterY
+ 0002:000314F1       g_joy1MinY
+ 0002:000314F3       g_joy1MinX
+ 0002:000314F5       g_joy1MaxX
+ 0002:000314F7       g_joy1MaxY
+ 0002:000314F9       g_joy1XLeftDivisor
+ 0002:000314FB       g_joy1XRightDivisor
+ 0002:000314FD       g_joy1YTopDivisor
+ 0002:000314FF       g_joy1YBottomDivisor
+ 0002:00031501       g_joy2XValue
+ 0002:00031502       g_joy2YValue
+ 0002:00031503       g_joy2X
+ 0002:00031505       g_joy2Y
+ 0002:0003150B       g_joy2CenterX
+ 0002:0003150D       g_joy2CenterY
+ 0002:00031513       g_joy2MinY
+ 0002:00031515       g_joy2MinX
+ 0002:00031517       g_joy2MaxX
+ 0002:00031519       g_joy2MaxY
+ 0002:0003151B       g_joy2XLeftDivisor
+ 0002:0003151D       g_joy2XRightDivisor
+ 0002:0003151F       g_joy2YTopDivisor
+ 0002:00031521       g_joy2YBottomDivisor
+ 0002:00031523       g_joy1Status
+ 0002:00031525       g_joy2Status
+ 0002:00031527       g_numLoopsJoy1
+ 0002:00031529       g_numLoopsJoy2
  0002:0003152B       UP
  0002:0003152C       DOWN
  0002:0003152D       LEFT
  0002:0003152E       RIGHT
  0002:0003152F       FIRE
- 0002:00031530       joy1_fire_1
- 0002:00031531       joy1_fire_2
- 0002:00031532       joy2_fire_1
- 0002:00031533       joy2_fire_2
+ 0002:00031530       g_joy1Fire1
+ 0002:00031531       g_joy1Fire2
+ 0002:00031532       g_joy2Fire1
+ 0002:00031533       g_joy2Fire2
  0002:0003153A       mem_408k_ofs_60c00h
  0002:0003154A       mem_408k_ofs_4fc00h
  0002:00031552       mem_408k_ofs_30000h
@@ -3296,13 +3296,13 @@
  0002:0003E166       handle_982k
  0002:0003E16A       lin_adr_2_6_mb
  0002:0003E16E       handle_2_6_mb
- 0002:0003E192       working_palette
- 0002:0003E492       palette_2
+ 0002:0003E192       g_workingPalette
+ 0002:0003E492       g_fadeToPalette
  0002:0003E792       nullPalette
  0002:0003EA92       asave_256_handle
  0002:0003EA98       keyCount
  0002:0003EA9A       key_buffer
- 0002:0003EAA6       scanCode
+ 0002:0003EAA6       g_scanCode
  0002:0003EAB4       int_9_ofs
  0002:0003EABA       int_9_seg
  0002:0003EABE       controlWord
@@ -3367,7 +3367,7 @@
  0002:0004EA48       menu_size
  0002:0004EA4C       end_of_menu
  0002:0004EA50       templateMenuEntry
- 0002:0004EA88       exitMenu
+ 0002:0004EA88       g_exitMenu
  0002:0004EA8A       diy_file_buffer_copy
  0002:0004EABF       diy_pitch_type
  0002:0004EEA9       DIY_competition_start
@@ -3768,8 +3768,8 @@
  0002:000552C8       convertKeysTable
  0002:00055336       frameColorsTable
  0002:00055356       next_entry_direction_offsets
- 0002:0005535E       pitchDatBuffer
- 0002:00057A8E       currentMenu
+ 0002:0005535E       g_pitchDatBuffer
+ 0002:00057A8E       g_currentMenu
  0002:000593F2       leagues_table_copy
  0002:0005C682       skillsPerQuadrant
  0002:0005C79E       quadrantDistanceFactor
@@ -3785,7 +3785,7 @@
  0002:0005D9A0       tact_5_2_3
  0002:0005DB18       tact_attack
  0002:0005DC90       tact_defend
- 0002:0005DE08       tacticsTable
+ 0002:0005DE08       g_tacticsTable
  0002:0005DE54       priceSkillPonders
  0002:0005DEE0       quadrantCoordinatesToBallQuadrant
  0002:0005F3B2       table_def_names
@@ -4043,7 +4043,7 @@
  0002:000A8943       pl1_isnt_player
  0002:000A8945       team_A_name
  0002:000A8956       team_B_name
- 0002:000A8A6D       start_game_flag
+ 0002:000A8A6D       g_exitGameFlag
  0002:000A8A71       team_no_that_scored
  0002:000A8A73       team_data_ptr
  0002:000A8A77       team_scored_ptr
@@ -4547,7 +4547,7 @@
  0002:000B8E04       diy_competition_menu
  0002:000B8EB4       tactic_cursor_frames
  0002:000B8EBC       angleCoeficients
- 0002:000B96BC       sineCosineTable
+ 0002:000B96BC       kSineCosineTable
  0002:000B98BC       sel_tactics
  0002:000B98BE       editTacticsCountryBuffer
  0002:000B9948       edit_tactics_num_players

@@ -9,18 +9,18 @@ Command line parsing is at cseg:1adbf
 
 SWOS++ additional command line switches:
 
-/s<game name> - go directly to multiplayer lobby, and host a game called
-                <game name>
-/c<game name> - search for a game name <game name>, and if found try to connect
-                to it automatically
-/t<number>    - set timeout for game search (/c paremeter), it is given in
-                seconds, range is 5 to 60 seconds, if ommited default timeout
-                of 30 seconds will be used
+/s<game name> - go directly to multiplayer lobby, and host a game called <game name>
+/c<game name> - search for a game name <game name>, and if found try to connect to it automatically
+/t<number>    - set timeout for game search (/c parameter), it is given in seconds, range is 5 to 60 seconds,
+                if omitted default timeout of 30 seconds will be used
 /i<file name> - name of info file that will be used by SWOS++ to write various
                 events and informations and about the game
-/p<nickname>  - set player nickname to what is given; it is only used for
-                current session and does not interfere with normal options; if
-                ommited saved nickname from multiplayer options will be used
+/p<nickname>  - set player nickname to what is given; it is only used for current session and does not
+                interfere with normal options; if omitted saved nickname from multiplayer options will be used
+/jb           - read joystick values from BIOS instead of polling directly, can be followed by =0 or 1,
+                default is off unless we're running under DOSBox
+/jc           - controls whether we calibrate joysticks or not, can be followed by =0 or 1, default is on
+
 
 Parameters follow directly after switches, no spaces, If a string parameter
 contains spaces, place it in quotes.

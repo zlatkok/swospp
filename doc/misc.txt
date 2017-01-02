@@ -176,7 +176,7 @@ user code. [tests are broken since switching to GCC]
 
 printf()
 --------
-sprintf() is present and it's basically Open Watcom rip off. :P  It's mostly
+sprintf() is present and it's basically Open Watcom rip off :P. It's mostly
 used for log file parameters formatting. Implementation isn't complete, but the
 most important things are there with few additions:
 - support for %hhd and %hhx was added (8-bit value is printed)
@@ -266,11 +266,15 @@ bytes for DOSBox together with headers). For important packets delivery is
 guaranteed, and if they're too big for one physical packet they will be
 fragmented and sent in parts. Protocol used to guarantee delivery is:
 TODO
+Receiver is obligated to respond with 'ack' packet to each important packet.
+Sender will keep sending all unacknowledged packets until ack is received.
+Therefore the only way to find out if any client has disconnected is to send
+them something periodically.
 dword - packet id
 data...
 
-Menu integration is done through OnIdle function which is called by the menu
-loop.
+Menu integration is done through OnIdle (NetworkOnIdle()) function which is
+called by the menu loop (from MenuProc()).
 
 In synchronization phase players exchange teams and tactics. After successful
 completion each player or watcher will have teams and tactics of every player.

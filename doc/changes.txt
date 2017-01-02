@@ -1,3 +1,13 @@
+1.9.2.1
+- joystick handling vastly improved when playing in DOSBox (go ahead, try it :))
+- watchers should work again
+- joystick disconnection is detected now (sadly, in DOSBox only at startup but not later)
+- intro animations will be skipped when going straight to game lobby (if requested via command line)
+- fixed freeze after failing to connect to game lobby
+- fixed bug where game would stay locked in play match menu if second player pressed play game
+  quickly after making change to lineup
+- game now properly returns to menu when host disbands the game while client is choosing team
+
 1.9.2.0
 - fixed players unable to be swapped before the match after the first game
 - lineup and tactics from play match menu are now saved in options (for up to 5 different teams)
@@ -10,7 +20,7 @@
 - fixed game length being too short compared to Amiga version
 
 1.9.1.8
-- SWOS 2016/2017. anniversary edition!
+- SWOS 2016/2017. 20th anniversary edition!
 
 1.9.1.7
 - fixed options not getting saved
@@ -49,3 +59,42 @@
 - fixed bug: when replaying friendly game, saved replay file would contain more than one game
 - added guard against invalid joypad configuration
 - keys assigned to players will not have their default meaning (such as P, S...)
+
+1.4
+- fixed nasty bug that occasionally caused replay file corruption after calling bench
+- now lastgame.rpl is properly saved even if game is aborted (e.g. alt+f1)
+- replays can be speeded up by pressing 'f'
+- screenshots by pressing 'f2'
+- fixed highlights crashing after saving replay - now both can be watched
+- joypad auto-detection at startup, so controls won't get blocked if joypad is not present
+
+1.3
+- new load DIY menu added, with long competition names and ability to change team controls
+- startup Windows version check
+
+1.2.3
+- fixed player number display when getting booked
+- player number is hidden in substitutes menu when player is booked (if not, it would be seen behind card sprite, which looks bad)
+
+1.2.2
+- fixed bench player numbers getting set to 12..16 regardless of real number
+
+1.2.1
+- fixed invalid numbers display in substitutes menu and expanded it a bit to hold bigger numbers
+
+1.2
+- player shirt numbers can now be anything from 0 to 127
+- optimized loader and reduced its size
+- patcher should now work fine with Underdogs SWOS
+
+1.1
+- more intelligent auto-save options
+- controls configuration inside the game, with support for two players on keyboard
+
+1.0
+- completely integrated into SWOS menu system
+- auto-replays are off by default
+- spinning "S" is off by default
+- auto-save options
+- partial support for Serbian Latin letters
+- save and replay complete game

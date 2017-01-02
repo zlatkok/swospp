@@ -40,7 +40,7 @@ static HeapStats heapStats[16];
 static int numHeaps;
 
 
-static HeapStats *getHeapStats(void *heap)
+static HeapStats *GetHeapStats(void *heap)
 {
     int i;
     assert(numHeaps >= 0 && numHeaps < (int)sizeofarray(heapStats));
@@ -51,17 +51,18 @@ static HeapStats *getHeapStats(void *heap)
 }
 
 
-static void initHeapStats(void *heap)
+static void InitHeapStats(void *heap)
 {
     HeapStats *hs;
     assert(numHeaps >= 0 && numHeaps < (int)sizeofarray(heapStats));
-    if (!(hs = getHeapStats(heap)))
+    if (!(hs = GetHeapStats(heap)))
         hs = &heapStats[numHeaps++];
     hs->currentAllocations = hs->currentlyAllocated = hs->maxAllocations = hs->maxAllocated = 0;
     hs->heap = heap;
 }
 
-static void removeHeapStats(void *heap)
+
+static void RemoveHeapStats(void *heap)
 {
     int i;
     assert(numHeaps >= 0 && numHeaps < (int)sizeofarray(heapStats) && heap);
@@ -72,11 +73,12 @@ static void removeHeapStats(void *heap)
             return;
         }
     }
+
     WriteToLog("qAlloc: Tried to remove non-existant heap stats.");
 }
 
 
-/** excludeHeapBlocks
+/** ExcludeHeapBlocks
 
     heap -> heap we're working with
     size -  size of the heap
@@ -85,11 +87,12 @@ static void removeHeapStats(void *heap)
     Useful in case you have some blocks that will stay allocated throughout the whole program life cycle
     without getting explicitly freed, causing final memory check to report them as memory leaks.
 */
-void excludeHeapBlocks(void *heap, int size)
+void ExcludeHeapBlocks(void *heap, int size)
 {
     Block *head = (Block *)heap, *p = head;
-    HeapStats *hs = getHeapStats(heap);
+    HeapStats *hs = GetHeapStats(heap);
     assert(hs);
+
     do {
         checkSig(p);
         if (!p->size && p != (Block *)((char *)heap + size - sizeof(Block)))
@@ -99,19 +102,20 @@ void excludeHeapBlocks(void *heap, int size)
 }
 
 
-bool isBlockExcluded(const HeapStats *hs, word ofs)
+bool IsBlockExcluded(const HeapStats *hs, word ofs)
 {
     assert(hs);
     for (size_t i = 0; i < hs->numExcludedBlocks; i++)
         if (hs->excludedBlocks[i] == ofs)
             return true;
+
     return false;
 }
 
 
 void ExcludeBlocks()
 {
-    excludeHeapBlocks(internalHeap, sizeof(internalHeap));
+    ExcludeHeapBlocks(internalHeap, sizeof(internalHeap));
 }
 
 
@@ -135,8 +139,10 @@ void ValidateHeap(void *heap)
         prev = p;
         p = (Block *)((char *)heap + p->next);
     }
+
     p = (Block *)((char *)heap + head->prev);
     prev = (Block *)((char *)heap + p->prev);
+
     while (p != head) {
         checkSig(p);
         if (next->size && next != heap)
@@ -147,12 +153,13 @@ void ValidateHeap(void *heap)
         p = prev;
         prev = (Block *)((char *)heap + p->prev);
     }
+
     if (head->prev == head->next && !head->prev)
         assert(head->size);
 }
 
 
-/** checkMemoryLeaks
+/** CheckMemoryLeaks
 
     heap -> heap to test
     size -  size of given heap
@@ -160,20 +167,22 @@ void ValidateHeap(void *heap)
     Check this heap for memory leaks - left over memory blocks, and issue a report about any found:
     write size and source file location which performed allocation.
 */
-void checkMemoryLeaks(void *heap, int size)
+void CheckMemoryLeaks(void *heap, int size)
 {
-    HeapStats *hs = getHeapStats(heap);
+    HeapStats *hs = GetHeapStats(heap);
     /* check for memory leaks */
     bool leaks = false;
     int numExcludedBlocks = 0;
     int totalExcludedMem = 0;
     Block *head = (Block *)heap, *p = head;
     assert(hs);
+
     do {
         checkSig(p);
         if (!p->size && p != (Block *)((char *)heap + size - sizeof(Block))) {
             int blockSize = p->next - ((dword)p - (dword)heap) - sizeof(Block);
-            if (!isBlockExcluded(hs, (char *)p - (char *)heap)) {
+
+            if (!IsBlockExcluded(hs, (char *)p - (char *)heap)) {
                 WriteToLog("qAlloc: Left over memory block at %#x, size %d, allocated at %s.\n",
                     (dword)p + sizeof(Block), blockSize, p->origin);
                 HexDumpToLog((char *)p + sizeof(Block), p->next - ((dword)p - (dword)internalHeap) - sizeof(Block),
@@ -186,13 +195,16 @@ void checkMemoryLeaks(void *heap, int size)
         }
         p = (Block *)((char *)heap + p->next);
     } while (p != head);
+
     WriteToLog("qAlloc: Maximum memory allocated: %d bytes, maximum simultaneous allocations: %d",
         hs->maxAllocated, hs->maxAllocations);
+
     if (!leaks) {
         assert(!(hs->currentAllocations - numExcludedBlocks) && !(hs->currentlyAllocated - totalExcludedMem));
         WriteToLog("qAlloc OK. No memory leaks.");
     }
-    removeHeapStats(heap);
+
+    RemoveHeapStats(heap);
 }
 
 
@@ -208,7 +220,7 @@ int GetMaxAllocSize(int heapSize)
 #endif
 
 
-static void addBlock(char *heap, Block *oldBlock, int size)
+static void AddBlock(char *heap, Block *oldBlock, int size)
 {
     assert(oldBlock->size >= size + sizeof(Block));
     /* don't split blocks too small */
@@ -241,7 +253,7 @@ void qAllocInit()
 {
     qHeapInit(internalHeap, sizeof(internalHeap));
 #ifdef DEBUG
-    initHeapStats(internalHeap);
+    InitHeapStats(internalHeap);
 #endif
 }
 
@@ -249,7 +261,7 @@ void qAllocInit()
 void qAllocFinish()
 {
 #ifdef DEBUG
-    checkMemoryLeaks(internalHeap, sizeof(internalHeap));
+    CheckMemoryLeaks(internalHeap, sizeof(internalHeap));
 #endif
 }
 
@@ -264,7 +276,7 @@ void qHeapInit(void *heap, int size)
     setSig(first);
     setSig(last);
 #ifdef DEBUG
-    initHeapStats(heap);
+    InitHeapStats(heap);
 #endif
 }
 
@@ -279,10 +291,10 @@ void *qHeapAlloc(void *heap, int size)
     do {
         checkSig(p);
         if (p->size >= size + sizeof(Block)) {
-            addBlock((char *)heap, p, size);
+            AddBlock((char *)heap, p, size);
 #ifdef DEBUG
             {
-                HeapStats *hs = getHeapStats(heap);
+                HeapStats *hs = GetHeapStats(heap);
                 const char *origin = (const char *)strrchr((char *)file, '\\');
                 origin = origin ? origin + 1 : file;
                 sprintf(p->origin, "%.10s:%d", origin, line > 9999 ? 9999 : line);
@@ -297,6 +309,7 @@ void *qHeapAlloc(void *heap, int size)
         }
         p = (Block *)((char *)heap + p->next);
     } while (p != head);
+
     WriteToLog("qAlloc: Out of memory! Requested: %d bytes (heap is %#x)", size, heap);
     return nullptr;
 }
@@ -304,16 +317,17 @@ void *qHeapAlloc(void *heap, int size)
 
 void qHeapFree(void *heap, void *ptr)
 {
-    /* restore block's size, try to merge it with neighbours */
-    Block *p = (Block *)((char *)ptr - sizeof(Block)), *prev, *next;
     if (!ptr)
         return;
+
+    /* restore block's size, try to merge it with neighbours */
+    Block *p = (Block *)((char *)ptr - sizeof(Block)), *prev, *next;
     checkSig(p);
     assert(!p->size);
     p->size = p->next - ((dword)p - (dword)heap);
 #ifdef DEBUG
     {
-        HeapStats *hs = getHeapStats(heap);
+        HeapStats *hs = GetHeapStats(heap);
         assert(hs);
         hs->currentAllocations--;
         hs->currentlyAllocated -= p->size;
@@ -326,11 +340,13 @@ void qHeapFree(void *heap, void *ptr)
         removeBlock((char *)heap, p);
         p = prev;
     }
+
     next = ((Block *)((char *)heap + p->next));
     if (next != heap && next->size) {
         p->size += next->size;
         removeBlock((char *)heap, next);
     }
+
 #ifdef DEBUG
     memset((char *)p + sizeof(Block), 0xee, p->size - sizeof(Block));
 #endif

@@ -6,9 +6,10 @@
 static char xmlHeap[20 * 1024];
 static unsigned int xmlHeapIndex;
 
-static XmlNodeType getAttributeType(const char *value, int length);
+static XmlNodeType GetAttributeType(const char *value, int length);
 
-static void *xmlAlloc(int size)
+
+static void *XmlAlloc(int size)
 {
     char *p = &xmlHeap[xmlHeapIndex];
     assert(size >= 0 && xmlHeapIndex + size <= sizeof(xmlHeap));
@@ -21,7 +22,8 @@ static void *xmlAlloc(int size)
     return p;
 }
 
-static void xmlFree(void *ptr)
+
+static void XmlFree(void *ptr)
 {
     if (!ptr)
         return;
@@ -33,9 +35,10 @@ static void xmlFree(void *ptr)
 #endif
 }
 
-static char *xmlStrdup(const char *str, int size)
+
+static char *XmlStrdup(const char *str, int size)
 {
-    char *duplicate = (char *)xmlAlloc(size + 1);
+    char *duplicate = (char *)XmlAlloc(size + 1);
     assert(str && size >= 0);
     if (duplicate) {
         memcpy(duplicate, str, size);
@@ -44,50 +47,56 @@ static char *xmlStrdup(const char *str, int size)
     return duplicate;
 }
 
+
 void XmlFreeAll()
 {
-    xmlFree(xmlHeap);
+    XmlFree(xmlHeap);
 }
+
 
 void XmlDeallocateTree(XmlNode *tree)
 {
-    xmlFree(tree);
+    XmlFree(tree);
 }
+
 
 XmlNode *NewEmptyXmlNode(const char *name, int nameLen)
 {
     return NewXmlNode(name, nameLen, XML_EMPTY, 0, false);
 }
 
+
 XmlNode *NewXmlNode(const char *name, int nameLen, XmlNodeType type, int length, bool alloc)
 {
     assert(((!name || !*name) && !nameLen) || (name && nameLen));
     assert(!name || strlen(name) == nameLen);
 
-    XmlNode *x = (XmlNode *)xmlAlloc(sizeof(XmlNode) + (name && *name ? nameLen + 1 : 0));
+    XmlNode *x = (XmlNode *)XmlAlloc(sizeof(XmlNode) + (name && *name ? nameLen + 1 : 0));
     if (name && *name) {
         x->name = (char *)x + sizeof(XmlNode);
         memcpy(x->name, name, nameLen);
         x->name[nameLen] = '\0';
         x->nameHash = simpleHash(name, nameLen);
-        x->savedValue.ptr = (char *)xmlAlloc(length);
+        x->savedValue.ptr = (char *)XmlAlloc(length);
     } else {
         /* anonymous node */
         x->nameHash = 0;
         x->name = nullptr;
         x->savedValue.ptr = nullptr;
     }
+
     x->nameLength = nameLen;
     x->type = type;
     x->length = length;
     x->savedLength = length;
-    x->value.ptr = alloc ? (char *)xmlAlloc(length) : nullptr;
+    x->value.ptr = alloc ? (char *)XmlAlloc(length) : nullptr;
     assert((XmlNodeIsAnonymous(x) == (x->savedValue.ptr == nullptr)) && (!alloc || x->value.ptr));
     x->children = x->nextChild = nullptr;
     x->attributes = nullptr;
     x->numAttributes = 0;
     return x;
 }
+
 
 XmlNode *AddXmlNode(XmlNode *parent, XmlNode *child)
 {
@@ -97,6 +106,7 @@ XmlNode *AddXmlNode(XmlNode *parent, XmlNode *child)
     return parent;
 }
 
+
 void SetFunc(XmlNode *node, void *(*func)())
 {
     node->type = XML_FUNC;
@@ -104,19 +114,22 @@ void SetFunc(XmlNode *node, void *(*func)())
     node->length = 0;
 }
 
+
 void RefreshFuncData(const XmlNode *node)
 {
     int ofs = 0;
     char *data;
     assert(node && node->type == XML_FUNC && node->value.func && node->children);
     data = (char *)node->value.func();
+
     for (XmlNode *child = node->children; child; child = child->nextChild) {
         child->value.ptr = data + ofs;
         ofs += child->length;
     }
 }
 
-static void snapshotNode(XmlNode *node)
+
+static void SnapshotNode(XmlNode *node)
 {
     assert(node);
 
@@ -124,7 +137,8 @@ static void snapshotNode(XmlNode *node)
         return;
 
     if (!node->savedValue.ptr && node->length)
-        node->savedValue.ptr = (char *)xmlAlloc(node->length);
+        node->savedValue.ptr = (char *)XmlAlloc(node->length);
+
     switch (node->type) {
     case XML_CHAR:
     case XML_SHORT:
@@ -134,26 +148,31 @@ static void snapshotNode(XmlNode *node)
         node->savedLength = node->length;
         memcpy(node->savedValue.ptr, node->value.ptr, node->length);
         break;
+
     case XML_FUNC:
         RefreshFuncData(node);
         break;
+
     case XML_EMPTY:
         break;
+
     default:
         assert_msg(0, "Unknown XML node type");
     }
 }
 
+
 void XmlTreeSnapshot(XmlNode *root)
 {
     while (root) {
-        snapshotNode(root);
+        SnapshotNode(root);
         XmlTreeSnapshot(root->children);
         root = root->nextChild;
     }
 }
 
-static bool nodeUnmodified(const XmlNode *node)
+
+static bool NodeUnmodified(const XmlNode *node)
 {
     assert(node);
 
@@ -168,10 +187,14 @@ static bool nodeUnmodified(const XmlNode *node)
     case XML_ARRAY:
         assert(node->value.ptr && node->savedValue.ptr);
         return node->length == node->savedLength && !memcmp(node->value.ptr, node->savedValue.ptr, node->length);
+
     case XML_FUNC:
         RefreshFuncData(node);
+        /* assume fall-through */
+
     case XML_EMPTY:
         return true;
+
     default:
         assert_msg(0, "Unknown XML node type");
     }
@@ -184,48 +207,58 @@ bool XmlTreeUnmodified(const XmlNode *root)
     while (root) {
         if (!XmlTreeUnmodified(root->children))
             return false;
-        if (!nodeUnmodified(root))
+
+        if (!NodeUnmodified(root))
             return false;
+
         root = root->nextChild;
     }
     return true;
 }
 
-/** nodesEqual
 
-    src -> xml node 1 to compare
-    dst -> xml node 2 to compare
+/** NodesEqual
+
+    src -> XML node 1 to compare
+    dst -> XML node 2 to compare
 
     Return true if nodes are considered to be equal. So far only compare by name, but other criteria
     could be added, such as equality of certain attributes for example.
 */
-static bool nodesEqual(const XmlNode *src, const XmlNode *dst)
+static bool NodesEqual(const XmlNode *src, const XmlNode *dst)
 {
     assert(src && dst);
     return src->nameLength == dst->nameLength && src->nameHash == dst->nameHash && !strcmp(src->name, dst->name);
 }
 
-static void convertNumberToString(char *dst, int dstSize, char *from, int fromSize)
+
+static void ConvertNumberToString(char *dst, int dstSize, char *from, int fromSize)
 {
     int fromVal;
     char *convVal;
     assert(dst && dstSize > 0 && from);
+
     switch (fromSize) {
     case 1:
         fromVal = *(int8_t *)from;
         break;
+
     case 2:
         fromVal = *(int16_t *)from;
         break;
+
     case 4:
         fromVal = *(int32_t *)from;
         break;
+
     default:
         assert(0);
     }
+
     convVal = int2str(fromVal);
     *strncpy(dst, convVal, dstSize - 1) = '\0';
 }
+
 
 static int convertStringToNumber(const char *src, int srcLen)
 {
@@ -236,14 +269,15 @@ static int convertStringToNumber(const char *src, int srcLen)
     return strtol(convBuf, nullptr, 0, nullptr);
 }
 
-/** mergeNodes
 
-    dstNode -> destionation node
+/** MergeNodes
+
+    dstNode -> destination node
     srcNode -> source node
 
     Put value from source node to destination node, if their types differ perform conversion.
 */
-static void mergeNodes(XmlNode *dstNode, const XmlNode *srcNode)
+static void MergeNodes(XmlNode *dstNode, const XmlNode *srcNode)
 {
     assert(dstNode && srcNode);
     assert((XmlNodeGetName(srcNode) && XmlNodeGetName(dstNode)) || (!XmlNodeGetName(srcNode) && !XmlNodeGetName(dstNode)));
@@ -258,11 +292,13 @@ static void mergeNodes(XmlNode *dstNode, const XmlNode *srcNode)
         if (dstNode->length > 0) {
             assert(dstNode->value.ptr && srcNode->value.ptr);
             assert(dstNode->type == XML_STRING || dstNode->type == XML_ARRAY || dstNode->length == srcNode->length);
+
             if (dstNode->length > srcNode->length) {
                 memcpy(dstNode->value.ptr, srcNode->value.ptr, srcNode->length);
                 memset(dstNode->value.ptr + srcNode->length, 0, dstNode->length - srcNode->length);
             } else
                 memcpy(dstNode->value.ptr, srcNode->value.ptr, dstNode->length);
+
             if (dstNode->type == XML_STRING)
                 dstNode->value.ptr[dstNode->length - 1] = '\0';
         }
@@ -274,54 +310,69 @@ static void mergeNodes(XmlNode *dstNode, const XmlNode *srcNode)
         case CONV(XML_CHAR, XML_SHORT):
             *dstNode->value.charVal = *srcNode->value.shortVal;
             break;
+
         case CONV(XML_CHAR, XML_INT):
             *dstNode->value.charVal = *srcNode->value.intVal;
             break;
+
         case CONV(XML_CHAR, XML_STRING):
         case CONV(XML_CHAR, XML_ARRAY):
             *dstNode->value.charVal = convertStringToNumber(srcNode->value.ptr, srcNode->length);
             break;
+
         case CONV(XML_SHORT, XML_CHAR):
             *dstNode->value.shortVal = *srcNode->value.charVal;
             break;
+
         case CONV(XML_SHORT, XML_INT):
             *dstNode->value.shortVal = *srcNode->value.intVal;
             break;
+
         case CONV(XML_SHORT, XML_STRING):
         case CONV(XML_SHORT, XML_ARRAY):
             *dstNode->value.shortVal = convertStringToNumber(srcNode->value.ptr, srcNode->length);
             break;
+
         case CONV(XML_INT, XML_CHAR):
             *dstNode->value.intVal = *srcNode->value.charVal;
             break;
+
         case CONV(XML_INT, XML_SHORT):
             *dstNode->value.intVal = *srcNode->value.shortVal;
             break;
+
         case CONV(XML_INT, XML_STRING):
         case CONV(XML_INT, XML_ARRAY):
             *dstNode->value.intVal = convertStringToNumber(srcNode->value.ptr, srcNode->length);
             break;
+
         case CONV(XML_STRING, XML_CHAR):
-            convertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 1);
+            ConvertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 1);
             break;
+
         case CONV(XML_STRING, XML_SHORT):
-            convertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 2);
+            ConvertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 2);
             break;
+
         case CONV(XML_STRING, XML_INT):
-            convertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 4);
+            ConvertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 4);
             break;
+
         case CONV(XML_ARRAY, XML_CHAR):
-            convertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 1);
+            ConvertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 1);
             break;
+
         case CONV(XML_ARRAY, XML_SHORT):
-            convertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 2);
+            ConvertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 2);
             break;
+
         case CONV(XML_ARRAY, XML_INT):
-            convertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 4);
+            ConvertNumberToString(dstNode->value.ptr, dstNode->length, srcNode->value.ptr, 4);
             break;
         }
     }
 }
+
 
 /** XmlMergeTrees
 
@@ -339,13 +390,13 @@ void XmlMergeTrees(XmlNode *destTree, const XmlNode *srcTree)
         const XmlNode *srcNode = srcTree;
 
         while (srcNode) {
-            if (nodesEqual(destTree, srcNode))
+            if (NodesEqual(destTree, srcNode))
                 break;
             srcNode = srcNode->nextChild;
         }
 
         if (srcNode) {
-            mergeNodes(destTree, srcNode);
+            MergeNodes(destTree, srcNode);
             XmlMergeTrees(destTree->children, srcNode->children);
         }
 
@@ -353,27 +404,34 @@ void XmlMergeTrees(XmlNode *destTree, const XmlNode *srcTree)
     }
 }
 
-static XmlAttribute *findAttribute(const XmlNode *node, const char *attrName, uint32_t hash)
+
+static XmlAttribute *FindAttribute(const XmlNode *node, const char *attrName, uint32_t hash)
 {
     XmlAttribute *attr;
     assert(node && attrName);
+
     for (attr = node->attributes; attr; attr = attr->next) {
         if (attr->nameHash == hash && !strcmp(attr->name, attrName))
             return attr;
     }
+
     return nullptr;
 }
 
-static bool checkNodeType(XmlNodeType type, const char *name, const char *value)
+
+static bool CheckNodeType(XmlNodeType type, const char *name, const char *value)
 {
     UNUSED(name);
     UNUSED(value);
+
     if (type == XML_TYPE_MAX) {
-        WriteToLog("Xml node '%s' has invalid type (%s).", name, value);
+        WriteToLog("XML node '%s' has invalid type (%s).", name, value);
         return false;
     }
+
     return true;
 }
+
 
 bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const char *value, int valueLen)
 {
@@ -381,27 +439,30 @@ bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const cha
     XmlAttribute *attr;
     assert(node && name && value);
     hash = simpleHash(name, nameLen);
-    if (findAttribute(node, name, hash)) {
+
+    if (FindAttribute(node, name, hash)) {
         WriteToLog("Attribute '%s' already specified for node '%s'.", name, node->name);
         return false;
     }
+
     assert(simpleHash("type", 4) == 0x7c9ebd07);
     if (hash == 0x7c9ebd07 && !strcmp(name, "type")) {
-        XmlNodeType type = getAttributeType(value, valueLen);
-        if (!checkNodeType(type, node->name, value))
+        XmlNodeType type = GetAttributeType(value, valueLen);
+        if (!CheckNodeType(type, node->name, value))
             return false;
         node->type = type;
     }
-    attr = (XmlAttribute *)xmlAlloc(sizeof(XmlAttribute));
+
+    attr = (XmlAttribute *)XmlAlloc(sizeof(XmlAttribute));
     if (attr) {
-        attr->name = xmlStrdup(name, nameLen);
+        attr->name = XmlStrdup(name, nameLen);
         if (!attr->name)
             return false;
         attr->nameLength = nameLen;
         attr->nameHash = hash;
-        attr->value = xmlStrdup(value, valueLen);
+        attr->value = XmlStrdup(value, valueLen);
         if (!attr->value) {
-            xmlFree(attr->name);
+            XmlFree(attr->name);
             return false;
         }
         attr->valueLength = valueLen;
@@ -410,10 +471,12 @@ bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const cha
         node->numAttributes++;
         return true;
     }
+
     return false;
 }
 
-static XmlNodeType getAttributeType(const char *value, int length)
+
+static XmlNodeType GetAttributeType(const char *value, int length)
 {
     uint32_t hash;
     static_assert(XML_TYPE_MAX == 7, "Xml types changed.");
@@ -429,14 +492,18 @@ static XmlNodeType getAttributeType(const char *value, int length)
         { "array",  0x0f1abe24, XML_ARRAY  },
         { "empty",  0x0f605c34, XML_EMPTY  },
     };
+
     assert(simpleHash("char", 4) == 0x7c952063);    /* in case algo gets changed :P */
     assert(value);
     hash = simpleHash(value, length);
+
     for (size_t i = 0; i < sizeofarray(allowedTypes); i++)
         if (allowedTypes[i].hash == hash && !strcmp(value, allowedTypes[i].name))
             return allowedTypes[i].type;
+
     return XML_TYPE_MAX;
 }
+
 
 const char *XmlNodeTypeToString(XmlNodeType nodeType, size_t *length)
 {
@@ -452,24 +519,32 @@ const char *XmlNodeTypeToString(XmlNodeType nodeType, size_t *length)
         "empty",    5,
         "function", 8,
     };
+
     assert(XML_TYPE_MAX == 7);
+
     if (nodeType >= sizeofarray(typeNames))
         nodeType = XML_EMPTY;
+
     if (length)
         *length = typeNames[nodeType].length;
+
     return typeNames[nodeType].name;
 }
+
 
 bool AddXmlContent(XmlNode *node, XmlNodeType type, void *content, int size)
 {
     assert(node && content && size > 0);
     node->type = type;
-    if (!(node->value.ptr = (char *)xmlAlloc(size)))
+
+    if (!(node->value.ptr = (char *)XmlAlloc(size)))
         return false;
+
     memcpy(node->value.ptr, content, size);
     node->length = size;
     return true;
 }
+
 
 const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_t attrNameLen, size_t *valLen)
 {
@@ -477,9 +552,12 @@ const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_
     assert(node);
     if (valLen)
         *valLen = 0;
+
     if (!node->attributes)
         return nullptr;
+
     hash = simpleHash(attrName, attrNameLen);
+
     for (XmlAttribute *attr = node->attributes; attr; attr = attr->next) {
         if (attr->nameHash == hash && !strcmp(attr->name, attrName)) {
             if (valLen)
@@ -487,14 +565,17 @@ const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_
             return attr->value;
         }
     }
+
     return nullptr;
 }
+
 
 void GetXmlNodeAttributes(const XmlNode *node, XmlAttributeInfo *attrInfo)
 {
     size_t i = 0;
     XmlAttribute *elem;
     assert(node);
+
     for (elem = node->attributes; elem; elem = elem->next, i++) {
         attrInfo->name = elem->name;
         attrInfo->nameLength = elem->nameLength;
@@ -502,8 +583,10 @@ void GetXmlNodeAttributes(const XmlNode *node, XmlAttributeInfo *attrInfo)
         attrInfo->valueLength = elem->valueLength;
         attrInfo++;
     }
+
     assert(i == node->numAttributes);
 }
+
 
 void ReverseChildren(XmlNode *root)
 {

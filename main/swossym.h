@@ -11,15 +11,16 @@ extern dword swosCodeBase;
 extern byte prevVideoMode asm ("prevVideoMode");
 extern word EGA_graphics asm ("EGA_graphics");
 extern void (*FindFiles[])() asm ("FindFiles");
+extern void (*Initialization[])() asm ("Initialization");
 extern void (*GameLoop[])() asm ("GameLoop");
 extern void (*Flip[])() asm ("Flip");
 extern void (*SWOS_EndProgram[])() asm ("SWOS_EndProgram");
-extern Menu *currentMenu asm ("currentMenu");
+extern Menu *g_currentMenu asm ("g_currentMenu");
 extern void (*ShowMenu[])() asm ("ShowMenu");
 extern void (*CalcMenuEntryAddress[])() asm ("CalcMenuEntryAddress");
 extern word controlWord asm ("controlWord");
-extern word joy1Status asm ("joy1Status");
-extern word joy2Status asm ("joy2Status");
+extern word g_joy1Status asm ("g_joy1Status");
+extern word g_joy2Status asm ("g_joy2Status");
 extern void (*Joy2SetStatus[])() asm ("Joy2SetStatus");
 extern void (*Player1StatusProc[])() asm ("Player1StatusProc");
 extern void (*Player2StatusProc[])() asm ("Player2StatusProc");
@@ -33,8 +34,8 @@ extern void (*SetExitMenuFlag[])() asm ("SetExitMenuFlag");
 /*
     controls
 */
-extern word numLoopsJoy1 asm ("numLoopsJoy1");
-extern word numLoopsJoy2 asm ("numLoopsJoy2");
+extern word g_numLoopsJoy1 asm ("g_numLoopsJoy1");
+extern word g_numLoopsJoy2 asm ("g_numLoopsJoy2");
 /*
     SWOS original options
 */
@@ -46,8 +47,8 @@ extern word allPlayerTeamsEqual asm ("allPlayerTeamsEqual");
 extern word pitchType asm ("pitchType");
 extern word commentary asm ("commentary");
 extern word chairmanScenes asm ("chairmanScenes");
-extern word joyKbdWord asm ("joyKbdWord");
-extern short sineCosineTable[256] asm ("sineCosineTable");
+extern word g_joyKbdWord asm ("g_joyKbdWord");
+extern const short kSineCosineTable[256] asm ("kSineCosineTable");
 extern char *vsPtr asm ("vsPtr");
 /*
     68k register set
@@ -74,22 +75,23 @@ extern void (*SetCurrentEntry[])() asm ("SetCurrentEntry");
 extern void (*DrawMenu[])() asm ("DrawMenu");
 extern void (*LoadDIYFile[])() asm ("LoadDIYFile");
 extern void (*PrimitivePrintf[])() asm ("PrimitivePrintf");
-extern word numSelectedTeams asm ("numSelectedTeams");
-extern TeamFile selectedTeams[] asm ("selectedTeams");
-extern word gameType asm ("gameType");
-extern char pitchDatBuffer[] asm ("pitchDatBuffer");
+extern word g_numSelectedTeams asm ("g_numSelectedTeams");
+extern TeamFile g_selectedTeams[] asm ("g_selectedTeams");
+extern word g_gameType asm ("g_gameType");
+extern char g_pitchDatBuffer[] asm ("g_pitchDatBuffer");
 extern word inSubstitutesMenu asm ("inSubstitutesMenu");
 extern void (*MainKeysCheck[])() asm ("MainKeysCheck");
 extern word lastKey asm ("lastKey");
 extern void (*VerifyJoypadControls[])() asm ("VerifyJoypadControls");
-extern volatile ushort currentTick asm ("currentTick");
+extern volatile ushort g_currentTick asm ("g_currentTick");
 extern byte seed asm ("seed");
 extern byte seed2 asm ("seed2");
 extern void (*Rand[])() asm ("Rand");
 extern void (*SaveOptions[])() asm ("SaveOptions");
 extern void (*RestoreOptions[])() asm ("RestoreOptions");
 extern void (*DrawMenuItem[])() asm ("DrawMenuItem");
-extern void (*ReadGamePort[])() asm ("ReadGamePort");
+extern void (*WaitRetrace[])() asm ("WaitRetrace");
+extern void (*SWOS_ReadGamePort[])() asm ("SWOS_ReadGamePort");
 extern char bigCharsTable[] asm ("bigCharsTable");
 extern void (*GetKey[])() asm ("GetKey");
 extern char aDataTeam_nnn[] asm ("aDataTeam_nnn");
@@ -190,8 +192,8 @@ extern void (*DrawSpriteInColor[])() asm ("DrawSpriteInColor");
 extern void (*DrawBenchAndSubsMenu[])() asm ("DrawBenchAndSubsMenu");
 extern void (*DrawBenchPlayersAndCoach[])() asm ("DrawBenchPlayersAndCoach");
 extern void (*SWOS_DrawSpriteInGame[])() asm ("SWOS_DrawSpriteInGame");
-extern void (*DrawSubstitutesMenu[])() asm ("DrawSubstitutesMenu");
-extern void (*DrawFormationMenu[])() asm ("DrawFormationMenu");
+extern void (*SWOS_DrawSubstitutesMenu[])() asm ("SWOS_DrawSubstitutesMenu");
+extern void (*SWOS_DrawFormationMenu[])() asm ("SWOS_DrawFormationMenu");
 extern void (*SubstitutePlayerIfFiring[])() asm ("SubstitutePlayerIfFiring");
 extern void (*EnqueueSubstituteSample[])() asm ("EnqueueSubstituteSample");
 extern short subsState asm ("subsState");
@@ -213,7 +215,7 @@ extern void (*DrawSpriteCentered[])() asm ("DrawSpriteCentered");
 extern void (*DrawLittlePlayersAndBall[])() asm ("DrawLittlePlayersAndBall");
 extern word pl1Tactics asm ("pl1Tactics");
 extern word pl2Tactics asm ("pl2Tactics");
-extern Tactics *tacticsTable[] asm ("tacticsTable");
+extern Tactics *g_tacticsTable[] asm ("g_tacticsTable");
 extern void (*ShowFormationMenu[])() asm ("ShowFormationMenu");
 extern void (*ChangeFormationIfFiring[])() asm ("ChangeFormationIfFiring");
 extern void (*CheckContinueAbortPrompt[])() asm ("CheckContinueAbortPrompt");
@@ -232,6 +234,7 @@ extern void (*InitializeTacticsPositions[])() asm ("InitializeTacticsPositions")
 extern void (*InitMainMenuStuff[])() asm ("InitMainMenuStuff");
 extern const char hexDigits[] asm ("hexDigits");
 extern char continueMenu[] asm ("continueMenu");
+extern void (*FadeOut[])() asm ("FadeOut");
 extern const char aTeam2_dat[] asm ("aTeam2_dat");
 extern void (*LoadFile[])() asm ("LoadFile");
 extern void (*UnchainSpriteInMenus[])() asm ("UnchainSpriteInMenus");
@@ -251,6 +254,8 @@ extern word goalScored asm ("goalScored");
 extern const char playerNormalStandingAnimTable[] asm ("playerNormalStandingAnimTable");
 extern void (*GetPlayerByOrdinal[])() asm ("GetPlayerByOrdinal");
 extern void (*InitIngameTeamStructure[])() asm ("InitIngameTeamStructure");
+extern void (*VersusInit[])() asm ("VersusInit");
+extern void (*ShowStadiumInit[])() asm ("ShowStadiumInit");
 /*
     Watcom C library
 */

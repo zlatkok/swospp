@@ -1,8 +1,12 @@
 TODO:
+- fix `/~ key when typing
+- is it theoretically possible for player to quit and quickly come back with
+  different team (before network timeout expires)?
+- add image version to binary format
+- templetize RegisterOptions
 - add warning "DISCONNECTED FROM THE GAME" after client loses the connection to
   the game; when that happens we suddenly find ourselves in join game menu,
   it's a bit too confusing without explanation
-- implement network timeout handler for sync & play match menu
 - align pointers
 - if one player has COMMENTARY ON, game will loose sync
 - fix "coach" showing up instead of "play" in play match menu
@@ -15,11 +19,7 @@ TODO:
   [17.36.41] Philipp Habermann: something happens to them
 - ubaciti vizualni indikator kada je igra pauzirana, da ne izgleda kao da je
   zabola (kao i kad laguje)
-- sigh... player2 pucnuo, partija krenula, player1 zaglavljen u lobiju.....
-  update: izgleda kad se brzo skroluje, pritisne pucanje a na prvom igracu jos
-  nije stigao da odskroluje do play game
 - bug case: client dc, server restarts, client joins -> boom (wrong menu)
-- regression testing - test changing teams when already in game lobby
 - close room (multiplayer)
 - za sada namestiti replay/continue da radi nakon partije
 - test build process on clean structure (no dirs, especially 'var') - might fail

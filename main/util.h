@@ -107,8 +107,8 @@ int strlen(const char *str);
 char *strncpy(char *dst, const char *src, size_t n);
 void *memset(void *ptr, int value, size_t num);
 void *memmove(void *dst, const void *src, size_t n);
-void segread(struct SREGS *sregs);
-int int386x(int vec, union REGS *in, union REGS *out, struct SREGS *sregs);
+void segread(SREGS *sregs);
+int int386x(int vec, union REGS *in, union REGS *out, SREGS *sregs);
 
 /* recreate small part of time.h, just enough so we can get timestamps nicely printed */
 #ifndef _TIME_T_DEFINED

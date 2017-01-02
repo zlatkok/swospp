@@ -105,6 +105,7 @@ if ($CLEAN) {
     exit(0) if ($PARAMS{'target'} eq 'clean');
     $PARAMS{'target'} = 'all';  # assuming it was 'rebuild' at this point
 }
+
 # set debug flags
 if ($TARGET eq 'dbg') {
     $CFLAGS .= $DBG_CFLAGS;
@@ -129,7 +130,7 @@ handleSWOSAnniversaryVersion();
 
 # go into file loop
 logl("Traversing source directories...");
-find( { wanted => sub
+find({ wanted => sub
 {
     my $path = catdir('.', $File::Find::name);
     my ($base, $dir, $ext) = fileparse($path, qr/\.[^.]*/);
@@ -149,6 +150,7 @@ find( { wanted => sub
             return;
         }
     }
+
     return if !-f;
 
     if ($SRC_EXTENSIONS{$ext}) {
@@ -217,6 +219,7 @@ sub formDepFileName
     my ($dir, $file) = @_;
     $file = join('.', File::Spec->splitdir($dir)) . $file;
     $file = substr($file, 2) if (substr($file, 0, 2) eq '..');
+
     return catdir(catdir($OBJ_DIR, 'deps'), $file) . '.dep';
 }
 
@@ -226,6 +229,7 @@ sub markAsScanned
     my ($path, $file, $isInclude, $dependencies) = @_;
     my $hashRef = $isInclude ? $includes{$file} : $srcFiles{$path};
     $hashRef->{'depsScanned'} = 1;
+
     return $hashRef->{'dependencies'} = $dependencies;
 }
 
@@ -235,10 +239,12 @@ sub findInclude
 {
     my ($file, $parent) = @_;
     return $file if (-e $file);
+
     foreach my $dir (keys %additionalIncludes) {
         my $path = catdir($dir, $file);
         return $path if (-e $path);
     }
+
     die "Included file $file (from $parent) could not be found.\n";
 }
 
@@ -248,15 +254,18 @@ sub scanIncludeDependencies
 {
     my ($file, $dependencies, $parent) = @_;
     my $incPath = findInclude($file, $parent);
+
     # reassign source file to includes if it's being included
     if (exists $srcFiles{$incPath}) {
         logl("Moving source file $incPath to includes.");
         $includes{$file} = $srcFiles{$incPath};
         delete $srcFiles{$incPath};
     }
+
     my ($incBase, $incDir, $incExt) = fileparse($incPath, qr/\.[^.]*/);
     my $incFile = $incBase . $incExt;
     push(@{$dependencies}, $incFile);
+
     # recursively check for sub-dependencies and appropriate them ;)
     my $subDependencies = getDependencies($incPath, $incDir, $incFile, $parent);
     push(@{$dependencies}, $_) for @{$subDependencies};
@@ -274,6 +283,7 @@ sub getIncludeRegex
         'asm' => \ASM_INCLUDE_REGEX, 'inc' => \ASM_INCLUDE_REGEX
     );
     my $directives = $directives{$ext} or die "Unknown extension encountered: \".$ext\".\n";
+
     return qr/^\s*${$directives}\s*"([a-zA-Z0-9_.\/]+)"/;
 }
 
@@ -328,7 +338,7 @@ sub getDependencies
     # do a crude scan for includes; it doesn't account for say conditionally included files,
     # make sure to expand it if it's ever needed; we're also assuming user will be nice and
     # wouldn't use <> for non-system includes
-    # but don't attempt to scan binary files included with incbin
+    # but don't attempt to scan binary files included via incbin
     if (!$isBinary) {
         open($IN, '<', "$path") or die "Failed to open file: $path\n";
 
@@ -539,6 +549,7 @@ sub runCommand
         print 'COMMAND: ' . join(' ', @_) . "\n";
         return if $DEBUG;
     }
+
     system(@_) == 0 or die "Failed to run command: " . join(' ', @_) . ", ($?)\n";
     if ($? >> 8) {
         showWarningReport();
@@ -555,6 +566,7 @@ sub filterCommandOutput
         print "COMMAND: $cmd, IGNORE: @{$ignorePatternsOrCaptureFile} \n";
         return if $DEBUG;
     }
+
     @output = `$cmd`;
     $? == -1 and die "Command failed: $cmd\n";
     if ((ref($ignorePatternsOrCaptureFile) eq 'ARRAY') && scalar(@{$ignorePatternsOrCaptureFile})) {
@@ -562,6 +574,7 @@ sub filterCommandOutput
             foreach (@{$ignorePatternsOrCaptureFile}) {
                 next OUTPUT if (index($line, $_) != -1);
             }
+
             $warnings{$file} = $1 if ($line =~ /(\d+) warnings/ && $1 > 0);
             print $line;
         }
@@ -668,20 +681,24 @@ sub buildFiles
     foreach my $src (@{$buildList}) {
         exists $buildCommands{$srcFiles{$src}{'ext'}}
             or die "Invalid extension for source files '$srcFiles{$src}{'ext'}' found.\n";
+
         mkpath($srcFiles{$src}{'dir'});
         my $ext = $srcFiles{$src}{'ext'};
         print $targetTag, ('Assembling ', 'Compiling ')[$ext eq '.c' || $ext eq '.cpp'],
             $srcFiles{$src}{'file'}, "...\n";
+
         # expand commands
         my $cmd = $buildCommands{$srcFiles{$src}{'ext'}};
         runCommand(expandCommandVariables($cmd, $srcFiles{$src}{'path'},
             $srcFiles{$src}{'obj'}, $srcFiles{$src}{'base'}, $LST_DIR));
+
         if ($DIS ne '' && ($ext eq '.c' || $ext eq '.cpp')) {
             # disassemble; note that this will make listings of files with same names
             # in different subdirectories overwrite each other
             filterCommandOutput($DIS . ' ' . $srcFiles{$src}{'obj'} . " /s=$srcFiles{$src}{'path'}",
                 catdir($LST_DIR, $srcFiles{$src}{'base'}) . $ext . '.lst');
         }
+
         # if we get here, everything went well with compiling/assembling, so update our internal timestamps
         $srcFiles{$src}{'objTimestamp'} = time();
     }
@@ -695,9 +712,10 @@ sub createLnkFile
     my $lnkTimestamp = getTimestamp($lnkFile);
     my $latestDepTimestamp = max(map({ $srcFiles{$_}{'objTimestamp'} } keys %srcFiles), $scriptTimestamp);
     logl("createLnkFile: script ts = $scriptTimestamp, dep ts = $latestDepTimestamp, lnk ts = $lnkTimestamp");
+
     if ($latestDepTimestamp > $lnkTimestamp) {
         $LFLAGS =~ tr/\r\n//d;
-        my $lnkContents = $LFLAGS . ' ' . join(' ', map( { $srcFiles{$_}{'obj'} } keys %srcFiles)) .
+        my $lnkContents = $LFLAGS . ' ' . join(' ', map({ $srcFiles{$_}{'obj'} } keys %srcFiles)) .
             ' /output-name:' . catdir($OBJ_DIR, $EXE_FILE);
         logl("LNK FILE CONTENTS:\n$lnkContents");
         return 1 if ($DEBUG);
@@ -713,17 +731,19 @@ sub linkFiles
     my ($scriptTimestamp) = @_;
     my $lnkFile = catdir($OBJ_DIR, $LNK_FILE);
     my $exeFileTimestamp = getTimestamp(catdir($OBJ_DIR, $EXE_FILE));
-    return if ($exeFileTimestamp > getTimestamp($lnkFile) && $exeFileTimestamp > $scriptTimestamp);
-    print "Linking...\n";
-    runCommand($LINK, '@' . $lnkFile);
-    my $srcMap = catdir($OBJ_DIR, $BASE_FNAME . '.map');
-    my $dstMap = catdir($VAR_DIR, "${BASE_FNAME}_$TARGET.map");
-    if ($DEBUG) {
-        print "MOVE: $srcMap -> $dstMap\n";
-    } else {
-        move($srcMap, $dstMap) or die "Error moving map file.\n";
+
+    if ($exeFileTimestamp < getTimestamp($lnkFile) || $exeFileTimestamp < $scriptTimestamp) {
+        print "Linking...\n";
+        runCommand($LINK, '@' . $lnkFile);
+        my $srcMap = catdir($OBJ_DIR, "$BASE_FNAME.map");
+        my $dstMap = catdir($VAR_DIR, "${BASE_FNAME}_$TARGET.map");
+        if ($DEBUG) {
+            print "MOVE: $srcMap -> $dstMap\n";
+        } else {
+            move($srcMap, $dstMap) or die "Error moving map file.\n";
+        }
+        print "PE Executable linked: $BASE_FNAME.exe [$TARGET_FULL VERSION]\n";
     }
-    print "PE Executable linked: $BASE_FNAME.exe [$TARGET_FULL VERSION]\n";
 }
 
 
@@ -735,20 +755,23 @@ sub createBin
     my $binFileTimestamp = getTimestamp($binFile);
     my $pe2bin = catdir($BIN_DIR, 'pe2bin.exe');
     my $pe2binTimestamp = getTimestamp($pe2bin);
-    return if ($binFileTimestamp > getTimestamp($exeFile) && $binFileTimestamp > $scriptTimestamp && $binFileTimestamp > $pe2binTimestamp);
-    if (!$DEBUG) {
-        open(my $F, '>', catdir($BIN_DIR, "$TARGET_FULL")) or die "Failed to create $TARGET marker file.\n";
-        print $F "$TARGET_FULL VERSION\n";
-        close $F;
-        unlink(catdir($BIN_DIR, ('DEBUG', 'RELEASE')[$TARGET eq 'dbg']));
-    }
-    runCommand($pe2bin, $exeFile);
-    my $result = catdir($BIN_DIR, $FILENAME);
-    logl("COPY: $binFile -> $result");
-    $DEBUG or copy($binFile, $result) or die "Failed to copy $FILENAME from $OBJ_DIR to $BIN_DIR.\n";
-    foreach my $destDir (@DEST_DIRS) {
-        logl("COPY: $binFile -> $destDir");
-        $DEBUG or copy($binFile, $destDir) or die("Failed to copy $FILENAME from $OBJ_DIR to $destDir. ($!)\n");
+
+    if ($binFileTimestamp < getTimestamp($exeFile) || $binFileTimestamp < $scriptTimestamp || $binFileTimestamp < $pe2binTimestamp) {
+        if (!$DEBUG) {
+            open(my $F, '>', catdir($BIN_DIR, "$TARGET_FULL")) or die "Failed to create $TARGET marker file.\n";
+            print $F "$TARGET_FULL VERSION\n";
+            close $F;
+            unlink(catdir($BIN_DIR, ('DEBUG', 'RELEASE')[$TARGET eq 'dbg']));
+        }
+
+        runCommand($pe2bin, $exeFile);
+        my $result = catdir($BIN_DIR, $FILENAME);
+        logl("COPY: $binFile -> $result");
+        $DEBUG or copy($binFile, $result) or die "Failed to copy $FILENAME from $OBJ_DIR to $BIN_DIR.\n";
+        foreach my $destDir (@DEST_DIRS) {
+            logl("COPY: $binFile -> $destDir");
+            $DEBUG or copy($binFile, $destDir) or die("Failed to copy $FILENAME from $OBJ_DIR to $destDir. ($!)\n");
+        }
     }
 }
 
@@ -773,6 +796,7 @@ sub replace
             $pos = index($str, $findVal, $pos + length($replaceVal));
         }
     }
+
     return $str;
 }
 
@@ -794,11 +818,13 @@ sub showWarningReport
         my $totalWarnings = sum(values %warnings);
         my $numFilesPrinted = 0;
         my $warningReport = '';
+
         foreach my $file (keys %warnings) {
             last if $numFilesPrinted >= 5;    # max 5 files
             $warningReport .= "$file($warnings{$file}) ";
             $numFilesPrinted++;
         }
+
         substr($warningReport, -1, 1, '');
         $warningReport .= '...' if ($numFilesPrinted < scalar keys %warnings);
         print color 'red';

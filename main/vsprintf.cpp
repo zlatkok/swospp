@@ -45,6 +45,7 @@ static void FloatFormat(char *buf, va_list *args, Specification *spec);
 
 int __cdecl vsprintf(char *buf, const char *fmt, va_list args);
 
+
 int __cdecl sprintf(char *buf, const char *fmt, ...)
 {
     va_list va;
@@ -56,6 +57,7 @@ int __cdecl sprintf(char *buf, const char *fmt, ...)
 
     return ret;
 }
+
 
 int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
 {
@@ -112,6 +114,7 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
                     }
                 } else
                     memcpy(out, arg, spec.n1);
+
                 out += spec.n1;
                 arg += spec.n1;
                 spec.output_count += spec.n1;
@@ -125,6 +128,7 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
                 memset(out, '0', spec.nz2);
                 out += spec.nz2;
                 spec.output_count += spec.nz2;
+
                 if (spec.alignment < 0) {
                     memset(out, ' ', spec.width);
                     out += spec.width;
@@ -136,6 +140,7 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
     buf[spec.output_count] = '\0';
     return spec.output_count;
 }
+
 
 static const char *GetSpecification(const char *p, Specification *spec, va_list *arg)
 {
@@ -197,6 +202,7 @@ static const char *GetSpecification(const char *p, Specification *spec, va_list 
         spec->is_long = true;
         p++;
         break;
+
     case 'h':
         if (p[1] == 'h') {
             spec->is_short_short = true;
@@ -211,6 +217,7 @@ static const char *GetSpecification(const char *p, Specification *spec, va_list 
     return p;
 }
 
+
 void ResetSpecification(Specification *spec)
 {
     spec->alignment = 0;
@@ -218,6 +225,7 @@ void ResetSpecification(Specification *spec)
     spec->zero_pad = spec->space_pad = spec->sign_prefix = spec->sharp = false;
     spec->is_short = spec->is_long = spec->is_short_short = false;
 }
+
 
 static char *FormString(Specification *spec, va_list *args, char *buffer)
 {
@@ -236,11 +244,13 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
     switch (spec->type) {
     case 'C':
         WriteToLog("FormString: wide characters not supported.");
-        /* fallthrough */
+        /* fall-through */
+
     case 'c':
         spec->length = 1;
         buffer[0] = va_arg(*args, int);
         break;
+
     case 'd':
     case 'i':
         long_value = spec->is_long ? va_arg(*args, long) : va_arg(*args, int);
@@ -257,6 +267,7 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
             buffer[spec->n0++] = ' ';
         }
         break;
+
     case 'o':
     case 'u':
     case 'x':
@@ -281,17 +292,20 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
         FixedPointFormat(buffer, int_value, spec);
         spec->length = strlen(buffer);
         break;
+
     case 'g':
     case 'G':
     case 'e':
     case 'E':
         FloatFormat(buffer, args, spec);
         break;
+
     case 's':
         buffer[0] = '\0';
         tmp = va_arg(*args, char *);
         if (tmp)
             arg = tmp;
+
         spec->n1 = spec->length = strlen(arg);
         if (spec->precision >= 0 && spec->precision < spec->length)
             spec->n1 = spec->precision;
@@ -301,6 +315,7 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
             spec->n1 = spec->n1 * 3 - 1;
         }
         break;
+
     case 'x':
     case 'X':
         if (spec->sharp && long_value) {
@@ -308,12 +323,16 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
             buffer[spec->n0++] = spec->type;
         }
         radix = 16;
+        /* fall-through */
+
     case 'o':
         if (spec->type == 'o') {
             radix = 8;
             if (spec->sharp)
                 buffer[spec->n0++] = '0';
         }
+        /* fall-through */
+
     case 'd':
     case 'i':
     case 'u':
@@ -321,6 +340,7 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
             spec->space_pad = true;
             spec->zero_pad = false;
         }
+
         arg = &buffer[spec->n0];
         if (!spec->precision && !long_value) {
             *arg = '\0';
@@ -331,33 +351,42 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
                 strupr(buffer);
             spec->length = strlen(arg);
         }
+
         spec->n1 = spec->length;
         if (spec->n1 < spec->precision)
             spec->nz0 = spec->precision - spec->n1;
         if (spec->precision == -1)
             SetZeroPad(spec);
         break;
+
     case 'p':
     case 'P':
         if (!spec->width)
             spec->width = 2 * sizeof(void *);
+
         spec->space_pad = spec->sign_prefix = false;
         int_value = va_arg(*args, unsigned);
         itoa(int_value, buffer, 16);
         len = strlen(buffer);
+
         for (i = 2 * sizeof(void *) - 1; len; i--)
             buffer[i] = buffer[--len];
+
         while (i >= 0)
             buffer[i--] = '0';
+
         buffer[2 * sizeof(void *)] = '\0';
         if (spec->type == 'X')
             strupr(buffer);
+
         spec->n0 = strlen(arg);
         break;
+
     case 'C':
     case 'c':
         spec->n1 = 1;
         break;
+
     default:
         spec->width = 0;
         buffer[0] = spec->type;
@@ -382,6 +411,7 @@ static void SetZeroPad(Specification *spec)
         }
     }
 }
+
 
 static void FixedPointFormat(char *buffer, int value, Specification *spec)
 {
@@ -409,7 +439,8 @@ static void FixedPointFormat(char *buffer, int value, Specification *spec)
 static void FloatFormat(char *, va_list *, Specification *) {}
 
 /* helper convert routines */
-static const char Alphabet[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+static const char kAlphabet[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
 
 /* Get quotient and reminder using single division. */
 static int __udiv(int value, int *divQuot)
@@ -425,6 +456,7 @@ static int __udiv(int value, int *divQuot)
     return value;
 }
 
+
 static char *utoa(unsigned int value, char *buffer, int radix)
 {
     char *p = buffer;
@@ -438,13 +470,16 @@ static char *utoa(unsigned int value, char *buffer, int radix)
     do {
         quot = radix;
         rem = __udiv(value, (int *)&quot);
-        *q = Alphabet[rem];
+        *q = kAlphabet[rem];
         ++q;
         value = quot;
     } while (value != 0);
+
     while (*p++ = *--q);
+
     return buffer;
 }
+
 
 static char *itoa (int value, char *buffer, int radix)
 {
@@ -454,9 +489,11 @@ static char *itoa (int value, char *buffer, int radix)
         *p++ = '-';
         value = -value;
     }
+
     utoa(value, p, radix);
     return buffer;
 }
+
 
 char *ultoa(unsigned long value, char *buffer, unsigned radix)
 {
@@ -467,15 +504,18 @@ char *ultoa(unsigned long value, char *buffer, unsigned radix)
 
     buf[0] = '\0';
     q = &buf[1];
+
     do {
         rem = radix;
         value = __udiv(value, (int *)&rem);
-        *q = Alphabet[rem];
+        *q = kAlphabet[rem];
         ++q;
     } while (value != 0);
+
     while (*p++ = *--q);
     return buffer;
 }
+
 
 char *ltoa (long value, char *buffer, int radix)
 {
@@ -485,6 +525,7 @@ char *ltoa (long value, char *buffer, int radix)
         *p++ = '-';
         value = -value;
     }
+
     ultoa(value, p, radix);
     return buffer;
 }

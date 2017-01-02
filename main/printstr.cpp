@@ -40,6 +40,7 @@ static void DrawSpriteInGame(int x, int y, const SpriteGraphics *s)
     DrawSprite(x, y, s->wquads * 16, s->nlines, s->data, 0);
 }
 
+
 static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
 {
     deltaColor = 0;
@@ -47,7 +48,7 @@ static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
 }
 
 
-/** getSmallNumberStringLength
+/** GetSmallNumberStringLength
 
     num         -> null-terminated string of a number to measure, it's assumed it contains only ASCII digits
     digitWidths -> lengths of digits, assumed length 10 elements
@@ -56,7 +57,7 @@ static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
 
     Return what would be the length of string in pixels when rendered.
 */
-static int getSmallNumberStringLength(const char *num, const byte *digitWidths, int kerning, int *outWidths)
+static int GetSmallNumberStringLength(const char *num, const byte *digitWidths, int kerning, int *outWidths)
 {
     int len = 0;
     while (*num) {
@@ -99,7 +100,7 @@ void PrintSmallNumber(int num, int x, int y, bool32 inGame)
     buf = int2str(num);
     assert(inGame == 0 || inGame == 1);
     /* find out the length of number when printed to center it */
-    length = getSmallNumberStringLength(buf, currentDigitLengths, kerning, widths);
+    length = GetSmallNumberStringLength(buf, currentDigitLengths, kerning, widths);
 
     x -= length / 2;
     y -= inGame ? 2 : 5;

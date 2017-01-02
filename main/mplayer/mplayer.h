@@ -6,14 +6,11 @@
 #define REFRESH_INTERVAL    70  /* ping new games after this many ticks */
 
 #define MAX_PLAYERS     8       /* maximum number of players in multi-player game */
-#define NICKNAME_LEN    20      /* maximum multiplayer nickname length */
-#define GAME_NAME_LENGTH NICKNAME_LEN + 10
+
 #define MAX_GAMES_WAITING       10
 #define MAX_CHAT_LINES           9
 #define MAX_CHAT_LINE_LENGTH    25
 #define MAX_TEAM_NAME_LEN       17
-
-extern dword currentTeamId;                    /* id of current team */
 
 /* structure used to communicate state of waiting games to GUI */
 #pragma pack(push, 1)
@@ -41,16 +38,6 @@ struct SavedTeamData {
 };
 
 #define DEFAULT_MP_OPTIONS sizeof(MP_Options), 1, 4, 2, 5, 2, 'z', 8,
-
-struct LobbyState {
-    int numPlayers;
-    MP_Options options;
-    char *playerNames[MAX_PLAYERS];
-    int playerFlags[MAX_PLAYERS];   /* bit 0 - is watcher, bit 1 - is ready  */
-    char *playerTeamsNames[MAX_PLAYERS];
-    char *chatLines[MAX_CHAT_LINES];
-    byte chatLineColors[MAX_CHAT_LINES];
-};
 #pragma pack(pop)
 
 enum MP_Join_Game_Response {
@@ -64,13 +51,6 @@ enum MP_Join_Game_Response {
     GR_INVALID_GAME
 };
 
-/* GUI callbacks */
-typedef void (*SendWaitingToJoinReport)(const WaitingToJoinReport *report);
-typedef bool32 (*ModalFunction)(int status, const char *errorText);
-typedef void (*EnterGameLobbyFunction)();
-typedef void (*UpdateLobbyFunction)(const LobbyState *state);
-typedef void (*ShowTeamsMenuFunction)(TeamFile *, TeamFile *, int (*)());
-
 void ApplySavedTeamData(TeamFile *team);
 void StoreTeamData(const TeamFile *team);
 
@@ -83,8 +63,6 @@ extern "C" {
     void SetGameName(const char *newGameName);
     const char *GetPlayerNick();
     void SetPlayerNick(const char *newPlayerNick);
-    const char *GetDirectGameName();
-    const char *GetDirectGameNickname();
     void InitializeMPOptions(const MP_Options *options);
     void UpdateMPOptions(const MP_Options *options);
     bool CompareMPOptions(const MP_Options *options);
@@ -100,23 +78,8 @@ extern "C" {
     int SetMaxSubstitutes(byte newMaxSubs);
     void UpdateSkipFrames(int frames);
     void UpdateNetworkTimeout(word networkTimeout);
-
-    /* Game Lobby menu */
-    void InitMultiplayerLobby();
-    void FinishMultiplayerLobby();
-    MP_Options *GetSavedClientOptions();
-    void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const LobbyState *),
-        void (*errorFunc)(), void (*onGameEndFunc)(), bool inWeAreTheServer);
-    void DisbandGame();
-    void GoBackToLobby();
-    void SetPlayerReadyState(bool isReady);
-    void SetPlayerOrWatcher(bool isWatcher);
-    void SetupTeams(bool32 (*modalSyncFunc)(), ShowTeamsMenuFunction showTeamMenuFunc);
-    bool32 CanGameStart();
-    char *SetTeam(TeamFile *newTeamName, dword teamId);
-    void AddChatLine(const char *line);
-    void StartGame();
-    void GameFinished();
+    dword GetCurrentTeamId();
+    void SetCurrentTeamId(dword teamId);
 
     /* Multiplayer options menu */
     void InitializeMPOptionsMenu();
@@ -131,22 +94,8 @@ extern "C" {
     void ChooseMPTactics();
     void ExitMultiplayerOptions();
 
-    /* Join game menu GUI interfacing */
-    void EnterWaitingToJoinState(SendWaitingToJoinReport updateFunc = nullptr, int findGamesTimeout = 0);
-    void RefreshList();
-    void LeaveWaitingToJoinState();
-    void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
-        void (*enterGameLobbyFunc)(), void (*disconnectedFunc)(), bool32 (*modalSyncFunc)(),
-        ShowTeamsMenuFunction showTeamsMenuFunc, void (*onErrorFunc)(), void (*onGameEndFunc)());
-
-    /* Network loop during menus. Return false during blocking operations. */
-    bool32 NetworkOnIdle();
-    void BroadcastControls(byte controls, word longFireFlag);
-    dword GetControlsFromNetwork();
     int HandleMPKeys(int key);
-    bool32 SwitchToNextControllingState();
 }
-
 
 #include "dosipx.h"
 
@@ -155,8 +104,8 @@ void SetRandomVariables(const char *vars, int size);
 
 /* Running multiplayer game */
 extern "C" {
-    void InitMultiplayerGame(int inPlayerNo, IPX_Address *inPlayerAddresses, int inNumWatchers,
-        IPX_Address *inWatcherAddresses, Tactics *pl1CustomTactics, Tactics *pl2CustomTactics);
+    void InitMultiplayerGame(int playerNo, IPX_Address *playerAddresses, int numWatchers,
+        const IPX_Address *watcherAddresses, const Tactics *pl1CustomTactics, const Tactics *pl2CustomTactics);
     void FinishMultiplayerGame();
     void OnGameLoopStart();
     void OnGameLoopEnd();

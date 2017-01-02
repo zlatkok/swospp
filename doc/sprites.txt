@@ -90,8 +90,8 @@ block.
 
 === Sprite map
 
-Sprajt 1286 ima gresku: sirina je pogresno postavljena na 5 pixela. Trebalo bi
-da bude 16 piksela.
+Sprite 1286 has an error: width is mistakingly set to 5 pixels. It should be 16
+pixels.
 
 0-112 character set
 
@@ -104,29 +104,30 @@ da bude 16 piksela.
 5 - -
 6 - .
 7 - /
-8-17 - brojevi
-18-43 - slova
-44 - kockica (kursor)
+8-17  - numbers
+18-43 - letters
+44 - block (cursor)
 45 - *
-46 - znak funte
-47 - duza crtica
+46 - pound sign
+47 - em dash
 48 - ?
 49 - :
 50 - +
 51 - %
 52 - ;
-53 - A sa dva akcenta iznad
-54 - U      - || -
-55 - O      - || -
+53 - A with umlaut
+54 - U   - // -
+55 - O   - // -
 
-56 - nekakva uspravna crta
+56 - vertical bar
+57 - invalid character symbol (x in a box)
 
-zatim ide veliki set, za veliki karakter na indeks malog dodati 57 (izuzev za
-broj 56, on je jedinstven)
+Big character set follows, to get big character index add 57 to small character
+index (except for number 56, that one's unique).
 
-113-122 zvezdice (za oznacavanje skill-a igraca)
+113-122 stars (for visualising player skills)
 
-123 - slika lopte, ali nisam primetio da se igde koristi
+123 - ball sprite, but I haven't noticed it being used anywhere
 
 mali igraci sa odgovarajucom bojom i sarama na dresovima; koriste se za
 editovanje taktike (u njih se kopiraju odgovarajuce slicice)

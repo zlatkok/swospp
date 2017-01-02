@@ -10,6 +10,8 @@ global FatalError
 
 extern IPX_IsInstalled
 extern InitializeOptions
+extern ParseCommandLine
+extern SetDOSBoxDefaultOptions
 extern aboutText
 extern pl2Keyboard
 %ifdef DEBUG
@@ -22,7 +24,9 @@ extern InstallCrashLogger
 extern SetupSWOSAnniversaryMenu
 %endif
 
+
 section .data
+
 pressAnyKeyStr:
         db 13, 10, "<Press any key to terminate>", 13, 10
 dosboxString:
@@ -35,6 +39,7 @@ detectedStr:
 verStrAddr:
         db verStr, 0
 %endif
+
 
 section .text
 
@@ -52,13 +57,21 @@ section .text
 ; Note that SWOS Initialization() hasn't run yet.
 ;
 start:
-
 %ifdef DEBUG
         mov  [codeBase], ebx
 %endif
         call SwitchStack
         call FixSWOSIntro
+        call DetectDOSBox
+        jz   .check_os
+
+        call SetDOSBoxDefaultOptions
+        jmp  .os_ok
+
+.check_os:
         call CheckWindowsVersion
+
+.os_ok:
         call DexorAbout
 %ifdef SWOS_16_17
         call SetupSWOSAnniversaryMenu
@@ -77,6 +90,7 @@ start:
         call IPX_IsInstalled    ; test presence of IPX for multiplayer
         WriteToLog "IPX Network supported: %#x", eax
 %endif
+        call ParseCommandLine
         WriteToLog "Initializing qAlloc..."
         call qAllocInit         ; initialize QuickAlloc
         call InstallCrashLogger
@@ -170,8 +184,8 @@ SwitchStack:
 ; in:
 ;      edx -> string to print
 ;
-; Terminates program after showing message to user. Waits for keypress from
-; user to terminate program. Do not use in startup code.
+; Terminates program after showing message to the user. Waits for keypress from
+; the user to terminate the program. Do not use in startup code.
 ;
 FatalError:
         xor  eax, eax
@@ -179,7 +193,7 @@ FatalError:
         dec  ecx
         mov  edi, edx
         repnz scasb
-        not  ecx                ; get string lenght
+        not  ecx                ; get string length
         dec  ecx                ; without ending zero
         mov  al, [prevVideoMode]
         int  0x10
@@ -209,7 +223,8 @@ FatalError:
 ; need a special method - search 128 bytes from F000:E000 for string "DOSBox".
 ;
 ; out:
-;      zero flag clear = DOSBox successfully detected, set otherwise
+;      eax = 1, zero flag clear -> DOSBox successfully detected
+;      eax = 0, zero flag set otherwise
 ;
 DetectDOSBox:
         mov  esi, 0xf000 << 4 | 0xe000 - 1 ; DOS/4GW maps first 1mb of low memory
@@ -223,7 +238,7 @@ DetectDOSBox:
         calla swos_libc_strnicmp_, edi
         test eax, eax
         jz   .found
-        inc  esi
+        inc  esi                            ; sorry, no Boyer-Moore for you
         dec  ecx
         jnz  .loop
 
@@ -301,17 +316,13 @@ CheckWindowsVersion:
         mov  ax, 0x1600         ; do Windows version check
         int  0x2f               ; first we try int 0x2f
         test al, al
-        jnz  .windows_ok        ; if this succedes, Windows 9x is loaded - ok
+        jnz  .windows_ok        ; if this succeeds, Windows 9x is loaded - OK
 
         mov  ax, 0x3306         ; this has failed, either no Windows or
         int  0x21               ; Windows NT/2000/XP is loaded, so we check
         xchg bh, bl             ; "true" MS-DOS version, and if it is below
-
         cmp  bx, 0x0600         ; 6.0, issue a warning
         jae  .windows_ok
-
-        call DetectDOSBox       ; DOSBox is masquerading as DOS 5.0
-        jz   .show_warning
 
         mov  edx, dosboxString
         mov  [edx + dosboxStringLen], byte '$'
@@ -320,11 +331,10 @@ CheckWindowsVersion:
         mov  edx, detectedStr
         mov  ah, 9
         int  0x21
-
         jmp  short .windows_ok
 
 .show_warning:
-        mov  edx, badOS        ; some sort of NT running...
+        mov  edx, badOS         ; some sort of NT running...
         mov  ah, 9
         int  0x21
         xor  eax, eax
@@ -344,6 +354,7 @@ FixSWOSIntro:
         jz   .out
 
         mov  byte [SWOS + 0x3f], 0xeb   ; fix intro screen bug when no keys are pressed
+
 .out:
         retn
 
@@ -368,7 +379,7 @@ UpdatePrevVideoMode:
 ;      eax - video memory speed index
 ;
 ; Taken from install.exe and adapted to 32-bit DOS4/GW. Tries to measure video
-; graphics memory speed.
+; graphics memory speed. Used to keep user interface response somewhat consistent.
 ;
 VideoBenchmark:
         mov  ebx, 176
@@ -384,18 +395,22 @@ VideoBenchmark:
         xor  ax, dx
         loopz .tick_edge_loop
         jnz  short .time_tick_start
+
         dec  ebp
         jnz  short .tick_edge_loop
+
         jmp  short .out
 
 .time_tick_start:
         xor  ecx, ecx        ; we're on tick limit now
+
 .loop_write_to_vmem:
         push ecx
         call Write16BytesToVideoMemory ; how many times will this execute during 1 bios timer cycle
         pop  ecx
         cmp  dx, [esi]
         loopz .loop_write_to_vmem
+
         neg  ecx
         mov  eax, 20
         mul  ecx
@@ -407,7 +422,8 @@ VideoBenchmark:
         mul  ecx
         mov  ebx, 100
         xor  edx, edx
-        div  ebx            ; the thing equals: (round up((num. video loops) * 20 / 176)) * 5 / 100
+        div  ebx            ; the thing equals: (round up(number of video loops * 20 / 176)) * 5 / 100
+
 .out:
         retn
 
@@ -437,7 +453,7 @@ Write16BytesToVideoMemory:
 
 ; DexorAbout
 ;
-; Dexors about string back to ascii.
+; Dexors about string back to ASCII.
 ;
 DexorAbout:
         xor  ecx, ecx
@@ -469,7 +485,7 @@ DexorAbout:
 
 ; WriteYULetters
 ;
-; Support for Serbo-Croatian latin letters, called from SWOS
+; Support for Serbo-Croatian Latin letters, called from SWOS
 ;
 extern DrawBitmap
 global WriteYULetters
@@ -504,6 +520,7 @@ WriteYULetters:
         jnz  .draw_char
         mov  esi, letter_dj_small
         jmp  short .draw_char
+
 .tj:
         mov  dl, 'C'
         mov  esi, accent_big
@@ -511,12 +528,15 @@ WriteYULetters:
         jnz  .draw_char
         mov  esi, accent_small
         jmp  short .draw_char
+
 .ch:
         mov  dl, 'C'
         jmp  short .draw_hook
+
 .zh:
         mov  dl, 'Z'
         jmp  short .draw_hook
+
 .sh:
         mov  dl, 'S'            ; based on 'S'
 
@@ -596,6 +616,7 @@ FixGetTextSize:
         cmp  dword [A3], conversion_table_small
         jz   .small_char
         mov  ax, 9
+
 .small_char:
         mov  word [D0], 18
         retn

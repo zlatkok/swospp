@@ -163,10 +163,10 @@ struct MenuEntry {
         word number;
         void *spriteCopy;
     } u2;
-    void (*OnSelect)();
+    void (*onSelect)();
     word controlMask;
-    void (*BeforeDraw)();
-    void (*AfterDraw)();
+    void (*beforeDraw)();
+    void (*afterDraw)();
 };
 
 struct Menu {

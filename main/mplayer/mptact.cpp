@@ -8,11 +8,11 @@
 
 #include "mptact.h"
 
-static const Tactics *pl1MPCustomTactics;   /* point to actual custom tactics */
-static const Tactics *pl2MPCustomTactics;
-static byte pl1RealTactics;                 /* real player tactics, without mucking */
-static byte pl2RealTactics;
-static byte * const plRealTactics[2] = { &pl1RealTactics, &pl2RealTactics };
+static const Tactics *m_pl1MPCustomTactics;     /* point to actual custom tactics */
+static const Tactics *m_pl2MPCustomTactics;
+static byte m_pl1RealTactics;                   /* real player tactics, without mucking */
+static byte m_pl2RealTactics;
+static byte * const m_plRealTactics[2] = { &m_pl1RealTactics, &m_pl2RealTactics };
 
 static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team);
 static void RestoreTactics();
@@ -25,17 +25,17 @@ void InitTacticsContextSwitcher(const Tactics *player1CustomTactics, const Tacti
     assert(playMatchTeam1Ptr && playMatchTeam2Ptr);
 
     /* save real tactics first, they're swapped initially */
-    pl1RealTactics = playMatchTeam2Ptr->tactics;
-    pl2RealTactics = playMatchTeam1Ptr->tactics;
-    WriteToLog("Initial tactics: %s - %d (\"%s\"), %s - %d (\"%s\")", playMatchTeam1Ptr->name, pl1RealTactics,
-        tacticsTable[pl1RealTactics], playMatchTeam2Ptr->name, pl2RealTactics, tacticsTable[pl2RealTactics]);
-    pl1MPCustomTactics = player1CustomTactics;
-    pl2MPCustomTactics = player2CustomTactics;
-    pl1Tactics = pl1RealTactics;
-    pl2Tactics = pl2RealTactics;
+    m_pl1RealTactics = playMatchTeam2Ptr->tactics;
+    m_pl2RealTactics = playMatchTeam1Ptr->tactics;
+    WriteToLog("Initial tactics: %s - %d (\"%s\"), %s - %d (\"%s\")", playMatchTeam1Ptr->name, m_pl1RealTactics,
+        g_tacticsTable[m_pl1RealTactics], playMatchTeam2Ptr->name, m_pl2RealTactics, g_tacticsTable[m_pl2RealTactics]);
+    m_pl1MPCustomTactics = player1CustomTactics;
+    m_pl2MPCustomTactics = player2CustomTactics;
+    pl1Tactics = m_pl1RealTactics;
+    pl2Tactics = m_pl2RealTactics;
 
     /* let's keep tactics 1 as fixed at start */
-    VirtualizeTactics(2, pl2RealTactics, rightTeamData);
+    VirtualizeTactics(2, m_pl2RealTactics, rightTeamData);
 
     /* overwrite selectedFormationEntry assignment with our call */
     PatchCall(ShowFormationMenu, 0x27, RestoreTactics);
@@ -89,7 +89,7 @@ asm (
 */
 static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team)
 {
-    static Tactics const **plMPCustomTactics[2] = { &pl1MPCustomTactics, &pl2MPCustomTactics };
+    static Tactics const **plMPCustomTactics[2] = { &m_pl1MPCustomTactics, &m_pl2MPCustomTactics };
     static word * const plTactics[2] = { &pl1Tactics, &pl2Tactics };
     int otherTeam = --teamNo ^ 1;
 
@@ -99,20 +99,20 @@ static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team
     assert(team);
     assert(teamNo == 0 || teamNo == 1);
     assert(pl1Tactics < TACTICS_MAX && pl2Tactics < TACTICS_MAX && newTactics < TACTICS_MAX);
-    assert(pl1RealTactics < TACTICS_MAX && pl2RealTactics < TACTICS_MAX);
+    assert(m_pl1RealTactics < TACTICS_MAX && m_pl2RealTactics < TACTICS_MAX);
 
     /* store original new tactics immediately, before we ruin it :P */
-    *plRealTactics[teamNo] = newTactics;
+    *m_plRealTactics[teamNo] = newTactics;
 
     /* for other team only fix tactics name in case it's custom */
     if (*plTactics[otherTeam] >= TACTICS_USER_A)
-        *tacticsTable[*plTactics[otherTeam]] = otherTeamCustomTactics[*plRealTactics[otherTeam] - TACTICS_USER_A];
+        *g_tacticsTable[*plTactics[otherTeam]] = otherTeamCustomTactics[*m_plRealTactics[otherTeam] - TACTICS_USER_A];
 
     /* check if new tactics are custom, if so check if there's a conflict and resolve it */
     if (newTactics >= TACTICS_USER_A) {
         if ((newTactics += newTactics == *plTactics[otherTeam]) == TACTICS_MAX)
             newTactics = TACTICS_MAX - 2;
-        *tacticsTable[newTactics] = thisTeamCustomTactics[*plRealTactics[teamNo] - TACTICS_USER_A];
+        *g_tacticsTable[newTactics] = thisTeamCustomTactics[*m_plRealTactics[teamNo] - TACTICS_USER_A];
     }
 
     /* store new, possibly adjusted tactics */
@@ -132,20 +132,20 @@ static int getBenchTeamIndex()
 /* Restore tactics to "being able to show" state. Called when player opens up bench menu. */
 static void RestoreTactics()
 {
-    static const Tactics **customTactics[2] = { &pl1MPCustomTactics, &pl2MPCustomTactics };
+    static const Tactics **customTactics[2] = { &m_pl1MPCustomTactics, &m_pl2MPCustomTactics };
     int benchTeamIndex = getBenchTeamIndex();
 
     assert(pl1Tactics < TACTICS_MAX && pl2Tactics < TACTICS_MAX);
     assert(teamPlayingUp == 1 || teamPlayingUp == 2);
     assert(benchTeamIndex == 0 || benchTeamIndex == 1);
-    assert(pl1MPCustomTactics && pl2MPCustomTactics);
+    assert(m_pl1MPCustomTactics && m_pl2MPCustomTactics);
 
     for (int i = 0; i < 6; i++)
-        *strncpy(tacticsTable[TACTICS_USER_A + i]->name,
+        *strncpy(g_tacticsTable[TACTICS_USER_A + i]->name,
             (*customTactics[benchTeamIndex])[i].name, sizeof(Tactics::name) - 1) = '\0';
 
     /* show real index regardless of what we have set it to */
-    selectedFormationEntry = *plRealTactics[benchTeamIndex];
+    selectedFormationEntry = *m_plRealTactics[benchTeamIndex];
 }
 
 

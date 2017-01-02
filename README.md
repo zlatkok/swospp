@@ -10,6 +10,18 @@ Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Fea
 - some small original game bug fixes
 - ...and more... :)
 
+Change list can be seen [here](doc/changes.txt).
+
+
+## Installation
+
+Copy `swospp.bin`, `loader.bin` and `patchit.com` into your Sensible World of Soccer installation directory.
+Run `patchit.com` and choose option 1 (install). If everything goes well it should patch the game's executable
+and print a message that everything went well. After successful patch `patchit.com` is not necessary anymore and
+may be deleted.
+
+To use SWOS++ simply run the game as usual as all features are integrated.
+
 
 ## Hierarchy
 

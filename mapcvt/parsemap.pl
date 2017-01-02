@@ -24,23 +24,30 @@ while (<FILT>) {
     next if !length;        # skip entirely commented or empty lines
     @tokens = split(',', $_);
     @tokens = map { s/^\s+|\s+$//g; $_; } @tokens;  # remove whitespaces
+
     if ($#tokens >= 0) {
         $#tokens != 1 || length($tokens[1]) or die "Symbol attributes missing at line $line.\n";
+
         $symbols{$tokens[0]} and die "Duplicate symbol `$tokens[0]' found at line $line.\n",
             "Previous occurence at line ", $symbols{$tokens[0]}->{'line'}, ".\n";
         $symbols{$tokens[0]} = {'line' => $line};
         $symbols{$tokens[0]}->{'comment'} = $lastPassOverComment if defined($lastPassOverComment);
+
         $lastPassOverComment = undef;
         $i = 1;
         next if @tokens < 2;                # no prefix or type
+
         if ($tokens[1] =~ /prefix\s*(.*)/) {
             length $1 or die "Missing prefix at line $line.\n";
             $symbols{$tokens[0]}->{'prefix'} = $1;
             $i++;
         }
+
         next if $i > $#tokens;              # only got prefix - that's valid too
+
         $symbols{$tokens[0]}->{'C'} = 1;    # register as a C symbol
         $tokens[$i] =~ /prefix($|\s+)/ and die "Syntax error at line $line, duplicate prefix found.\n";
+
         if ($tokens[$i] =~ /\s*function\s*(.*)/) {
             !$symbols{$tokens[0]}->{'function'} or die "Duplicate function found at line $line.\n";
             !length $1 or die "Unexpected input after keyword `function' found at line $line.\n";
@@ -54,7 +61,6 @@ while (<FILT>) {
                 $symbols{$tokens[0]}->{'array_size'} = $4;
                 $symbols{$tokens[0]}->{'array_type'} = $2;
             } else {
-                # shouldn't execute
                 die("Syntax error at line $line\n");
             }
         } else {    # assume it's a type
@@ -324,7 +330,8 @@ print SWOSSYM_H "\n}\n";
 # complain about symbols present in filter but not in map file
 if ($numPresent != keys %symbols) {
     print 'Orphaned symbol' . ($numPresent > 1 ? 's' : '') . " found:\n";
-    while (($name, $data) = each %symbols) {
+    foreach my $name (sort {$symbols{$a}{'line'} cmp $symbols{$b}{'line'}} keys %symbols) {
+        $data = $symbols{$name};
         if (!$data->{'present'}) {
             print "$name, at line $data->{'line'}\n";
         }

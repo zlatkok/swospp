@@ -189,7 +189,7 @@ aboutText:
 
 
     ;
-    ; edit/load diy files menu
+    ; edit/load DIY files menu
     ;
 
     global edit_DIY_Menu
@@ -350,7 +350,7 @@ section .text
 ;   4 word  - ending sprite index
 ;   2 dword - pointer to bitmap animation table - if showing bitmap
 ;             pointer to array of pointers to bitmaps terminated by null
-;   6 word  - sprite/bitmp width
+;   6 word  - sprite/bitmap width
 ;   8 word  - sprite/bitmap height
 ;  10 dword - pointer to string table, format: dword - num. strings, that many pointers to strings follow
 ;
@@ -359,7 +359,7 @@ InitModalDialog:
         mov  [modalDlgArgs], eax
         mov  ax, [eax + 2]
         mov  [currentSprite], ax
-        mov  ax, [currentTick]
+        mov  ax, [g_currentTick]
         mov  [lastTick], ax
         mov  word [direction], 1
         mov  byte [currentMenuFrame], 0
@@ -370,7 +370,7 @@ InitModalDialog:
 ; DrawModalDialog
 ;
 ; Draw modal dialog - a framed menu entry with background and text lines. Text
-; lines will adapt to fit (but it would probably work ok for up to few lines).
+; lines will adapt to fit (but it would probably work OK for up to few lines).
 ; Draw animation if specified.
 ;
 %define DLG_X       50
@@ -387,6 +387,7 @@ DrawModalDialog:
         test al, 1
         mov  eax, DLG_X
         jnz  .draw_framed_rect
+
         add  eax, 30        ; lesser size dialog when no 'ok' button
         sub  ecx, 60
 
@@ -397,10 +398,12 @@ DrawModalDialog:
         mov  eax, [esi + 10]
         test eax, eax
         jz   .no_strings
+
         lea  esi, [eax + 4] ; esi -> first string
         mov  eax, [eax]
         test eax, eax
         jz   .no_strings
+
         mov  edx, eax       ; edx = string counter
         lea  ebx, [eax + 1]
         mov  eax, DLG_HEIGHT
@@ -445,11 +448,14 @@ DrawModalDialog:
         mov  bx, [esi + 2]  ; starting sprite index
         test al, 2          ; sprite or bitmap?
         jnz  .test_bitmap_index
+
         test al, 4
         jz   .sprite_index_ok
+
         test ebx, ebx
         jb   .no_sprite
-        mov  dx, [currentTick]
+
+        mov  dx, [g_currentTick]
         mov  ax, [lastTick]
         mov  cl, [esi + 1]
 
@@ -457,9 +463,11 @@ DrawModalDialog:
         add  eax, ecx
         cmp  eax, edx
         jge  .check_sprite_index
+
         mov  di, [direction]
         test di, di
         jz   .decrease
+
         inc  word [currentSprite]
         jmp  .test_loop
 
@@ -474,6 +482,7 @@ DrawModalDialog:
         mov  ax, [esi + 4]
         cmp  ax, bx
         jge  .check_lower_bound
+
         mov  bx, [esi + 4]
         xor  byte [direction], 1
 
@@ -481,6 +490,7 @@ DrawModalDialog:
         mov  ax, [esi + 2]
         cmp  ax, bx
         jle  .sprite_index_ok
+
         mov  bx, [esi + 2]
         xor  byte [direction], 1
 
@@ -510,10 +520,12 @@ DrawModalDialog:
         mov  edi, [edi + ebx]
         test edi, edi
         jnz  .draw_bitmap
+
         shr  ebx, 2
         dec  ebx
         test byte [esi], 8      ; bit 3 - animation loop
         jz   .test_bitmap_index_loop
+
         xor  ebx, ebx
         jmp  .test_bitmap_index_loop
 
@@ -535,11 +547,13 @@ DrawModalDialog:
         xor  ebx, ebx
         test byte [esi], 4      ; is animation on?
         jz   .no_sprite
+
         mov  al, [esi + 1]      ; animation delay
-        mov  bx, [currentTick]
+        mov  bx, [g_currentTick]
         sub  ebx, eax
         cmp  bx, [lastTick]
         jb   .no_sprite
+
         inc  byte [currentBitmapIndex]
         add  ebx, eax
         mov  [lastTick], bx
@@ -548,6 +562,7 @@ DrawModalDialog:
         mov  al, [esi]
         test al, 1      ; show OK button flag
         jz   .out
+
         mov  eax, DLG_X + DLG_WIDTH / 2 - 15
         mov  ebx, DLG_Y + DLG_HEIGHT - 15 - 6 - 4
         mov  ecx, 30
@@ -693,10 +708,13 @@ DecreasePtr:
 ; Called from SWOS, from ShowMenu. Record stack pointer so we can return to any
 ; of the menus that called us, not just the last one. Stack should look like
 ; this on entry:
-; - caller return address after ShowMenu call
-; - previous active menu entry ptr
-; - previous menu ptr
-; - callers address (from ShowMenu)
+; - return address from our patched call <- stack top
+; - previous active menu entry pointer
+; - previous menu pointer
+; - callers address (that called ShowMenu)
+;
+; Stack state is in our favour allowing us to track both stack state and which menu
+; that state belongs simply by dereferencing saved stack pointer.
 ;
 global PushMenu
 PushMenu:
@@ -715,7 +733,7 @@ PushMenu:
         add  esi, 4
         mov  [menuStackPtr], esi
 
-        mov  word [exitMenu], 0
+        mov  word [g_exitMenu], 0
         retn
 
 
@@ -743,7 +761,7 @@ PopMenu:
         push ebx
 
 .out:
-        mov  word [exitMenu], 0
+        mov  word [g_exitMenu], 0
         retn
 
 
@@ -835,8 +853,8 @@ currentMenuFrame:
         resb 2
 currentBitmapIndex:
         resb 1
-menuStack:          ; circular buffer of menu stack frames
-        resd 6
+menuStack:          ; circular buffer of menu stack frames, this will hopefully be enough
+        resd 10     ; (main -> swpp -> mp -> lobby -> choose team -> club teams -> europe -> england -> league/division)
 menuStackEnd:
 
 

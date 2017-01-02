@@ -12,6 +12,7 @@ Basic:
 - create multiplayer game and change MP options in lobby, restart SWOS and verify that options get saved
 - verify that changing multiplayer options doesn't affect normal options
 - change tactics in multiplayer options menu, make a custom tactics and save, verify that there are no errors and that they get saved properly
+- change team lineup while in multiplayer play match menu, restart and verify that it remains saved between runs
 - with fresh install, verify that default multiplayer game name and player nickname are created
 - create direct connect game, and join from a client
 - exit game via escape, verify it is working properly on both server and the client
@@ -39,6 +40,8 @@ Misc.:
 - test menus when starting the game: game is started when both players are ready and server hits start game button;
   client may happen to have opened other menus than game lobby: choose teams, or continue/abort prompt; verify that
   everything works correctly in that case also (normal game end, as well as error)
+- cause timeout while final synchronization in play match menu (right before the game); verify that game goes to
+  game lobby/join game menu correctly (depending if we are the server or not -- try all the cases)
 
 Memory leaks:
 - each time SWOS is closed look in log file and verify there was no memory leaks

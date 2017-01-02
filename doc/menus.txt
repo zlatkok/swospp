@@ -71,9 +71,9 @@ Menu entries, following the header:
             case 3:
                 ofs30 = sprite index
             }
-            0 - do not draw (nebitno)
+            0 - do not draw
 
-       34 ; tip2 [0,1,2,3,4,5,6,7] -- something of a foreground type
+       34 ; type2 [0,1,2,3,4,5,6,7] -- something of a foreground type
 
             0: NOP, no foreground
             1: ofs38 contains a function pointer, invoke it with x and y
@@ -101,98 +101,106 @@ Menu entries, following the header:
                First sprite is copied into second, second is converted to 8
                colors and eventually drawn to screen.
 
-       36 ; Donji nibl ofs36 predstavlja boju teksta. Ako je nula, onda upisi
-            dvojku (bela boja). Nibl 1 oznacava da li se crta sa malim ili
-            velikim fontom (tj. bit 4, a bitovi 5,6,7 moraju biti nula, posto
-            imamo samo dve mogucnosti). Ako je setovan bit 15, string je
-            left-aligned, a ako je setovan bit 14, string je right aligned.
-            Ako nijedan od ta dva nije setovan, string se centrira u entry-ju.
-            Ako 9. bit nije setovan, i ofs34 je razlicito od nule, entry se
-            crta bez teksta. Ako je setovan bit 13, tekst ce lagano treperiti.
-       38 ; videti ofs34
-       42 ; funkcija on_select
-       46 ; maska za kontrole (and-uje se sa control word-om)
-       48 ; funkcija before_draw, na ulazu esi = A5 -> stavka
-       52 ; funkcija after_draw
+       36 ; Low nibble of offset 36 represents color of the text. If it's zero
+            then use color 2 (white). Nibble 1 represents font size -- small or
+            big (bit 4 that is, bits 5,6,7 must be zero since we only have two
+            possibilities). If bit 14 is set string is left-aligned, and if bit
+            15 is set string is right-aligned. If neither of these bits is on,
+            string is centered across the entry. If bit 9 isn't set and offset
+            34 is not zero, entry is drawn without text. If bit 13 is set text
+            will blink gently.
+       38 ; see ofs34
+       42 ; onSelect function
+       46 ; controls mask (gets AND-ed with control word)
+       48 ; beforeDraw function, on entry esi = A5 -> entry that's drawn
+       52 ; afterDraw function
 
-    sizeof (menu_item) = 56
+    sizeof(MenuItem) = 56
 
-Kordinate stavki su po x osi pomerene udesno za 8 piksela. Tako se stavka sa x
-koordinatom nula u stvari nalazi na osmom pikselu ekrana.
+x coordinates of menu entries are shifted right by 8 pixels. Therefore entry
+with x coordinate zero is in fact begins at eight pixel of the screen.
 
 beforeDraw function executes first, before anything has been drawn. afterDraw
 is executed after all the entry drawing has been done, but before flip so it's
 still possible to alter looks of the entry.
 
-Ukoliko tip1 ili tip2 nisu u propisanom opsegu, izdaje se int3 i ulece u
-beskonacnu petlju. Taj int3 ubija program ako nema debuggera.
+If type1 or type2 fall out of prescribed range, int3 is issued and endless loop
+is entered. int3 will terminate the program if debugger isn't attached.
 
 Type 1 is something of a background type, while type 2 relates to menu entry
 foreground (contents).
 
-Ovo gore se odnosi na (kako sam ih nazvao) "screen menije". Postoje i
-"staticki" (takodje moj naziv) meniji, koje procedura ConvertMenu
-konvertuje u screen menije, i kopira ih u bafer current_menu. Oni imaju
-drugaciji format.
+All this relates to (as I call them) "screen menus". There are "static" menus
+(also my term), which procedure ConvertMenu converts to screen menus, and
+copies them to buffer g_currentMenu. They have a different format, as their
+purpose is to waste as little space as possible.
 
-Uvek prvo ide header. Prvih 16 bajtova se poklapa sa screen menijem (oni se
-uvek kopiraju neizmenjeni). Posle ide broj stavki promenljive duzine,
-kraj jedne je oznacen tipom 0 (word), a kraj menija je oznacen sa -999.
+Static menu always starts with header. Header coincides with screen menu
+header, and is followed by a number of entries of variable length. Entries are
+comprised of variable number of records, each identified by a word. End of
+entry is marked with record type 0, and end of entire menu is marked with
+entry whose x coordinate is -999.
 
-Prilikom konverzije, na x koordinate stavki dodaje se 8.
+During the conversion, 8 is added to each entry x coordinate (as already
+mentioned).
 
+Static menu header:
 
-static_menu_header:
+        See screen menu header (first 16 bytes)
+        Only thing that differs is offset 12 - in static menu that is the index
+        of current entry, while screen menu holds it as a pointer
 
-        Videti header za screen meni (prvih 16 bajtova)
-        Jedino sto se razlikuje je offset 12 - kod statickog je to broj aktivne
-        stavke, dok se to kod ekranskog menija konvertuje u pointer
+sizeof(StaticMenuHeader) = 16
 
-sizeof static_menu_header = 16
-
-Stavka (promenljiva velicina):
+Example of an entry (variable size):
 
         0 - x         ;
-        2 - y         ; ova cetiri polja su fiksna,
-        4 - sirina    ; tj. uvek prisutna
-        6 - visina    ;
-        8 - tip (2, na osnovu ovoga ide skok, ima ih 22)
-       10 - sada idu neka 4 bajta, koja oznacavaju entry-je na koje
-       11 - se prelazi kada se pritisne gore, dole, levo, desno, respektivno
+        2 - y         ; these four fields are fixed,
+        4 - width     ; ie. always present
+        6 - height    ;
+        8 - type (2, code will branch based on this, there are 22 types)
+       10 - 4 bytes follow which are indices of entries we switch to when up,
+       11 - down, left, right is pressed, respectively
        12
        13
-       14 - tip (4)
-       16 - boja frejma i pozadine stavke
-       18 - tip (8)
+       14 - type (4)
+       16 - frame and background color
+       18 - type (8)
        20 - string flags
-       22 - pointer na tekst polja
-       26 - tip (13)
-       28 - funkcija tog polja (selektuje se samo ako je pritisnuto pucanje)
-       30 - tip (0 - sto oznacava kraj stavke)
+       22 - pointer to entry text
+       26 - type (13)
+       28 - entry function (executes when fire is pressed on this entry)
+       30 - type (0) - marking the end of entry
 
-       (ovo je samo primer, ne mora ovako da izgleda)
+       (again, this is only an example, menus can be very varied)
 
 
-Znacenje polja se menja na osnovu tipa (moze da ih ima cak vise ili
-manje), sve dok se ne naleti na tip 0.
+Each record type has its own fields. Records inside the entry are interpreted
+until we run into type 0 record.
 
-Znacenje header wordova (oni idu pre pocetka stavke):
+There are special values for entry x coordinate that have special meaning:
 
--999   kraj menija
--998   sledeca 2 worda su menu_x i menu_y (dodaju se na x i y stavki)
--997   sve nailazece tipove stavljaj u temp menu entry (koji se koristi za
-       inicijalizaciju svih stavki)
--996   vrati temp menu entry na normalu (pozovi InitMenuEntry)
+-999   end of menu
+-998   following two words are menuX and menuY (they will get added to x and
+       y of all following entries)
+-997   template entry follows - copy all records belonging to next entry to
+       template entry which is used to initialize all entries
+-996   return template entry back to normal (call InitMenuEntry)
 
-Tipova ima 22.
+Template entries are used to save space when initializing many entries with
+same records (for example multiple entries that have uniform color and same on
+select function).
+
+There are 22 record types:
+
 ---------------------------
-TIP 0:
+TYPE 0:
 
-oznaka za kraj stavke
+End of entry mark
 ---------------------------
-TIP 1:  (nevidljiva stavka)
+TYPE 1:  (invisible entry)
 
-ofs4 = 1
+ofs4 (isInvisible) = 1
 ---------------------------
 TIP 2:  (pozicije)
 
@@ -801,3 +809,28 @@ gameLobbyMenu
 playMatchMenu
 versusMenu
 stadiumMenu
+
+
+Menu stacking
+-------------
+
+Menus are displayed by ShowMenu procedure. It takes a menu in packed form as a
+parameter in A6, unpacks it, and then calls MenuProc repeatedly until
+g_exitMenu has been set to true.
+
+Before calling PrepareMenu that will prepare given menu (or activate it so to
+say) it pushes pointer to current menu's packed form and it's current entry to
+the stack. This way information about previous menu is saved, and once the
+current menu finishes and steps out of the menu loop, previous menu and it's
+entry are popped off the stack and made into current menu. ShowMenu then
+returns to the caller, as its main task (showing the menu given to it) has
+been completed.
+
+Returning to menu from the game is done differently: SWOS procedure handles
+that by explicitly saving current menu and it's current entry.
+
+By saving pointers to top of the stack when previous menus are saved, and
+manipulating stack we are able to return to any menu in the chain, not only the
+last one that was shown. This is required sometimes, for example returning from
+game lobby to join game menu even if the player opened several menus while
+choosing team.

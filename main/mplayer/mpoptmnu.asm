@@ -19,14 +19,14 @@ section .data
     extern MP_Tactics, MPMenuSetPlayerNick, ChooseTeam
 
     StartMenu mpOptionsMenu, InitializeMPOptionsMenu, MPOptionsMenuAfterDraw, 0, 1
-        %assign START_Y         30
-        %assign WIDTH_COLUMN_1  124
-        %assign WIDTH_COLUMN_2  136
-        %assign OPTION_HEIGHT   11
-        %assign X_COLUMN_1      (WIDTH - WIDTH_COLUMN_1 - WIDTH_COLUMN_2 - 5) / 2
-        %assign X_COLUMN_2      X_COLUMN_1 + WIDTH_COLUMN_1 + 5
-        %assign CHANGER_WIDTH   16
-        %assign CHANGER_HEIGHT  11
+        %assign START_Y                 30
+        %assign WIDTH_COLUMN_1          124
+        %assign WIDTH_COLUMN_2          136
+        %assign OPTION_HEIGHT           11
+        %assign X_COLUMN_1              (WIDTH - WIDTH_COLUMN_1 - WIDTH_COLUMN_2 - 5) / 2
+        %assign X_COLUMN_2              X_COLUMN_1 + WIDTH_COLUMN_1 + 5
+        %assign CHANGER_WIDTH           16
+        %assign CHANGER_HEIGHT          11
         %assign CHANGER_OPTION_WIDTH    WIDTH_COLUMN_2 - CHANGER_WIDTH * 2 - 2
 
         MenuXY -8, 0

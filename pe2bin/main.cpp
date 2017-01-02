@@ -7,7 +7,7 @@
 #include "zk.h"
 
 #define MAX_FILENAME 256
-#define FIXUP_ARRAY_SIZE 5000
+#define FIXUP_ARRAY_SIZE 6000
 
 #define FALSE 0
 #define TRUE  1
@@ -41,9 +41,10 @@ static int pbPtr;
 static void push(dword *stack, int *stackptr, dword addr)
 {
     if (*stackptr >= FIXUP_ARRAY_SIZE) {
-        fputs("Fixup stack overflow!", stderr);
+        fprintf(stderr, "Fixup stack overflow! Size: %d\n", FIXUP_ARRAY_SIZE);
         exit(1);
     }
+
     stack[(*stackptr)++] = addr;
 }
 
@@ -94,6 +95,7 @@ static int checksum(dword c, int i, unsigned char *mem, int memSize)
         c |= t >> 31;
         c ^= i + *mem;
     }
+
     return c;
 }
 
@@ -140,11 +142,13 @@ static int sectionOrder[] = { SEC_TEXT, SEC_DATA, SEC_RDATA, SEC_PTDATA, SEC_REL
 
 static void *xmalloc(size_t size)
 {
-    void *p;
-    if (!(p = malloc(size))) {
+    void *p = malloc(size);
+
+    if (!p) {
         fputs("Out of memory.", stderr);
         exit(1);
     }
+
     return p;
 }
 
@@ -181,6 +185,7 @@ static bool isIgnoredSection(bool *ignoredSections, dword address, const Section
         if (address >= sectionHeaders[i].vaddr && address < sectionHeaders[i].vaddr + sectionHeaders[i].virtualSize)
             return ignoredSections[i];
     }
+
     return false;
 }
 
@@ -247,9 +252,12 @@ static void getDestinationFilename(const char *fileArg, char *dest, size_t destL
     dest[destLen - 1] = '\0';
 
     char *dot;
-    for (dot = &dest[len - 1]; dot >= dest && *dot != '.'; dot--);
+    for (dot = &dest[len - 1]; dot >= dest && *dot != '.'; dot--)
+        ;
+
     if (*dot != '.')
         *(dot = &dest[len - 1]) = '.';
+
     for (len = destLen - (dot++ - dest) - 1; len > 3; len--)
         if (!(*dot++ = *ext++))
             break;
@@ -269,6 +277,7 @@ static const char *getSectionName(dword value, const SectionHeader *sectionHeade
             return sectionName;
         }
     }
+
     return "<unknown section>";
 }
 
@@ -278,6 +287,7 @@ static int getRelocSectionFixupPointingTo(dword value)
     for (size_t i = 0; i < SECTS_NEEDED; i++)
         if (value >= sects[i].vaddr && value < sects[i].vaddr + sects[i].vsize)
             return i;
+
     return -1;
 }
 
@@ -367,8 +377,10 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
                 RelocSections toSection = toSectionIndex >= 0 ? sects[toSectionIndex].relocIndex : INVALID;
 
                 if (toSection == INVALID && (toSection = displacementRelocFix(value, sects[i].buffer, ofs, rdataOffset)) == INVALID) {
-                    fprintf(stderr, "Fixup record pointing to unknown or invalid section `%s' (from section `%s').\n", getSectionName(value, sectionHeaders, numSections), sects[j].name);
-                    fprintf(stderr, "value: 0x%08x pageRVA: %08x offset: 0x%08x type = %d ordinal %d, total %d\n", value, pageRVA, ofs, type, j, numRelocs);
+                    fprintf(stderr, "Fixup record pointing to unknown or invalid section `%s' (from section `%s').\n",
+                        getSectionName(value, sectionHeaders, numSections), sects[j].name);
+                    fprintf(stderr, "value: 0x%08x pageRVA: %08x offset: 0x%08x type = %d ordinal %d, total %d\n",
+                        value, pageRVA, ofs, type, j, numRelocs);
                     /* don't end program here; we issued a warning, image probably won't run, but maybe this is some kind of experiment */
                     ++*warnings;
                     break;
@@ -383,17 +395,20 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
                 switch (toSection) {
                 case CODE:
                     break;
+
                 case DATA:
                     /* offset bss references since it comes between data and rdata */
                     if (*fixupLoc >= bssOffset)
                         *fixupLoc += rdataSize;
                     *fixupLoc += sects[SEC_TEXT].size;
                     break;
+
                 case SWOS:
                     value -= sects[SEC_SWOS].vaddr;
                     if (value >= 0xb0000)
                         *fixupLoc -= 0xb0000;
                     break;
+
                 case RDATA:
                     if (value >= peopt->dataDir[DIR_IAT].vaddr && value < peopt->dataDir[DIR_IAT].vaddr + peopt->dataDir[DIR_IAT].size) {
                         fprintf(stderr, "Unsupported DLL call from section %s, offset 0x%08x.\n", sects[j].name, ofs);
@@ -401,19 +416,23 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
                         *fixupLoc = 0;
                         ++*warnings;
                     }
+
                     value -= sects[SEC_RDATA].vaddr;
                     if (value >= rdataOffset && value < rdataOffset + rdataSize) {
                         *fixupLoc += sects[SEC_TEXT].size + sects[SEC_DATA].size;
                         ourRdataItem = true;
                     }
                     break;
+
                 case PATCH:
                     if (value >= patchOffset && value < patchOffset + patchSize) {
                         fprintf(stderr, "Fixup record pointing to patch data! This shouldn't happen!\n");
                         exit(1);
                     }
+
                     fprintf(stderr, "Fixup record pointing to `.ptdata' section, but not to patch data!!!\n");
                     exit(1);
+
                 default:
                     reportInvalidFixup(sects[i].name, sects[toSectionIndex].name, ofs);
                 }
@@ -424,39 +443,53 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
                 case RDATA:
                     if (toSection == RDATA && !ourRdataItem)
                         break;
+
                     switch (fromSection) {
                     case RDATA:
                         ofs += sects[SEC_DATA].size - rdataOffset;
+                        /* fall-through */
+
                     case DATA:
                         ofs += sects[SEC_TEXT].size;
+                        /* fall-through */
+
                     case CODE:
                         addCodeBaseFixup(ofs);
                         break;
+
                     case PATCH:
                         addPatchBaseFixup(ofs);
                         break;
+
                     default:
                         reportInvalidFixup(sects[i].name, sects[toSectionIndex].name, ofs);
                     }
                     break;
+
                 case SWOS:
                     switch (fromSection) {
                     case RDATA:
                         ofs += sects[SEC_DATA].size - rdataOffset;
+                        /* fall-through */
+
                     case DATA:
                         ofs += sects[SEC_TEXT].size;
+                        /* fall-through */
+
                     case CODE:
                         if (value < 0xb0000)
                             addCodeSWOSCFixup(ofs);
                         else
                             addCodeSWOSDFixup(ofs);
                         break;
+
                     case PATCH:
                         if (value < 0xb0000)
                             addPatchSWOSCFixup(ofs);
                         else
                             addPatchSWOSDFixup(ofs);
                         break;
+
                     default:
                         reportInvalidFixup(sects[i].name, sects[toSectionIndex].name, ofs);
                     }
@@ -492,7 +525,7 @@ int __cdecl main(int argc, char **argv)
     assert(sizeofarray(sects) == sizeofarray(sectionOrder));
 
     fputs("pe2bin v1.2 - converter from Win32 PE exe to Zlatko Karakas Binary Format\n"
-          "Copyright Zlatko Karakas 2003-2016.\n\n", stderr);
+          "Copyright Zlatko Karakas 2003-2017.\n\n", stderr);
 
     if (argc < 2) {
         fputs("Input filename missing.\n", stderr);
@@ -538,7 +571,8 @@ int __cdecl main(int argc, char **argv)
 
     /* allocate memory and read in all section headers */
     if (peh.numSections < sizeofarray(sects)) {
-        fprintf(stderr, "Required sections missing. Executable only has %d (required at least %u).\n", peh.numSections, sizeofarray(sects));
+        fprintf(stderr, "Required sections missing. Executable only has %d (required at least %u).\n",
+            peh.numSections, sizeofarray(sects));
         return 1;
     }
 
@@ -551,45 +585,54 @@ int __cdecl main(int argc, char **argv)
         for (j = 0; j < peh.numSections; j++)
             if (!strncmp((const char *)sectionHeaders[j].name, sects[sectionOrder[i]].name, strlen(sects[sectionOrder[i]].name)))
                 break;
+
         if (j >= peh.numSections) {
             fprintf(stderr, "Required section %s is missing.\n", sects[sectionOrder[i]].name);
             return 1;
         }
+
         sec = sectionHeaders + j;
         sects[sectionOrder[i]].vaddr = sec->vaddr;
         sects[sectionOrder[i]].vsize = sec->virtualSize;
         sects[sectionOrder[i]].size = min(sec->sizeOfRawData, sec->virtualSize);
+
         /* round up text size on base 4 because of data alignment */
         if (j == SEC_TEXT)
             sects[sectionOrder[i]].size = (sects[sectionOrder[i]].size + 3) & ~3;
+
         /* load it up */
         if (sec->sizeOfRawData) {
             safefseek(in, sec->ptrToRawData, SEEK_SET);
             sects[sectionOrder[i]].buffer = (unsigned char *)xmalloc(sects[sectionOrder[i]].size);
             safefread(sects[sectionOrder[i]].buffer, sects[sectionOrder[i]].size, 1, in);
         }
+
         /* and finally go on and process it */
         switch (sectionOrder[i]) {
         case SEC_TEXT:  /* entry point MUST be in .text section */
             entryPoint = peopt.entryPoint - sec->vaddr;
             break;
+
         case SEC_DATA:  /* expecting .bss to be merged with .data */
             bssSize = sec->virtualSize - sec->sizeOfRawData;
             bssOffset = sec->sizeOfRawData;
             bssSize = max(0, bssSize);
             break;
+
         case SEC_RDATA:
             if (peopt.dataDir[DIR_EXPORT].vaddr < sec->vaddr ||
                 peopt.dataDir[DIR_EXPORT].vaddr + peopt.dataDir[DIR_EXPORT].size > sec->vaddr + sec->virtualSize) {
                 fputs("Export directory must be in `.rdata' section.\n", stderr);
                 return 1;
             }
+
             base = (char *)sects[SEC_RDATA].buffer;
             edt = (ExportDirectoryTable *)(base + peopt.dataDir[DIR_EXPORT].vaddr - sec->vaddr);
             functions = (dword *)(base + edt->exportAddrTableRVA - sec->vaddr);
             ordinals = (word *)(base + edt->ordinalTableRVA - sec->vaddr);
             names = (dword *)(base + edt->namePointerRVA - sec->vaddr);
             gotPatchSize = gotPatchStart = FALSE;
+
             for (j = 0; j < edt->addrTableEntries; j++) {
                 dword entryPointRVA = functions[j], i;
 
@@ -610,14 +653,17 @@ int __cdecl main(int argc, char **argv)
                     }
                 }
             }
+
             if (!gotPatchSize) {
                 fputs("Could not find exported symbol `PatchSize'\n", stderr);
                 return 1;
             }
+
             if (!gotPatchStart) {
                 fputs("Could not find exported symbol `PatchStart'\n", stderr);
                 return 1;
             }
+
             /* calculate exact size of import section (if it exists) */
             if (peopt.dataDir[DIR_IMPORT].size) {
                 int size = 0;
@@ -629,17 +675,22 @@ int __cdecl main(int argc, char **argv)
                         fprintf(stderr, "Forwarder chains not supported.\n");
                         return 1;
                     }
+
                     p = (uchar *)(base + idt->nameRVA - sec->vaddr);
+
                     while (*p++)
                         size++;
+
                     size++;
                     d = (dword *)(base + idt->lookupTableRVA - sec->vaddr);
+
                     for (; *d; d++) {
                         if (!(*d & ~INT_MAX)) {
                             p = (uchar *)(base + (*d & INT_MAX) - sec->vaddr);
                             p += 2, size += 2;
                             while (*p++)
                                 size++;
+
                             size++;
                             size += (uint)p & 1;
                         }
@@ -660,17 +711,22 @@ int __cdecl main(int argc, char **argv)
                 if (peopt.dataDir[DIR_IAT].vaddr == rptr)
                     rptr += peopt.dataDir[DIR_IAT].size;
             }
+
             rdataOffset = rptr;
             rptr = sec->vaddr + sects[SEC_RDATA].size;
             if (rdataOffset < peopt.dataDir[DIR_IMPORT].vaddr)
                 rptr = peopt.dataDir[DIR_IMPORT].vaddr;
+
             if (rdataOffset < peopt.dataDir[DIR_EXPORT].vaddr)
                 rptr = min(rptr, peopt.dataDir[DIR_EXPORT].vaddr);
+
             if (rdataOffset < peopt.dataDir[DIR_IAT].vaddr)
                 rptr = min(rptr, peopt.dataDir[DIR_IAT].vaddr);
+
             rdataSize = rptr - rdataOffset;
             rdataOffset -= sec->vaddr;
             break;
+
         case SEC_PTDATA:
             patchSize = *(dword *)(sects[SEC_PTDATA].buffer + patchSize - sec->vaddr);
             patchOffset -= sec->vaddr;
@@ -679,6 +735,7 @@ int __cdecl main(int argc, char **argv)
                 exit(1);
             }
             break;
+
         case SEC_SWOS:
             if (sec->sizeOfRawData) {
                 fputs("Section .swos contains actual data/code!\n", stderr);
@@ -765,12 +822,14 @@ int __cdecl main(int argc, char **argv)
             sects[i].buffer = NULL;
         }
     }
+
     fclose(out);
 
     if (warnings > 0)
         fprintf(stderr, "%d warning(s). Image may not run.\n", warnings);
     else
         fputs("All OK.\n", stderr);
+
     fprintf(stderr, "Memory required for loading: %d bytes\n", zk.codeSize + zk.bssSize + zk.patchSize + zk.relocSize);
 
     return 0;

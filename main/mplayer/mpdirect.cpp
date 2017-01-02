@@ -5,59 +5,63 @@
     while doing that, since it might take a while.
 */
 
+#include "mpdirect.h"
 #include "mplayer.h"
+#include "mplobby.h"
 
+/* from .asm files */
 extern "C" void SetGameLobbyMenuServerMode(bool);
 extern "C" char *GetDirectConnectMenu();
 extern "C" char *GetGameLobbyMenu();
 extern "C" void JoinRemoteGame(int gameIndex);
 
-static bool directServerMode;
-static byte directGameNameLength;
-static char directGameName[GAME_NAME_LENGTH + 1];
-static char directGameNickname[NICKNAME_LEN + 1];
-static char commFile[9];
-static word directConnectTimeout = 30 * 70;         /* default timeout if nothing given */
-static int directGameIndex = -1;
+static bool m_directServerMode;
+static byte m_directGameNameLength;
+static char m_directGameName[GAME_NAME_LENGTH + 1];
+static char m_directGameNickname[NICKNAME_LEN + 1];
+static char m_commFile[9];
+static word m_directConnectTimeout = 30 * 70;       /* default timeout if nothing given */
+static int m_directGameIndex = -1;
 
 
 /** GetDirectGameName
 
-    Return pointer to the direct mode game name. Must always return valid pointer.
+    Return pointer to the direct mode game name. Must always return a valid pointer.
+    If this string is non-null, then we are in direct connect mode.
 */
 const char *GetDirectGameName()
 {
-    return directGameName;
+    return m_directGameName;
 }
 
 
-static void SetDirectServerMode(bool isServer, const char *start, const char *end)
+void SetDirectGameName(bool isServer, const char *start, const char *end)
 {
     assert(end + 1 >= start);
-    directServerMode = isServer;
+    m_directServerMode = isServer;
     assert(GAME_NAME_LENGTH < 256);
     start += *start == '"';
-    directGameNameLength = strncpy(directGameName, start, min(end - start + 1, GAME_NAME_LENGTH)) - directGameName;
-    directGameName[directGameNameLength] = '\0';
+    m_directGameNameLength = strncpy(m_directGameName, start, min(end - start + 1, GAME_NAME_LENGTH)) - m_directGameName;
+    m_directGameName[m_directGameNameLength] = '\0';
 }
 
 
-static void SetNickname(const char *start, const char *end)
+void SetNickname(const char *start, const char *end)
 {
     assert(end + 1 >= start);
     start += *start == '"';
-    *strncpy(directGameNickname, start, min(end - start + 1, NICKNAME_LEN)) = '\0';
+    *strncpy(m_directGameNickname, start, min(end - start + 1, NICKNAME_LEN)) = '\0';
 }
 
 
-static void SetCommFile(const char *start, const char *end)
+void SetCommFile(const char *start, const char *end)
 {
     assert(end + 1 >= start);
-    *strncpy(commFile, start, min(end - start + 1, (int)sizeof(commFile) - 1)) = '\0';
+    *strncpy(m_commFile, start, min(end - start + 1, (int)sizeof(m_commFile) - 1)) = '\0';
 }
 
 
-static void SetTimeout(const char *start, const char *end)
+void SetTimeout(const char *start, const char *end)
 {
     int newTimeout = 0;
 
@@ -69,70 +73,30 @@ static void SetTimeout(const char *start, const char *end)
     newTimeout = max(5 * 70, newTimeout);
     newTimeout = min(60 * 70, newTimeout);
 
-    directConnectTimeout = newTimeout;
+    m_directConnectTimeout = newTimeout;
 }
 
 
 const char *GetDirectGameNickname()
 {
-    return directGameNickname;
+    return m_directGameNickname;
 }
 
 
-static const char *GetStringEnd(const char *start)
+void DirectModeOnCommandLineParsingDone()
 {
-    auto end = start;
+    strupr(m_directGameName);
+    strupr(m_directGameNickname);
 
-    if (*end == '"') {
-        end++;
-        while (*end && *end != '"')
-            end++;
-    } else {
-        while (*end && !isspace(*end))
-            end++;
+    if (m_directGameName[0]) {
+        WriteToLog("Direct connect mode: %d (%s), gameName: \"%s\"", m_directGameName[0] != '\0',
+            m_directServerMode ? "server" : "client", m_directGameName);
+        WriteToLog("Nickname for direct connect: \"%s\", timeout = %d", m_directGameNickname, m_directConnectTimeout);
+        WriteToLog("Communication file: \"%s\"", m_commFile);
+
+        /* skip intro animation and jump right into game lobby/game search menu */
+        PatchByte(Initialization, 0x19, 1);
     }
-
-    return end - 1;
-}
-
-
-/** GetCommandLine
-
-    buff -> buffer to receive the command line
-
-    Transfer command line string from PSP to user-supplied buffer. Buffer has to be big enough,
-    including space for terminating zero. That means 257 bytes in the worst case, since command
-    line length is a byte.
-*/
-static void GetCommandLine(char *buff)
-{
-    asm volatile (
-        "push es                \n"
-        "push ds                \n"
-
-        "mov  ah, 0x62          \n"
-        "int  0x21              \n"     // ebx -> PSP
-
-        "mov  eax, ds           \n"
-        "mov  es, eax           \n"
-        "mov  ds, ebx           \n"
-
-        "mov  esi, 0x80         \n"     // offset 0x80 string length, offset 0x81 string itself
-        "movzx ecx, byte ptr [esi]  \n"
-        "jcxz .out              \n"
-
-        "inc  esi               \n"
-        "rep  movsb             \n"
-
-".out:                          \n"
-        "mov  byte ptr es:[edi], 0  \n"
-        "pop  ds                \n"
-        "pop  es                \n"
-
-        : "+D" (buff)
-        :
-        : "eax", "ebx", "ecx", "esi", "memory", "cc"
-    );
 }
 
 
@@ -143,7 +107,7 @@ static void GetCommandLine(char *buff)
     Display SWOS menu with given message, and "exit" button. When player presses
     exit shut down SWOS cleanly.
 */
-extern "C" void ShowErrorAndQuit(const char *message = nullptr)
+extern "C" void ShowErrorAndQuit(const char *message /* = nullptr*/)
 {
     if (message) {
         A0 = (dword)strupr((char *)message);
@@ -157,57 +121,6 @@ extern "C" void ShowErrorAndQuit(const char *message = nullptr)
 }
 
 
-/** ParseCommandLine
-
-    SWOS++ command line parsing. Switches are case insensitive. Switch parameters
-    follow switches immediately, no spaces. If switch parameter is a string, and it
-    contains spaces, start and end it with a quote (").
-*/
-static void ParseCommandLine()
-{
-    char cmdLine[257];
-    GetCommandLine(cmdLine);
-
-    const char *end;
-    bool isServer = false;
-
-    for (const char *p = cmdLine; *p; p++) {
-        if (*p == '/') {
-            end = ++p;
-            switch (*p++) {
-            case 's':
-                isServer = true;
-                /* pass through */
-            case 'c':
-                SetDirectServerMode(isServer, p, end = GetStringEnd(p));
-                break;
-            case 't':
-                SetTimeout(p, end = GetStringEnd(p));
-                break;
-            case 'i':
-                SetCommFile(p, end = GetStringEnd(p));
-                break;
-            case 'p':
-                SetNickname(p, end = GetStringEnd(p));
-                break;
-            }
-            p = end + (*p == '"');
-        }
-    }
-
-    strupr(directGameName);
-    strupr(directGameNickname);
-
-    WriteToLog("Command line is: \"%s\"", cmdLine);
-
-    if (directGameName[0]) {
-        WriteToLog("Direct connect mode: %d (%s), gameName: \"%s\"", directGameName[0] != '\0', directServerMode ? "server" : "client", directGameName);
-        WriteToLog("Nickname for direct connect: \"%s\", timeout = %d", directGameNickname, directConnectTimeout);
-        WriteToLog("Communication file: \"%s\"", commFile);
-    }
-}
-
-
 /** MainMenuSelect
 
     Parse command line looking for direct mode switches and return main menu SWOS will show.
@@ -215,13 +128,11 @@ static void ParseCommandLine()
 */
 extern "C" const char *MainMenuSelect()
 {
-    ParseCommandLine();
-
     if (GetDirectGameName()[0]) {
         auto failureReason = InitMultiplayer();
         if (!failureReason) {
-            SetGameLobbyMenuServerMode(directServerMode);
-            return directServerMode ? GetGameLobbyMenu() : GetDirectConnectMenu();
+            SetGameLobbyMenuServerMode(m_directServerMode);
+            return m_directServerMode ? GetGameLobbyMenu() : GetDirectConnectMenu();
         } else
             ShowErrorAndQuit(failureReason);
     }
@@ -236,21 +147,21 @@ extern "C" const char *MainMenuSelect()
 }
 
 
-static word connectingAnimationTimer;
+static word m_connectingAnimationTimer;
 
 /** SearchForTheDirectConnectGame
 
-    We get called from network module and given all games found so far. Look through
-    it and see if one of them is the one we look for; set directGameIndex if we found it.
+    We get called from network module and given all the games found so far. Look through
+    it and see if one of them is the one we look for; set m_directGameIndex if we found it.
 */
 static void SearchForTheDirectConnectGame(const WaitingToJoinReport *report)
 {
-    if (directGameIndex < 0) {
+    if (m_directGameIndex < 0) {
         for (int i = 0; i < MAX_GAMES_WAITING; i++) {
             if (report->waitingGames[i] == (char *)-1)
                 break;
-            if (!strncmp(report->waitingGames[i], directGameName, directGameNameLength)) {
-                directGameIndex = i;
+            if (!strncmp(report->waitingGames[i], m_directGameName, m_directGameNameLength)) {
+                m_directGameIndex = i;
                 break;
             }
         }
@@ -263,6 +174,7 @@ static constexpr int GetConnectingEntryIndex()
     return 1;
 }
 
+
 static MenuEntry *GetConnectingEntry()
 {
     D0 = GetConnectingEntryIndex();
@@ -271,8 +183,8 @@ static MenuEntry *GetConnectingEntry()
 }
 
 
-static int connectingStringLength;
-static word connectingStartTick;
+static int m_connectingStringLength;
+static word m_connectingStartTick;
 
 /** SearchForTheGameInit
 
@@ -283,35 +195,34 @@ extern "C" void SearchForTheGameInit()
 {
     auto connectingEntry = GetConnectingEntry();
     connectingEntry->disabled = true;
-    connectingStringLength = strlen(connectingEntry->u2.string);
-
-    connectingAnimationTimer = connectingStartTick = currentTick;
-    EnterWaitingToJoinState(SearchForTheDirectConnectGame, directConnectTimeout);
+    m_connectingStringLength = strlen(connectingEntry->u2.string);
+    m_connectingAnimationTimer = m_connectingStartTick = g_currentTick;
+    EnterWaitingToJoinState(SearchForTheDirectConnectGame, m_directConnectTimeout);
 }
 
 
 /** UpdateConnectingAnimation
 
-    Game search is under-way, update animation.
+    Game search is underway, update animation.
 */
 static void UpdateConnectingAnimation()
 {
-    static const word NEXT_FRAME_TICKS = 21;
-
+    const word kNextFrameTicks = 21;
     auto connectingEntry = GetConnectingEntry();
 
-    auto now = currentTick;
-    if (connectingAnimationTimer + NEXT_FRAME_TICKS < now) {
-        while (connectingAnimationTimer <= now)
-            connectingAnimationTimer += NEXT_FRAME_TICKS;
+    auto now = g_currentTick;
+    if (m_connectingAnimationTimer + kNextFrameTicks < now) {
+        while (m_connectingAnimationTimer <= now)
+            m_connectingAnimationTimer += kNextFrameTicks;
 
         static int animationState = 3;
         int currentState = animationState++ % 4;
         int i = 0;
-        while (i < currentState)
-            connectingEntry->u2.string[connectingStringLength - 3 + i++] = '.';
-        connectingEntry->u2.string[connectingStringLength - 3 + i] = '\0';
 
+        while (i < currentState)
+            connectingEntry->u2.string[m_connectingStringLength - 3 + i++] = '.';
+
+        connectingEntry->u2.string[m_connectingStringLength - 3 + i] = '\0';
         A5 = (dword)connectingEntry;
         calla(DrawMenuItem);
     }
@@ -338,12 +249,13 @@ static void HideSearchDialog()
 */
 extern "C" void UpdateGameSearch()
 {
-    if (directGameIndex >= 0) {
+    if (m_directGameIndex >= 0) {
         WriteToLog("Direct connect game found! Trying to connect...");
         HideSearchDialog();
-        JoinRemoteGame(directGameIndex);
-    } else if (currentTick > connectingStartTick + directConnectTimeout)
+        JoinRemoteGame(m_directGameIndex);
+    } else if (g_currentTick > m_connectingStartTick + m_directConnectTimeout) {
         ShowErrorAndQuit("Game not found.");
-    else
+    } else {
         UpdateConnectingAnimation();
+    }
 }

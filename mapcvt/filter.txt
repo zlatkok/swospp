@@ -7,7 +7,7 @@
 # Optional part following will also add the symbol to C header file, with
 # specified type. Symbols without type will not go into C header file.
 
-scanCode
+g_scanCode
 prevVideoMode, byte
 StopAIL
 CDROM_StopAudio
@@ -19,9 +19,9 @@ currentTeamNumber
 FindFiles, function
 aHigh
 SelFilesBeforeDrawCommon
-joy1_X_value
-joy2_X_value
-Initialization
+g_joy1XValue
+g_joy2XValue
+Initialization, function
 SWOSMainMenuInit
 GetTextSize
 GameLoop, function
@@ -34,7 +34,7 @@ EndProgram, prefix SWOS_, function
 CommonMenuExit
 nextGoalPtr
 goal_base_ptr
-currentMenu, Menu *
+g_currentMenu, Menu *
 current_hil_ptr
 hil_num_goals
 hil_file_buffer
@@ -48,8 +48,8 @@ aSetup_dat
 setupDatBuffer
 WriteFile
 controlWord, word
-joy1Status, word
-joy2Status, word
+g_joy1Status, word
+g_joy2Status, word
 SetControlWord
 Joy2SetStatus, function
 Player1StatusProc, function
@@ -67,32 +67,32 @@ SetExitMenuFlag, function
 ### controls
 
 UP
-joy1_min_X
-joy1_min_Y
-joy1_max_X
-joy1_max_Y
-joy1_center_X
-joy1_center_Y
-joy1_X_negative_divisor
-joy1_X_positive_divisor
-joy1_Y_negative_divisor
-joy1_Y_positive_divisor
-numLoopsJoy1, word
-joy2_min_X
-joy2_min_Y
-joy2_max_X
-joy2_max_Y
-joy2_center_X
-joy2_center_Y
-joy2_X_negative_divisor
-joy2_X_positive_divisor
-joy2_Y_negative_divisor
-joy2_Y_positive_divisor
-numLoopsJoy2, word
-joy1_fire_1
-joy1_fire_2
-joy2_fire_1
-joy2_fire_2
+g_joy1MinX
+g_joy1MinY
+g_joy1MaxX
+g_joy1MaxY
+g_joy1CenterX
+g_joy1CenterY
+g_joy1XLeftDivisor
+g_joy1XRightDivisor
+g_joy1YTopDivisor
+g_joy1YBottomDivisor
+g_numLoopsJoy1, word
+g_joy2MinX
+g_joy2MinY
+g_joy2MaxX
+g_joy2MaxY
+g_joy2CenterX
+g_joy2CenterY
+g_joy2XLeftDivisor
+g_joy2XRightDivisor
+g_joy2YTopDivisor
+g_joy2YBottomDivisor
+g_numLoopsJoy2, word
+g_joy1Fire1
+g_joy1Fire2
+g_joy2Fire1
+g_joy2Fire2
 
 ### SWOS original options
 
@@ -106,8 +106,8 @@ commentary, word
 chairmanScenes, word
 
 SetDefaultOptions
-joyKbdWord, word
-sineCosineTable, array short[256]
+g_joyKbdWord, word
+kSineCosineTable, array const short[256]
 vsPtr, char *
 
 ### 68k register set
@@ -141,13 +141,13 @@ SetCurrentEntry, function
 DrawMenu, function
 LoadDIYFile, function
 PrimitivePrintf, function
-numSelectedTeams, word
-selectedTeams, array TeamFile
-gameType, word
+g_numSelectedTeams, word
+g_selectedTeams, array TeamFile
+g_gameType, word
 aComputer
 aPlayerCoach_0
 aCoach_3
-pitchDatBuffer, array char
+g_pitchDatBuffer, array char
 DoContinueAbortMenu
 aContinue
 aAbort
@@ -164,7 +164,7 @@ lastKey, word
 DumpScreen
 VerifyJoypadControls, function
 aAsave_256
-currentTick, volatile ushort
+currentTick, prefix g_, volatile ushort
 seed, byte
 seed2, byte
 Rand, function
@@ -182,12 +182,12 @@ RestoreOptions, function
 DrawMenuItem, function
 aOff
 aOn
-exitMenu
+g_exitMenu
 InputText
 DrawMenuBack
 MenuProc
-WaitRetrace
-ReadGamePort, function
+WaitRetrace, function
+ReadGamePort, prefix SWOS_, function
 DrawOuterFrame
 bigCharsTable, pointer char
 aOk
@@ -269,7 +269,7 @@ currentMenuPtr
 ExitChooseTeams
 menuFade, word
 contAbortResult
-CallAfterDraw
+RestorePreviousMenu
 continueAbortMenu
 aPlus
 aMinus
@@ -325,8 +325,8 @@ DrawSpriteInColor, function
 DrawBenchAndSubsMenu, function
 DrawBenchPlayersAndCoach, function
 DrawSpriteInGame, prefix SWOS_, function
-DrawSubstitutesMenu, function
-DrawFormationMenu, function
+DrawSubstitutesMenu, prefix SWOS_, function
+DrawFormationMenu, prefix SWOS_, function
 SubstitutePlayerIfFiring, function
 EnqueueSubstituteSample, function
 subsState, short
@@ -348,7 +348,7 @@ DrawSpriteCentered, function
 DrawLittlePlayersAndBall, function
 pl1Tactics, word
 pl2Tactics, word
-tacticsTable, array Tactics *
+g_tacticsTable, array Tactics *
 ShowFormationMenu, function
 ChangeFormationIfFiring, function
 CheckContinueAbortPrompt, function
@@ -367,7 +367,8 @@ InitializeTacticsPositions, function
 InitMainMenuStuff, function
 hexDigits, array const char
 continueMenu, array char
-FadeOut
+FadeOutToBlack
+FadeOut, function
 LoadFillAndSwtitle
 screenWidth
 _STACKTOP
@@ -398,6 +399,13 @@ MakePlayerNameSprite
 playerPositionsArray
 PlayMatchMenuSwapPlayers
 showingCpuTeams
+VersusInit, function
+ShowStadiumInit, function
+g_joy1X
+g_joy1Y
+g_joy2X
+g_joy2Y
+
 
 
 ### Watcom C library

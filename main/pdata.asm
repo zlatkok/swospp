@@ -40,12 +40,14 @@ section .text
 extern replayStatus, EndProgram, SwitchToPrevVideoMode
 extern ShutDownNetwork, qAllocFinish
 
+
 ; Hook ALT-F1 fast exit, as well as normal exit from menu.
 HookTermination:
         WriteToLog "Termination handler invoked."
         call SwitchToPrevVideoMode
         xor  eax, eax
         jmp  EndProgram
+
 
 ; We are overwriting unused invisible entry in main menu, so have to show it explicitly.
 MakeSWOSPPVisible:
@@ -100,27 +102,28 @@ AddReplayDesc:
 
 
 ; reset control variables to zero, in case setup.dat contains some values
+extern VerifyJoysticks
 ResetControlVars:
         xor  eax, eax
-        mov  [joy1_X_value], eax
-        mov  [joy2_X_value], eax
-        mov  [joy1Status], eax
+        mov  [g_joy1XValue], eax
+        mov  [g_joy2XValue], eax
+        mov  [g_joy1Status], eax
         mov  [setupDatBuffer], ax
 
         mov  al, [pl2Keyboard]
-        test al, al             ; if true, both players are on the keyboard
+        test al, al                         ; if true, both players are on the keyboard
         jnz  .pl2_kbd
 
-        calla VerifyJoypadControls ; this will prevent controls blocking if there is currently no joypad attached
-        WriteToLog "joyKbdWord = %hd, after VerifyJoypadControls", dword [joyKbdWord]
+        call VerifyJoysticks  ; this will prevent controls blocking if there is currently no joystick attached
+        WriteToLog "g_joyKbdWord = %hd, after VerifyJoysticks()", dword [g_joyKbdWord]
         retn
 
 .pl2_kbd:
-        mov  word [joyKbdWord], 4   ; just in case user changed config through install.exe
+        mov  word [g_joyKbdWord], 4         ; just in case user changed config through install.exe
         retn
 
 
-; if shirt number is out of normal range, add 3000 to it
+; if shirt number is out of normal range, add 9000 to it
 SetPlayerNumber:
         test ax, ax
         jz   .increase
@@ -132,19 +135,19 @@ SetPlayerNumber:
         retn
 
 .increase:
-        add  ax, 3000
+        add  ax, 9000
         jmp  short .return
 
 
 ; We will execute inside DrawSprites loop, and check sprite number that's being drawn.
-; If it's over 3000, it means it's player number that's greater than 16. We'll limit them to 99 also.
+; See if it's over 9000!!!! It means it's player number that's greater than 16.
 ;
 ; in:
 ;     ax -  sprite number
 ;    esi -> Sprite structure
 ;
 DrawPlayerNumber:
-        cmp  ax, 3000
+        cmp  ax, 9000
         ja   .custom_draw
 
 .return:
@@ -153,7 +156,7 @@ DrawPlayerNumber:
         retn
 
 .custom_draw:
-        sub  ax, 3000 + 1187
+        sub  ax, 9000 + 1187
         cmp  ax, 255                ; clamp it to byte, that field in file is a byte
         ja   .skip_sprite
 
@@ -211,12 +214,13 @@ EditTacticsDrawPlayerNumber:
         movzx eax, word [D0]
         cmp  eax, 161       ; number 0
         jz   .custom_draw
+
         cmp  word [D0], 173
         jb   .out
 
 .custom_draw:
         push byte 0
-        movzx eax, word [D0]        ; ok so we gotta deal with high player number
+        movzx eax, word [D0]        ; OK so we gotta deal with high player number
         sub  ax, 161                ; number to draw = start of little numbers - 1
         movsx edx, word [D1]
         movsx ecx, word [D2]
@@ -240,7 +244,7 @@ FixPlayerBooking:
         retn
 
 .increase:
-        add  ax, 3000
+        add  ax, 9000
         jmp  short .return
 
 
@@ -263,8 +267,14 @@ HookSaveCoordinatesForHighlights:
         retn
 
 
-extern NetworkOnIdle
+; HookMenuLoop
+;
+; This part is crucial for whole network part to work properly. We will execute each
+; frame before MenuProc, and it might get skipped depending on network activity.
+;
+extern NetworkOnIdle, CheckIfJoystickDisconnected
 HookMenuLoop:
+        call CheckIfJoystickDisconnected
         call NetworkOnIdle
         test eax, eax
         jz   .skip_menu_proc
@@ -312,7 +322,7 @@ CheckInputDisabledTimer:
         test al, al
         jz   .go_on
 
-        cmp  al, -1     ; -1 signaling that controls are (possibly) coming from other player
+        cmp  al, -1                         ; -1 signaling that controls are (possibly) coming from other player
         jz   .redirect_input
 
         dec  byte [disabledInputCycles]
@@ -324,7 +334,7 @@ CheckInputDisabledTimer:
         mov  byte [convertedKey], 0
         mov  word [fire], 0
         mov  word [short_fire], 0
-        pop  eax                ; skip entire function
+        pop  eax                            ; skip entire function
         retn
 
 .redirect_input:
@@ -333,7 +343,7 @@ CheckInputDisabledTimer:
         jz   .get_real_key
 
         mov  ecx, eax
-        shr  ecx, 16                    ; ecx = long fire in high word
+        shr  ecx, 16                        ; ecx = long fire in high word
         and  eax, 0xffff
 
         test al, 0x80
@@ -346,61 +356,61 @@ CheckInputDisabledTimer:
         test al, al
         jnz  .process_key
 
-        calla GetKey                    ; to enable alt-f1
+        calla GetKey                        ; to enable alt-f1
         jmp  .no_key
 
 .process_key:
-        mov  [joy1Status], ax
-        mov  byte [Joy1SetStatus], 0xc3 ; prevent it from writing real values to joy1Status
-        call .go_on                     ; call GetKey so alt-f1 can end the program
+        mov  [g_joy1Status], ax
+        mov  byte [Joy1SetStatus], 0xc3     ; prevent it from writing real values to joy1Status
+        call .go_on                         ; call GetKey so alt-f1 can end the program
         pop  ebx
-        push dword [joyKbdWord]
-        mov  al, [pl2Keyboard]          ; if 2nd player on keyboard is on,
-        cbw                             ; CheckControls will be patched
-        mov  [joyKbdWord], ax           ; prevent joy1Status getting overwritten in any case
+        push dword [g_joyKbdWord]
+        mov  al, [pl2Keyboard]              ; if 2nd player on keyboard is on,
+        cbw                                 ; CheckControls will be patched
+        mov  [g_joyKbdWord], ax             ; prevent joy1Status getting overwritten in any case
         mov  word [controlsHeldTimer], 2000 ; prevent too fast commands getting rejected
         push ecx
         call ebx
         pop  ecx
-        pop  dword [joyKbdWord]
+        pop  dword [g_joyKbdWord]
         mov  byte [Joy1SetStatus], 0x66
         mov  al, byte [lastFireState]
         cbw
         mov  [fire], ax
-        movzx eax, byte [joy1Status]
+        movzx eax, byte [g_joy1Status]
         shr  eax, 5
         and  eax, 1
         neg  eax
-        mov  [short_fire], ax           ; we will get short fire each time it's issued
+        mov  [short_fire], ax               ; we will get short fire each time it's issued
         mov  [longFireFlag], cx
         retn
 
 .get_real_key:
         call .go_on
         pop  ebx
-        call ebx                        ; let CheckControls execute in full
-        xor  eax, eax                   ; al = controls byte
+        call ebx                            ; let CheckControls execute in full
+        xor  eax, eax                       ; al = controls byte
         cmp  word [final_controls_status], -1   ; make sure we don't flood
         jz   .check_short_fire
 
-        mov  al, [controlWord]          ; send real controls for player1, keyboard or joystick
-        cmp  word [joyKbdWord], 1
+        mov  al, [controlWord]              ; send real controls for player1, keyboard or joystick
+        cmp  word [g_joyKbdWord], 1
         jz   .check_short_fire
-        mov  al, [joy1Status]
+        mov  al, [g_joy1Status]
 
 .check_short_fire:
         and  al, ~0x20
         cmp  byte [short_fire], 0
         jz   .check_long_fire
-        or   al, 0x20                   ; short fire is generated periodically
+        or   al, 0x20                       ; short fire is generated periodically
 
 .check_long_fire:
         mov  bl, [fire]
         cmp  bl, [lastFireState]
         jz   .test_controls
 
-        or   al, 0x80                   ; signal long fire state change
-        mov  [lastFireState], bl        ; use previously unused bit 7 to signal it
+        or   al, 0x80                       ; signal long fire state change
+        mov  [lastFireState], bl            ; use previously unused bit 7 to signal it
 
 .test_controls:
         test al, al
@@ -413,27 +423,6 @@ CheckInputDisabledTimer:
 .go_on:
         calla GetKey
         mov  ax, [lastKey]
-
-.out:
-        retn
-
-
-; set them to 1 if 0 to avoid 2^32 loop
-; ecx = 0 on entry
-FixJoypadNumLoopsZero:
-        mov  cx, [numLoopsJoy1]
-        test ecx, ecx
-        jnz  .check_2nd
-
-        inc  word [numLoopsJoy1]
-
-.check_2nd:
-        mov  cx, [numLoopsJoy2]
-        test ecx, ecx
-        jnz  .out
-
-        inc  ecx
-        inc  word [numLoopsJoy2]
 
 .out:
         retn
@@ -453,16 +442,17 @@ HookMainMenuSetup:
 ; HookSetBenchPlayersNumbers
 ;
 ; in:
-;     al  -  player shirt number
-;     esi -> player (file) less header
+;     al  -  bench player ordinal in lineup (12-16)
+;     esi -> player (file) + negative offset of header size
 ;
-; Don't reset bench player's shirt number if it's a high number (> 16)
+; Don't reset bench player's shirt number if it's a high number (> 16, or zero)
 ;
 HookSetBenchPlayersNumbers:
-        test al, al
+        mov  bl, [esi + PlayerFile.shirtNumber + TEAM_FILE_HEADER_SIZE]
+        test bl, bl
         jz   .skip
 
-        cmp  al, 16
+        cmp  bl, 16
         jg   .skip
 
         mov  [esi + PlayerFile.shirtNumber + TEAM_FILE_HEADER_SIZE], al
@@ -480,7 +470,7 @@ HookSetBenchPlayersNumbers:
 ;     A1  -> player 2 (file) - header
 ;
 ; Prevent shirt number swapping in case any of players has high (custom) shirt
-; number. If nobody does, allow standard behaviour to happen.
+; number. If none of them does, allow standard behaviour to happen.
 ;
 HookBenchPlayerSwap:
         mov  al, [esi + PlayerFile.shirtNumber + TEAM_FILE_HEADER_SIZE]
@@ -505,7 +495,6 @@ HookBenchPlayerSwap:
         pop  eax
         add  eax, 0x21
         jmp  eax
-
 
 
 ; .ptdata name is mandatory
@@ -560,7 +549,7 @@ PatchStart:
     ; patch main menu after draw to keep SWOS++ entry visible
     PatchOffset SWOS_MainMenu + 4, SWOSMainMenuAfterDraw
 
-    ; patch DrawMenuText to add support for serbian letters
+    ; patch DrawMenuText to add support for Serbian letters
     StartRecord DrawMenuText + 0xb7
         calla WriteYULetters
     EndRecord
@@ -699,7 +688,7 @@ PatchStart:
         nop
     EndRecord
 
-    ; hook fliping to implement fast replays
+    ; hook flipping to implement fast replays
     extern CheckForFastReplay
     StartRecord Flip
         calla CheckForFastReplay
@@ -754,11 +743,6 @@ PatchStart:
         nop
     EndRecord
 
-    ; fix ReadGamePort causing a freeze if either of numLoops is 0
-    StartRecord ReadGamePort + 0x14
-        calla FixJoypadNumLoopsZero
-    EndRecord
-
     ; fix InputText to limit text properly when we start with buffer already filled more than limit
     PatchByte InputText + 0x25d, 0x83
 
@@ -785,6 +769,21 @@ PatchStart:
     StartRecord PlayMatchMenuSwapPlayers + 0x100
         calla HookBenchPlayerSwap
         nop
+    EndRecord
+
+    extern ReadGamePort2
+    StartRecord SWOS_ReadGamePort + 0x10
+        jmpa ReadGamePort2
+    EndRecord
+
+    ; patch reading of joystick keys which is done directly in Joy1SetStatus and Joy2SetStatus
+    extern ReadJoystickButtons
+    StartRecord Joy1SetStatus + 0x3b
+        calla ReadJoystickButtons
+    EndRecord
+
+    StartRecord Joy2SetStatus + 0x3b
+        calla ReadJoystickButtons
     EndRecord
 
 %ifdef DEBUG

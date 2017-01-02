@@ -11,16 +11,20 @@ global CheckForFastReplay
 CheckForFastReplay:
 %ifdef DEBUG
         extern DumpVariables
-        call DumpVariables      ; write out debug variables
+        call DumpVariables          ; write out debug variables
 %endif
         test byte [replayStatus], 1
         jz   .out
+
         test byte [replayStatus], 4
         jz   .out
+
         xor  byte [rplFrameSkip], 1
         test byte [rplFrameSkip], 1
         jz   .out
-        pop  eax                ; get rid of return address
+
+        pop  eax                    ; get rid of return address
+
 .out:
         cmp  word [EGA_graphics], -1
         retn
@@ -81,18 +85,18 @@ MyHilPtrAdd:
 
 global OpenReplayFile
 OpenReplayFile:
-        mov  word [rpl_handle], 0 ; rpl_handle will be zero in case of an error
+        mov  word [rpl_handle], 0   ; rpl_handle will be zero in case of an error
         mov  byte [save_errors], 0
         mov  edx, tmp_filename
         xor  ecx, ecx
         mov  ah, 0x3c
-        int  0x21               ; try to open file for writing
+        int  0x21                   ; try to open file for writing
         jc   .out
 
         mov  [rpl_handle], ax
         mov  bx, ax
         xor  cx, cx
-        mov  dx, 3626           ; leave room for header (3626 bytes)
+        mov  dx, 3626               ; leave room for header (3626 bytes)
         mov  ax, 0x4200
         int  0x21
         jc   .close_file
@@ -101,15 +105,17 @@ OpenReplayFile:
         jmp  .out
 
 .close_file:
-        mov  ah, 0x3e           ; if can't seek, close file
+        mov  ah, 0x3e               ; if can't seek, close file
         int  0x21
-        mov  word [rpl_handle], 0 ; set rpl_handle to zero to indicate error
+        mov  word [rpl_handle], 0   ; set rpl_handle to zero to indicate error
 
 .out:
-        mov  dword [A0], currentMenu
+        mov  dword [A0], g_currentMenu
         retn
 
 
+; CloseReplayFile
+;
 ; in:
 ;      eax - if true it's normal call, just retn, otherwise called from SWOS
 ;
@@ -120,9 +126,9 @@ CloseReplayFile:
         mov  esi, rpl_handle
         mov  bx, [esi]
         test bx, bx
-        jz   near .out          ; if file wasn't opened, nothing to do
+        jz   near .out                  ; if file wasn't opened, nothing to do
 
-        inc  byte [save_errors] ; anticipate error
+        inc  byte [save_errors]         ; anticipate error
         mov  eax, [current_hil_ptr]
         cmp  eax, [nextGoalPtr]
         jz   .nothing_left
@@ -131,22 +137,22 @@ CloseReplayFile:
         mov  edx, [goal_base_ptr]
         sub  ecx, edx
         mov  ah, 0x40
-        int  0x21               ; save remaining stuff
+        int  0x21                       ; save remaining stuff
         jc   .close_file
 
 .nothing_left:
         xor  cx, cx
         xor  dx, dx
         mov  ax, 0x4201
-        int  0x21               ; get current position
+        int  0x21                       ; get current position
         jc   .close_file
 
-        mov  [esp], ax          ; save current position
+        mov  [esp], ax                  ; save current position
         mov  [esp + 2], dx
 
         xor  dx, dx
         xor  cx, cx
-        mov  ax, 0x4200         ; seek to beginning
+        mov  ax, 0x4200                 ; seek to beginning
         int  0x21
         jc   .close_file
 
@@ -156,11 +162,11 @@ CloseReplayFile:
         mov  ah, 0x40
         mov  ecx, 3626
         mov  edx, hil_file_buffer
-        int  0x21                   ; write hil header
-        pop  word [hil_num_goals]   ; restore original number of goals
+        int  0x21                       ; write hil header
+        pop  word [hil_num_goals]       ; restore original number of goals
         jc   .close_file
 
-        mov  dx, [esp]              ; restore previous position
+        mov  dx, [esp]                  ; restore previous position
         mov  cx, [esp + 2]
         mov  ax, 0x4200
         int  0x21
@@ -170,21 +176,21 @@ CloseReplayFile:
         mov  ah, 0x40
         mov  edx, esi
         pop  ecx
-        int  0x21                   ; save replay terminator (-1)
+        int  0x21                       ; save replay terminator (-1)
         jc   .close_file
 
-        or   byte [replayStatus], 8 ; all ok, we have a replay - set flag
+        or   byte [replayStatus], 8     ; all OK, we have a replay - set flag
         mov  esi, tmp_filename
         mov  edi, selected_file
         push byte 13
         pop  ecx
         rep  movsb
-        dec  byte [save_errors]     ; restore errors as it was
+        dec  byte [save_errors]         ; restore errors as it was
 
 .close_file:
         mov  ah, 0x3e
-        int  0x21                   ; close file
-        mov  word [rpl_handle], 0   ; clear handle
+        int  0x21                       ; close file
+        mov  word [rpl_handle], 0       ; clear handle
 
 .out:
         and  byte [replayStatus], ~2    ; clear recording flag
@@ -193,7 +199,7 @@ CloseReplayFile:
         test eax, eax
         jnz  .retn
 
-        mov  ax, [isGameFriendly]   ; recreate the test
+        mov  ax, [isGameFriendly]       ; recreate the test
         or   ax, ax
 
 .retn:
@@ -211,30 +217,30 @@ InitReplays:
         xor  ebx, ebx
         mov  al, [replayStatus]
         and  al, 8
-        cmp  bl, al             ; al greater than zero?
-        sbb  ebx, ebx           ; ebx = al > 0 ? -1 : 0
-        neg  ebx                ; ebx = al > 0 ? 1 : 0
+        cmp  bl, al                 ; al greater than zero?
+        sbb  ebx, ebx               ; ebx = al > 0 ? -1 : 0
+        neg  ebx                    ; ebx = al > 0 ? 1 : 0
         mov  ecx, ebx
         mov  edx, ebx
         shl  ecx, 2
-        add  ecx, edx           ; ecx = al > 0 ? 5 : 0
-        add  cl, 9              ; ecx = al > 0 ? 14 : 9
-        neg  ebx                ; ebx = al > 0 ? -1 : 0
-        not  ebx                ; ebx = al > 0 ? 0 : -1
-        neg  ebx                ; ebx = al > 0 ? 0 : 1
-        mov  edi, ebx           ; CalcMenuEntryAddress trashes bx
+        add  ecx, edx               ; ecx = al > 0 ? 5 : 0
+        add  cl, 9                  ; ecx = al > 0 ? 14 : 9
+        neg  ebx                    ; ebx = al > 0 ? -1 : 0
+        not  ebx                    ; ebx = al > 0 ? 0 : -1
+        neg  ebx                    ; ebx = al > 0 ? 0 : 1
+        mov  edi, ebx               ; CalcMenuEntryAddress trashes bx
         mov  [D0], word 2
         calla CalcMenuEntryAddress
         mov  esi, [A0]
-        mov  [esi + MenuEntry.isDisabled], di ; disable or enable view/save replay buttons
-        mov  [esi + MenuEntry.backAndFrameColor], cx ; set color - green or gray for disabled entry
+        mov  [esi + MenuEntry.isDisabled], di           ; disable or enable view/save replay buttons
+        mov  [esi + MenuEntry.backAndFrameColor], cx    ; set color - green or gray for disabled entry
         mov  [D0], word 4
         calla CalcMenuEntryAddress
         mov  esi, [A0]
         mov  [esi + MenuEntry.isDisabled], di
         mov  [esi + MenuEntry.backAndFrameColor], cx
 
-        mov  al, [save_errors]  ; check rpl file errors
+        mov  al, [save_errors]                          ; check rpl file errors
         test al, al
         jz   .out
 
@@ -264,10 +270,12 @@ play_it:
         mov  ah, 0x3f
         int  0x21
         jc   read_error
+
         test eax, eax
-        jz   read_error         ; check for zero-sized file
+        jz   read_error                 ; check for zero-sized file
+
         cmp  eax, ecx
-        jnz  read_error         ; check for too small filesize
+        jnz  read_error                 ; check for too small filesize
 
         mov  edi, hil_filename
         mov  esi, selected_file
@@ -279,10 +287,10 @@ play_it:
         or   byte [replayStatus], 1     ; set playing flag
         calla ShowHighlights
         and  byte [replayStatus], ~1
-        mov  bx, [rpl_handle]   ; close file
+        mov  bx, [rpl_handle]           ; close file
         mov  ah, 0x3e
         int  0x21
-        mov  word [hil_num_goals], 0 ; reset highlights
+        mov  word [hil_num_goals], 0    ; reset highlights
         retn
 
 read_error:
@@ -305,7 +313,7 @@ LoadReplay:
         mov  edi, selected_file
         push byte 13
         pop  ecx
-        rep  movsb              ; copy selected name to our buffer
+        rep  movsb                      ; copy selected name to our buffer
         or   byte [replayStatus], 8
 
 .out:
@@ -313,7 +321,7 @@ LoadReplay:
 
 
 SaveReplay:
-        mov  eax, save_filename ; zero out default save name
+        mov  eax, save_filename         ; zero out default save name
         mov  byte [eax], 0
         mov  [A0], eax
         mov  dword [A1], save_replay_str
@@ -324,7 +332,7 @@ SaveReplay:
         mov  edi, selected_file
         push byte 13
         pop  ecx
-        rep  cmpsb              ; compare selected file with destination
+        rep  cmpsb                      ; compare selected file with destination
         jne  .copy
 
         mov  dword [A0], cant_copy_to_itself
@@ -336,12 +344,14 @@ SaveReplay:
         mov  ax, 0x3d00
         int  0x21
         jc   ViewReplay.cant_open
+
         mov  esi, eax
         mov  edx, [A0]
         xor  ecx, ecx
         mov  ah, 0x3c
         int  0x21
         jc   ViewReplay.cant_open
+
         mov  edi, eax
         mov  edx, found_filenames_buffer
 
@@ -351,8 +361,10 @@ SaveReplay:
         mov  ah, 0x3f
         int  0x21
         jc   read_error
+
         test eax, eax
         jz   .copy_over
+
         mov  ecx, eax
         mov  ah, 0x40
         mov  ebx, edi

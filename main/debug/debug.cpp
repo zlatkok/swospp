@@ -27,6 +27,7 @@ extern void ShutDownNetwork();
 
 static void WriteToLogFuncV(const char *fmt, va_list args);
 
+
 extern "C" __attribute((noreturn)) void AssertFailedMsg(const char *file, int line, const char *msg)
 {
     asm("int 1");
@@ -36,18 +37,22 @@ extern "C" __attribute((noreturn)) void AssertFailedMsg(const char *file, int li
     if (msg) {
         msgLen = strncpy(msgBuf, msg, sizeof(msgBuf) - 1) - msgBuf;
         msgBuf[min(msgLen, (int)sizeof(msgBuf) - 1)] = '\0';
-    } else
+    } else {
         msgLen = sprintf(msgBuf, "Assertion failed at %s(%d).", file, line);
+    }
 
     SwitchToPrevVideoMode();
     WriteToLog("Assertion failed! At %s:%d", file, line);
 
     if (msg)
         WriteToLog("%s", msg);
+
     if (msgLen > 0)
         PrintToStderr(msgBuf, msgLen);
+
     EndProgram(true);
 }
+
 
 extern "C" __attribute((noreturn)) void AssertFailed(const char *file, int line)
 {
@@ -193,26 +198,35 @@ void __cdecl WriteToLogFuncNoStamp(const char *str, ...)
 */
 void HexDumpToLog(const void *inAddr, int length, const char *title)
 {
-    static char buf[2048]; /* damn stack is really low this better be static */
+    char buf[2048];
     unsigned char *q, *addr = (unsigned char *)inAddr;
-    int i, lineOutput;
+
     if (!length || !addr)
         return;
+
     if (title)
         WriteToLogFunc("Hex dump of %s, size = %d\n", title, length);
+
     WriteToLogFuncNoStamp("   Address                    Hexadecimal values                    Printable");
     WriteToLogFuncNoStamp("--------------  -----------------------------------------------  ----------------\n");
+
     while (length > 0) {
+        int i, lineOutput;
+
         length -= 16;
         int lineCount = length < 0 ? 16 + length : 16;
         char *p = buf + sprintf(buf, "   %08lx     ", (int)addr);
+
         for (i = lineOutput = 0, q = addr; i < 16; i++, q++) {
             lineOutput++ < lineCount ? (p += sprintf(p, "%02x", *q)) : (*p++ = ' ', *p++ = ' ', p);
             *p++ = ' ';
         }
+
         *p++ = ' ';
+
         for (i = 0, q = addr; i < lineCount; i++, q++)
             *p++ = *q < 32 || *q > 126 ? '.' : *q;
+
         *p = '\0';
         WriteToLogFuncNoStamp("%s", buf);
         addr += 16;

@@ -133,7 +133,7 @@ SetEntryString:
         jmpa strcpy
 
 
-; Write game name and player nickname and prevent them appearing as "STDMENUTEXT".
+; Fill game name and player nickname and prevent them appearing as "STDMENUTEXT".
 MPMenuAfterDraw:
         push byte multiplayerMenu_playerNick
         call GetPlayerNick
@@ -243,7 +243,7 @@ ReturnToMPMenuAfterTheGame:
 
 UnpatchSWOSProc:
         mov  byte [SWOS + 0x24b], 0
-        jmpa CallAfterDraw
+        jmpa RestorePreviousMenu
 
 
 ; ReturnToGameLobbyAfterTheGame [called from C++]
@@ -258,7 +258,6 @@ ReturnToGameLobbyAfterTheGame:
         call SetMenuToReturnToAfterTheGame
         mov  byte [choosingTeam], 0
         calla ExitChooseTeams           ; will exit menu, and luckily we know it can be _max_ one menu :P
-        mov  esi, playMatchMenu
         call UnpatchAfterSettingTeams
         mov  eax, [currentMenuPtr]
         cmp  eax, continueAbortMenu
@@ -414,7 +413,7 @@ ToggleRefreshing:
 
         mov  [esi + MenuEntry.string], dword aSearching
         mov  [esi + MenuEntry.backAndFrameColor], word 9
-        mov  eax, [currentMenu]
+        mov  eax, [g_currentMenu]
 
         ; check if there are any games listed
         xor  ecx, ecx
@@ -535,6 +534,8 @@ JoinRemoteGame:
         pop  eax
         mov  edx, JoinGameModalDialogProc
         mov  ecx, EnterGameLobby
+        push PlayMatchMenuTimeout
+        push SyncModalDialogProc
         push ReturnToGameLobbyAfterTheGame
         push ReturnToMPMenuAfterTheGame
         push ShowPlayMatchMenu
@@ -592,10 +593,8 @@ DisconnectedFromLobby:
         movstr dword [A0], "DISCONNECTED FROM THE SERVER"
         calla ShowErrorMenu
         call ExitIfInDirectMode
-
-.return_to_menu:
         call InitJoinGameMenu
-        mov  eax, gameLobbyMenu
+        mov  eax, joinGameMenu
         xor  edx, edx
         call ReturnToMenu       ; make sure we land where we're supposed to
         mov  byte [choosingTeam], 0
@@ -623,7 +622,7 @@ MiniMenuLoop:
 
         mov  word [menuCycleTimer], 0
 
-        calla ReadGamePort
+        calla SWOS_ReadGamePort
         calla CheckControls
         calla WaitRetrace
         movzx ecx, word [PIT_countdown]
@@ -699,16 +698,19 @@ JoinGameModalDialogProc:
         mov  al, [lastModalState]
         test al, al
         jz   .out
-        mov  ax, word [fire]    ; check fire only if we're showing error dialog
-        mov  word [fire], 0     ; prevent from exiting menu
+
+        mov  ax, word [fire]            ; check fire only if we're showing error dialog
+        mov  word [fire], 0             ; prevent from exiting menu
         test ax, ax
         jz   .out
+
         mov  al, [disabledInputCycles]
         test al, al
         jnz  .out
-        inc  eax
+
         mov  byte [lastModalState], 0   ; reset this so we don't remain in error state forever ;)
         call ExitIfInDirectMode         ; if we failed to connect while in direct connect mode, exit SWOS
+        mov  al, 1
 
 .out:
         mov  [esp + 28], eax
@@ -1033,14 +1035,13 @@ GetGameLobbyMenu:
 ;
 extern ShowErrorAndQuit, FinishMultiplayerGame
 DisplayErrorAndExit:
-        calla FadeOut
+        calla FadeOutToBlack
         calla LoadFillAndSwtitle
         mov  eax, [lin_adr_384k]
         mov  [vsPtr], eax
         mov  word [screenWidth], 320
         mov  word [cameraX], 0
         mov  word [cameraY], 0
-        mov  esi, playMatchMenu
         call UnpatchAfterSettingTeams   ; required to regain user input
         call FinishMultiplayerGame
         movstr eax, "GAME INTERRUPTED"
@@ -1096,7 +1097,7 @@ InitGameLobbyMenu:
 
 
 SaveCurrentGLEntry:
-        mov  eax, [currentMenu + Menu.currentEntry]
+        mov  eax, [g_currentMenu + Menu.currentEntry]
         test eax, eax
         jz   .out
 
@@ -1145,7 +1146,7 @@ DisableServerOnlyEntries:
 ; Must not modify edi.
 ;
 FixSelectedEntry:
-        mov  ecx, currentMenu
+        mov  ecx, g_currentMenu
         mov  esi, [ecx + Menu.currentEntry]
         test esi, esi
         jz   short .out
@@ -1175,7 +1176,7 @@ FixSelectedEntry:
 ; Update entire game lobby screen based on informations received from the
 ; network module. Called each frame.
 ;
-extern currentTeamId, ApplyMPOptions
+extern GetCurrentTeamId, ApplyMPOptions
 UpdateGameLobby:
         pushad
         cmp  byte [choosingTeam], 0
@@ -1254,7 +1255,7 @@ UpdateGameLobby:
         mov  dword [esi + MenuEntry.onSelect], ToggleReadyState
         pop  esi
         mov  dword [esi + MenuEntry.onSelect], ChooseTeam   ; enable our player to select team
-        mov  eax, [currentTeamId]
+        call GetCurrentTeamId
         cmp  eax, -1
         jz   .set_choose_team
 
@@ -1446,13 +1447,13 @@ ChooseTeam:
         retn
 
 
-; fire triggered on num substitutes
+; fire triggered on num. substitutes
 ChangeNumSubstitutesAndNotify:
         call GetMaxSubstitutes
         test eax, eax
         jz   .out
 
-        mov  ebx, eax       ; ebx = max sunstitutes
+        mov  ebx, eax       ; ebx = max substitutes
         call GetNumSubstitutes
         inc  eax
         cmp  ebx, eax
@@ -1696,10 +1697,13 @@ ChangePlayerWatcher:
 extern SetupTeams
 OnStartGame:
         WriteToLog "Play match selected... going to synchronization..."
-        mov  word [showingCpuTeams], 0  ; just in case
+        mov  word [showingCpuTeams], 0          ; just in case
         mov  eax, SyncModalDialogProc
         mov  edx, ShowPlayMatchMenu
-        jmp SetupTeams                  ; let's rock'n'roll
+        mov  ecx, eax
+        push PlayMatchMenuTimeout
+        call SetupTeams                         ; let's rock'n'roll
+        retn
 
 
 ; SyncModalDialogProc [called from C++]
@@ -1714,7 +1718,7 @@ SyncModalDialogProc:
         mov  dword [modalDialogStrTable], syncingPleaseWaitStrTable
         mov  eax, modalDialogInitData
         call InitModalDialog
-        inc  byte [syncDialogInitialized]
+        mov  byte [syncDialogInitialized], 1
 
 .menu_loop:
         call MiniMenuLoop
@@ -1773,7 +1777,7 @@ ReturnCurrentTeam:
         mov  word [D0], ax
         neg  eax
         and  eax, TEAM_SIZE
-        lea  eax, [eax + selectedTeams]
+        lea  eax, [eax + g_selectedTeams]
         mov  [A0], eax
         mov  word [D1], 0
         xor  eax, eax
@@ -1787,8 +1791,8 @@ ReturnCurrentTeam:
 ;     edx -> team2
 ;     ecx -> get current team function
 ;
-; Called when we're entering menu for players to set up their teams. Do all the
-; necessary patching of play match menu for multiplayer to work.
+; Called when we're entering menu for players to set up their teams after successful
+; synchronization. Do all the necessary patching of play match menu for multiplayer to work.
 ;
 extern lastFireState
 ShowPlayMatchMenu:
@@ -1815,7 +1819,7 @@ ShowPlayMatchMenu:
 %endif
 
         call HookFindTeamInCache
-        movzx eax, byte [joyKbdWord]
+        movzx eax, byte [g_joyKbdWord]
         push byte 1
         cmp  al, convertControlsTableLen
         pop  ebx
@@ -1824,17 +1828,17 @@ ShowPlayMatchMenu:
         mov  ebx, eax
 
 .set_controls:
-        mov  al, [convertControlsTable + ebx]
-        push dword [joyKbdWord]
-        mov  [joyKbdWord], al
-        WriteToLog "joyKbdWord set to %d for menus.", eax
+        mov  al, [g_joyKbdWord]                 ; we used to save g_joyKbdWord by push/pop but in case of network
+        mov  [savedJoyKbdWord], al              ; error stack might get chopped off, so this is safer
+        xchg al, [convertControlsTable + ebx]
+        mov  [g_joyKbdWord], al
+        WriteToLog "g_joyKbdWord set to %d for menus.", eax
 
-        push esi
+        mov  byte [syncDialogInitialized], 0    ; we'll need this later
+
         calla InitAndPlayGame
-        pop  esi
-        pop  dword [joyKbdWord]
-
         call UnpatchAfterSettingTeams
+
 .out:
         popad
         retn
@@ -1842,12 +1846,11 @@ ShowPlayMatchMenu:
 
 ; UnpatchAfterSettingTeams
 ;
-; in:
-;     esi -> playMatchMenu
-;
 ; Clean up after returning from play match menu.
 ;
+global UnpatchAfterSettingTeams
 UnpatchAfterSettingTeams:
+        mov  esi, playMatchMenu
         mov  dword [esi + 0x10a], ExitPlayMatch
         mov  dword [esi + 0x134], PlayMatchSelected
         mov  dword [esi + Menu.afterDraw], PlayMatchAfterDraw
@@ -1855,8 +1858,9 @@ UnpatchAfterSettingTeams:
         mov  byte [disabledInputCycles], 0
         mov  word [player2ClearFlag], 0
         mov  word [keyCount], 0
-        call UnhookFindTeamInCache
-        retn
+        mov  al, [savedJoyKbdWord]
+        mov  [g_joyKbdWord], al
+        jmp  UnhookFindTeamInCache
 
 
 disabledPlayMatchMenuEntries:
@@ -1869,7 +1873,7 @@ disabledPlayMatchMenuEntries:
 ; by SWOS.
 ;
 FixPlayMatchMenuAfterDraw:
-        calla PlayMatchAfterDraw            ; let it do it's thing first
+        calla PlayMatchAfterDraw                    ; let it do it's thing first
 FixPlayMatchMenu:
         mov  dword [player1ClearFlag], 0xffff0000   ; keep player 1 clear player 2 set
         mov  esi, disabledPlayMatchMenuEntries
@@ -1891,22 +1895,68 @@ FixPlayMatchMenu:
         retn
 
 
+; PlayMatchMenuTimeout [called from C++]
+;
+; in:
+;     eax - if true, player that timed out is the server
+;
+; Called when a timeout occurs while players are setting up their teams (we're in
+; play match menu). Depending if timed out player is the server we have two options:
+; - if the server is down, go to multiplayer menu, try finding some new games to join
+; - if the server is still up, try going back to lobby
+;
+PlayMatchMenuTimeout:
+        pushad
+        push eax
+        call UnpatchAfterSettingTeams       ; must unpatch first since GetCurrentPlayerTeamIndex() might get called
+        movstr dword [A0], "A PLAYER DROPPED"
+        calla ShowErrorMenu
+        call ExitIfInDirectMode
+
+        pop  eax
+        test eax, eax
+        jz   .back_to_lobby
+
+        mov  eax, joinGameMenu
+        xor  edx, edx
+        call ReturnToMenu
+        call InitJoinGameMenu
+        calla ExitPlayMatch
+        jmp  short .out
+
+.back_to_lobby:
+        call ReturnToGameLobbyAfterTheGame
+
+.out:
+        popad
+        retn
+
+
+
 ; HookPlayMatchSelected
 ;
 ; Called when player finishes setting up team and presses play match button.
-; Notifies network to go to next state. Patches main loop and control status
-; procs to call our hooks.
+; Notifies network to go to next state. Relies on SwitchToNextControllingState to
+; patch main loop and control status procs to call our hooks.
 ;
 extern SwitchToNextControllingState
 HookPlayMatchSelected:
         mov  byte [lastFireState], 0
-        mov  word [joy1Status], 0
-        call SwitchToNextControllingState   ; return true if we're starting (player2 finished setup)
+        mov  word [g_joy1Status], 0
+        mov  eax, StartTheGameCallback
+        call SwitchToNextControllingState   ; returns zero if we can't start the game yet
         test eax, eax
+        jnz  .continue
+
+        retn
+
+.continue:
+        cmp  eax, 1
         mov  byte [pl1_fire], 1             ; must set these, as they will be used to determine
         mov  byte [pl2_fire], 0             ; player numbers in teams later
-        jz   .out
+        jz   StartTheGameCallback.out
 
+StartTheGameCallback:
         mov  byte [pl1_fire], 0
         mov  byte [pl2_fire], 1
 
@@ -1916,12 +1966,21 @@ HookPlayMatchSelected:
 
 ; HookExitPlayMatch
 ;
-; Patched in place of on exit play match menu function. Notifies the network
-; that we're leaving play match menu, so it can go back to lobby state.
-; Unpatches main loop and control status procs.
+; Patched in place of on exit play match menu function. Clean up everything then
+; proceed as normal.
 ;
 extern GoBackToLobby
 HookExitPlayMatch:
+        call ReturnToGameLobbyMenu
+        jmpa ExitPlayMatch
+
+
+; ReturnToGameLobbyMenu
+;
+; Notifies the network that we're leaving play match menu, so it can go back to lobby state.
+; Unpatches main loop and control status procs.
+;
+ReturnToGameLobbyMenu:
         mov  ebx, gameLobbyMenu
         call GoBackToLobby
         call GetPreviousMenu
@@ -1934,13 +1993,10 @@ HookExitPlayMatch:
         mov  word [menuFade], 0
         mov  word [contAbortResult], 1  ; abort the possible prompt
         mov  byte [choosingTeam], 0
-        mov  esi, playMatchMenu
         call UnpatchAfterSettingTeams   ; stack will be chopped off, we gotta run this manually
-        calla ExitChooseTeams
 
 .out:
-        jmpa ExitPlayMatch
-
+        jmpa ExitChooseTeams
 
 
 section .data
@@ -2035,7 +2091,7 @@ global aTeamNotChosen
 aTeamNotChosen:
         db "(TEAM NOT CHOSEN)", 0
 
-; convert joyKbdWord values to only keyboard/joypad to enforce Player1StatusProc to read
+; convert g_joyKbdWord values to only keyboard/joypad to enforce Player1StatusProc to read
 ; joypad too in case of mixed controls (Player2StatusProc won't be called and it's task is
 ; to read values for player on joypad in case of mixed controls)
 align 4
@@ -2054,7 +2110,7 @@ section .bss
 
 align 4, resb 1
 gameLobbySelectedEntry:
-        resd 1
+        resb 4
 playerOrWatcher:
         resb 2
 isReady:
@@ -2078,6 +2134,8 @@ options:
 syncDialogInitialized:
         resb 1
 mainLoopRan:
+        resb 1
+savedJoyKbdWord:
         resb 1
 savedFindTeamInCacheBytes:
         resb 5

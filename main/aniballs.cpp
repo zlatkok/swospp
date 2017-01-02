@@ -1,34 +1,4 @@
-static char ball1[] = {
-    0, 3, 2, 0,
-    2, 2, 2, 3,
-    2, 3, 2, 1,
-    0, 2, 3, 0
-};
-
-static char ball2[] = {
-    0, 2, 3, 0,
-    2, 3, 2, 2,
-    2, 2, 2, 3,
-    0, 2, 1, 0
-};
-
-static char ball3[] = {
-    0, 2, 2, 0,
-    3, 2, 3, 2,
-    2, 2, 2, 1,
-    0, 3, 1, 0
-};
-
-static char ball4[] = {
-    0, 2, 3, 0,
-    2, 2, 2, 2,
-    3, 2, 3, 1,
-    0, 2, 1, 0
-};
-
-static char *ballFrames[] = {ball1, ball2, ball3, ball4};
-
-#define MAX_BALLS 8
+const int kMaxBalls = 8;
 
 struct Ball {
     int x;
@@ -36,32 +6,67 @@ struct Ball {
     int height;
     int speed;
     int arg;
-} static balls[MAX_BALLS];
+} static m_balls[kMaxBalls];
 
-static void DrawBitmapClipped(int x, int y, int width, int height, char *data);
+
+const char kBall1[] = {
+    0, 3, 2, 0,
+    2, 2, 2, 3,
+    2, 3, 2, 1,
+    0, 2, 3, 0
+};
+
+const char kBall2[] = {
+    0, 2, 3, 0,
+    2, 3, 2, 2,
+    2, 2, 2, 3,
+    0, 2, 1, 0
+};
+
+const char kBall3[] = {
+    0, 2, 2, 0,
+    3, 2, 3, 2,
+    2, 2, 2, 1,
+    0, 3, 1, 0
+};
+
+const char kBall4[] = {
+    0, 2, 3, 0,
+    2, 2, 2, 2,
+    3, 2, 3, 1,
+    0, 2, 1, 0
+};
+
+const char *kBallFrames[] = {kBall1, kBall2, kBall3, kBall4};
+
+
+static void DrawBitmapClipped(int x, int y, int width, int height, const char *data);
 static unsigned numBalls;
 static unsigned repeatTimer;
 static int counter;
 
+
 void InitBalls()
 {
-    numBalls = MAX_BALLS / 2 + 1 + rand() % (MAX_BALLS / 2);
+    numBalls = kMaxBalls / 2 + 1 + rand() % (kMaxBalls / 2);
     for (size_t i = 0; i < numBalls; i++) {
-        balls[i].x = balls[i].y = 0;
-        balls[i].height = 34 + rand() % 32;
-        balls[i].arg = rand() % balls[i].height;
+        m_balls[i].x = m_balls[i].y = 0;
+        m_balls[i].height = 34 + rand() % 32;
+        m_balls[i].arg = rand() % m_balls[i].height;
         do {
-            balls[i].speed = rand() % 3 + 4;
-        } while (i && balls[i].speed == balls[i - 1].speed);
+            m_balls[i].speed = rand() % 3 + 4;
+        } while (i && m_balls[i].speed == m_balls[i - 1].speed);
     }
 }
+
 
 extern "C" void InitCounter()
 {
     counter = 0;
-    srand(currentTick);
+    srand(g_currentTick);
     InitBalls();
 }
+
 
 extern "C" void AnimateBalls()
 {
@@ -71,17 +76,17 @@ extern "C" void AnimateBalls()
         return;
 
     for (size_t i = 0; i < numBalls; i++) {
-        if (balls[i].x >= 320)
+        if (m_balls[i].x >= 320)
           continue;
         idle = false;
         repeatTimer = 0;
-        balls[i].x += balls[i].speed;
-        balls[i].x += 2;
-        sine = balls[i].height * sineCosineTable[balls[i].arg++ * balls[i].speed % 128];
+        m_balls[i].x += m_balls[i].speed;
+        m_balls[i].x += 2;
+        sine = m_balls[i].height * kSineCosineTable[m_balls[i].arg++ * m_balls[i].speed % 128];
         sine += ((sine & 0xffff) >= 0x1000) << 15;
         sine >>= 15;
-        balls[i].y = 199 - sine - 4;
-        DrawBitmapClipped(balls[i].x, balls[i].y, 4, 4, ballFrames[balls[i].arg % 4]);
+        m_balls[i].y = 199 - sine - 4;
+        DrawBitmapClipped(m_balls[i].x, m_balls[i].y, 4, 4, kBallFrames[m_balls[i].arg % 4]);
     }
     repeatTimer += idle;
     if (repeatTimer >= 40) {
@@ -90,7 +95,8 @@ extern "C" void AnimateBalls()
     }
 }
 
-void DrawBitmapClipped(int x, int y, int width, int height, char *data)
+
+void DrawBitmapClipped(int x, int y, int width, int height, const char *data)
 {
     if (x >= 320 || y >= 200)
         return;
