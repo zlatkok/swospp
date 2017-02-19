@@ -160,15 +160,15 @@ offset:  size:  description:
     49 - LIE        100 - SUD1        151 - SOL
     50 - MOL        101 - SWA1        152 - CUS
 
-   1       1    ??? (boolean izgleda)
-   2       1    broj igraca (majice) u timu
-   3      23    ime igraca (null terminated)
-  26       1    pozicija igraca (na terenu) i slicica face
-                                 pozicija:
-                faca:    G    RB   LB   D    RW   LW   M    A
-                crni    0x10 0x30 0x50 0x70 0x90 0xB0 0xD0 0xF0
-                belac   0x00 0x20 0x40 0x60 0x80 0xA0 0xC0 0xE0
-                ridji   0x08 0x28 0x48 0x68 0x88 0xA8 0xC8 0xE8
+   1       1    ??? (looks like a boolean)
+   2       1    player's shirt number
+   3      23    player name (null terminated)
+  26       1    bit-packed player position (in the field) and face
+                                 position:
+                face:    G    RB   LB   D    RW   LW   M    A
+                black   0x10 0x30 0x50 0x70 0x90 0xB0 0xD0 0xF0
+                white   0x00 0x20 0x40 0x60 0x80 0xA0 0xC0 0xE0
+                ginger  0x08 0x28 0x48 0x68 0x88 0xA8 0xC8 0xE8
 
                 bits 5,6,7 - position, 0 = goalkeeper
                 bits 3,4 - face (00 = white, 10 = black, 01 = ginger)
@@ -181,9 +181,8 @@ offset:  size:  description:
                              zero: cards <- 0
                              non-zero: cards <- 2 (red card)
                 bits 5,6,7 - injuries
-                0 i 1, i bitovi 5,6,7
-                u fajlu je nebitno, pred partiju se bitovi 5,6,7 setuju na
-                osnovu slucajnih vrednosti
+                value of this field is not read from file, before the game bits
+                5,6,7 are set to random values
                 could it be injuries?
   28       1    (h.o. nibble) ???
                 (l.o.  -||- ) passing (values 0..15)
@@ -193,109 +192,83 @@ offset:  size:  description:
                 (l.o.  -||- ) ball control
   31       1    (h.o.  -||- ) speed
                 (l.o.  -||- ) finishing
-  32       1    cena igraca:
-                  0  - 25K-
-                  1  - 25K
-                  2  - 30K
-                  3  - 40K
-                  4  - 50K
-                  5  - 65K
-                  6  - 75K
-                  7  - 85K
-                  8  - 100K
-                  9  - 110K
-                  10 - 130K
-                  11 - 150K
-                  12 - 160K
-                  13 - 180K
-                  14 - 200K
-                  15 - 250K
-                  16 - 300K
-                  17 - 350K
-                  18 - 450K
-                  19 - 500K
-                  20 - 550K
-                  21 - 600K
-                  22 - 650K
-                  23 - 700K
-                  24 - 750K
-                  25 - 800K
-                  26 - 850K
-                  27 - 950K
-                  28 - 1M
-                  29 - 1.1M
-                  30 - 1.3M
-                  31 - 1.5M
-                  32 - 1.6M
-                  33 - 1.8M
-                  34 - 1.9M
-                  35 - 2M
-                  36 - 2.25M
-                  37 - 2.75M
-                  38 - 3M
-                  39 - 3.5M
-                  40 - 4.5M
-                  41 - 5M
-                  42 - 6M
-                  43 - 7M
-                  44 - 8M
-                  45 - 9M
-                  46 - 10M
-                  47 - 12M
-                  48 - 15M
-                  49 - 15M+
-  33       1      ? (init na nulu)
-  34       1      ? (init na nulu)
-  35       1      ? (init na nulu)
-  36       1      ? (init na nulu)
-  37       1      nekakav flag, 154 = trial igrac, 155 = rezerva
+  32       1    player price:
+                  0  - 25K-      25 - 800K
+                  1  - 25K       26 - 850K
+                  2  - 30K       27 - 950K
+                  3  - 40K       28 - 1M
+                  4  - 50K       29 - 1.1M
+                  5  - 65K       30 - 1.3M
+                  6  - 75K       31 - 1.5M
+                  7  - 85K       32 - 1.6M
+                  8  - 100K      33 - 1.8M
+                  9  - 110K      34 - 1.9M
+                  10 - 130K      35 - 2M
+                  11 - 150K      36 - 2.25M
+                  12 - 160K      37 - 2.75M
+                  13 - 180K      38 - 3M
+                  14 - 200K      39 - 3.5M
+                  15 - 250K      40 - 4.5M
+                  16 - 300K      41 - 5M
+                  17 - 350K      42 - 6M
+                  18 - 450K      43 - 7M
+                  19 - 500K      44 - 8M
+                  20 - 550K      45 - 9M
+                  21 - 600K      46 - 10M
+                  22 - 650K      47 - 12M
+                  23 - 700K      48 - 15M
+                  24 - 750K      49 - 15M+
+  33       1      ? (init to zero)
+  34       1      ? (init to zero)
+  35       1      ? (init to zero)
+  36       1      ? (init to zero)
+  37       1      some kind of flag, 154 = trial player, 155 = reserve
 
-Velicina 38 bajtova.
+Size 38 bytes.
 
 
 ===============================================================================
-Postoji i druga struktura tima, koja se koristi za vreme utakmice, cija je
-velicina 1704 bajtova (in-game team).
+There is another team structure, which is used during the game, and its size is
+1704 bytes. We'll refer to it as in-game team.
 
 offset:  size:  desc.
 -------  -----  -----
-                (konvertovane boje)
-                 primarni set:
-   0       2    tip majice
-   2       2    boja pozadine majice
-   4       2    boja pruga na majici
-   6       2    boja sortsa
-   8       2    boja carapa
-                 sekundarni set:
-  10       2    tip majice
-  12       2    boja pozadine majice
-  14       2    boja pruga na majici
-  16       2    boja sortsa
-  18       2    boja carapa
-  20       2    indeks markiranog igraca (-1 ako niko nije markiran)
-  22      17    ime tima, null terminated
+                (converted colors)
+                 primary set:
+   0       2    shirt type
+   2       2    shirt background color
+   4       2    shirt stripes color
+   6       2    shorts color
+   8       2    socks color
+                 secondary set:
+  10       2    shirt type
+  12       2    shirt background color
+  14       2    shirt stripes color
+  16       2    shorts color
+  18       2    socks color
+  20       2    marked player index (-1 if nobody was marked)
+  22      17    team name, null terminated
   39       1    ?
-  40       1    broj auto-golova
-  41       1    ? - ova tri polja su uvek nula u hil fajlovima
+  40       1    number of own goals
+  41       1    ? - these 3 fields are always zero in hil files
 
-Velicina headera - 42 bajta.
+Header size - 42 bytes.
 
-  ofs22 se testira u FixupAndColorPitchFile, ako je donji bit setovan,
-  mesta timova su zamenjena
+  Ofs22 is tested in FixupAndColorPitchFile(), and if lower bit is set,
+  team places are swapped
 
-Nakon headera, sledi 16 struktura igraca:
+16 player structures follow the header:
 
 offset:  size:  desc.
 -------  -----  -----
-   0       1    ? - uvek nula u hilovima, ako je razlicito od nule, onda se
-                preskace igrac (strelica ne moze da ga selektuje)
-                probably isInjured flag
+   0       1    ? - always zero in hil files, but if it's not zero the player
+                is skipped (arrow can't select it), probably isInjured flag
    1       1    player index in team file structure
    2       1    number of goals scored
    3       1    shirt number
-   4       1    indeks pozicije igraca, ili -1 ako je bio zamenjen
-   5       1    indeks face igraca
-   6       1    da li je igrac povredjen? [0,1]
+   4       1    player position index, or -1 he was substituted
+   5       1    player face index
+   6       1    is player injured? [0,1]
    7       1    ?
    8       1    ne znam tacno sta je, ali ako je true igrac trosi samo 25
                 frejmova na uklizavanje umesto 55, mada se kasnije u svakom

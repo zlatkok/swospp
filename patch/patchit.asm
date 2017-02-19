@@ -110,7 +110,7 @@ menu_result    equ start + 0
 
 introstr:
         db "SWOS++ patcher/unpatcher", 13, 10
-        db "by Zlatko Karakas <zkz@eunet.yu>", 13, 10, 13, 10, "$"
+        db "by Zlatko Karakas <zlatko.karakas@gmail.com>", 13, 10, 13, 10, "$"
 menustr:
         db "1)   - install", 13, 10
         db "2)   - deinstall", 13, 10

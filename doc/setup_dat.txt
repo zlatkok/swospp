@@ -4,11 +4,11 @@ value in file is completely ignored.
 ---------------------------------------------------------------
 offset | length  | description
 -------+---------+---------------------------------------------
- 00    | 1 word  | EGA graphics, -1 = ukljuceno
-       |         | podesava se na osnovu video indeksa (izmedju ostalog), i to
-       |         | ukoliko je manji ili jednak 85 ukljuci
-       |         | komandna linija moze da overriduje : za [fF] 0, za [hH] -1
- 02    | 1 word  | 1 = scene direktora iskljucene, !1 = ukljucene
+ 00    | 1 word  | EGA graphics, -1 = ON
+       |         | gets set based on video index (among other), and is ON if
+       |         | index is less than or equal to 85; command line switches can
+       |         | override: for [fF] 0, for [hH] -1
+ 02    | 1 word  | 1 = director scenes OFF, !1 = ON
  04    | 1 word  | mute sound flag (1 = no sound)
  06    | 1 word  | joy_kbd_word - flag za kontrole, vrednosti:
        |         | 1 - tastatura
@@ -69,3 +69,4 @@ offset | length  | description
  102   | 1 byte  | Joypad 1 secondary fire,          - || -
  103   | 1 byte  | Joypad 2 primary fire,            - || -
  104   | 1 byte  | Joypad 2 secondary fire,          - || -
+-------+---------+---------------------------------------------

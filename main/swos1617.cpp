@@ -348,5 +348,4 @@ extern "C" void SWOSAnniversaryMenuOnDraw()
         else
             DrawPlayers();
     }
-
 }

@@ -74,7 +74,7 @@ static void RemoveHeapStats(void *heap)
         }
     }
 
-    WriteToLog("qAlloc: Tried to remove non-existant heap stats.");
+    WriteToLog("qAlloc: Tried to remove non-existent heap stats.");
 }
 
 

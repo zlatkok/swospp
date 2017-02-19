@@ -145,7 +145,7 @@ static void *xmalloc(size_t size)
     void *p = malloc(size);
 
     if (!p) {
-        fputs("Out of memory.", stderr);
+        fprintf("Out of memory, couldn't fulfill request for %d bytes.\n", stderr, size);
         exit(1);
     }
 
@@ -230,7 +230,7 @@ static void safefread(void *buffer, size_t size, size_t count, FILE *stream)
 static void safefwrite(const void *buffer, size_t size, size_t count, FILE *stream)
 {
     if (fwrite(buffer, size, count, stream) != count && size) {
-        fputs("File write error.", stderr);
+        fputs("File write error.\n", stderr);
         exit(1);
     }
 }
@@ -239,7 +239,7 @@ static void safefwrite(const void *buffer, size_t size, size_t count, FILE *stre
 static void safefseek(FILE *stream, long offset, int origin)
 {
     if (fseek(stream, offset, origin)) {
-        fputs("Seek error.", stderr);
+        fputs("Seek error.\n", stderr);
         exit(1);
     }
 }
@@ -320,7 +320,7 @@ static RelocSections displacementRelocFix(dword value, uchar *fromSectBuf, dword
 
 static void reportInvalidFixup(const char *from, const char *to, dword offset)
 {
-    fprintf(stderr, "Invalid fixup encountered, `%s' -> `%s', offset %u", from, to, offset);
+    fprintf(stderr, "Invalid fixup encountered, `%s' -> `%s', offset %u\n", from, to, offset);
     exit(1);
 }
 
@@ -354,7 +354,7 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
 
         RelocSections fromSection = sects[i].relocIndex;
         if (fromSection == INVALID || fromSection == SWOS) {
-            fprintf(stderr, "Section `%s' is not allowed to have fixups.", sects[i].name);
+            fprintf(stderr, "Section `%s' is not allowed to have fixups.\n", sects[i].name);
             ++*warnings;
             continue;
         }

@@ -129,75 +129,74 @@ index (except for number 56, that one's unique).
 
 123 - ball sprite, but I haven't noticed it being used anywhere
 
-mali igraci sa odgovarajucom bojom i sarama na dresovima; koriste se za
-editovanje taktike (u njih se kopiraju odgovarajuce slicice)
-124 belac
-125 ridji
-126 crnja
+small player sprites with team colors and shirt stripes; used in edit tactics
+menu (corresponding sprites are copied into them)
+124 white
+125 ginger
+126 black
 
-mali golmani, koriste se kod editovanja taktike
-(u njih se kopiraju odgovarajuce slicice)
-127 belac
-128 ridji
-129 crnja
+small goalkeeper sprites, used in tactics editing
+(corresponding sprites are copied into them)
+127 white
+128 ginger
+129 black
 
-mali igraci sa jednobojnim dresovima
-130 belac
-131 ridji
-132 crnja
+small player sprites with single-color shirts
+130 white
+131 ginger
+132 black
 
-mali igraci sa obojenim rukavima
-133 belac
-134 ridji
-135 crnja
+small player sprites with colored sleeves
+133 white
+134 ginger
+135 black
 
-mali igraci sa vertikalnim prugama na dresovima
-136 belac
-137 ridji
-138 crnja
+small player sprites with vertical stripe shirts
+136 white
+137 ginger
+138 black
 
-mali igraci sa horizontalnim prugama na dresovima
-139 belac
-140 ridji
-141 crnja
+small player sprites with horizontal stripe shirts
+139 white
+140 ginger
+141 black
 
-mali golmani
-142 belac
-143 ridji
-144 crnja
+small goalkeeper sprites
+142 white
+143 ginger
+144 black
 
-149 - kursor za vreme editovanje taktike, frejm 1
-150 -                 -||-                      2
-151                   -||-                      3
+149 - cursor during tactics editing, frame 1
+150 -                -||-                  2
+151 -                -||-                  3
 
-181 - dva prazna sprajta - nalaze se u edit teams meniju, u nevidljivim
-182 - stavkama pred kraj
+181 - two empty sprites - they're located in edit teams menu, in invisible
+182 - entries near the end
 
-183 - strelica na gore (za skrolovanje)
-184 -    -||-     dole       -||-
+183 - up arrow (for scrolling)
+184 - down arrow    -||-
 
-face igraca, za vreme editovanja taktike (mozda i jos negde)
-186 - belac
-187 - ridji
-188 - crnja
+player faces, used during tactics editing (perhaps elsewhere too)
+186 - white
+187 - ginger
+188 - black
 
-189 - prazan sprajt, takodje se nalazi u edit teams meniju, kao poslednja,
-      nevidljiva stavka
+189 - empty sprite, also located in edit teams menu, as last, invisible entry
 
-pehari
+trophies
 215 - sampion u prvenstvu
 216 - pobednik turnira po pozivu
 217 - osvajac kupa
 218 - ???
 219 - kup evropskih sampiona
 220 - kup pobednika kupova
-221 - UEFA kup
-222 - svetsko prvenstvo
-223 - evropsko prvenstvo
+221 - UEFA Cup
+222 - World Championship
+223 - European Championship
 
-227-234 prva skrolujuca reklama
-235-242 druga       -||-
-243-250 treca       -||-
+227-234 first scrolling ad
+235-242 second   -||-
+243-250 third    -||-
 
 255-270 brojevi + imena igraca, ispisuju se u levom gornjem uglu ekrana,
         oznacavaju igraca koji trenutno ima loptu; tim 1

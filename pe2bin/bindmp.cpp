@@ -1,6 +1,4 @@
-/* bindmp - utility to dump ZK binary format, useful for validating binary
-   file
-*/
+/* bindmp - utility to dump ZK binary format, useful for validating binary file */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -117,11 +115,6 @@ static void WritePatchData(uchar *p, int patch_size)
 
 int main(int argc, char **argv)
 {
-    FILE *in;
-    ZK_header *zk;
-    int fileSize, c, size;
-    uchar *contents;
-
     fprintf(stderr, "bindmp - utility for dumping ZK binary files\n");
     fprintf(stderr, "Copyright Zlatko Karakas 2003, 2017.\n\n");
 
@@ -130,26 +123,28 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    FILE *in;
     if (!(in = fopen(argv[1], "rb"))) {
         fprintf(stderr, "Can't open %s.\n", argv[1]);
         return 1;
     }
 
     safeseek(argv[1], in, 0, SEEK_END);
-    fileSize = ftell(in);
+    int fileSize = ftell(in);
     rewind(in);
 
-    contents = (uchar*)xmalloc(fileSize);
+    uchar *contents = (uchar*)xmalloc(fileSize);
     saferead(argv[1], contents, fileSize, 1, in);
 
-    zk = (ZK_header*)contents;
+    ZK_header *zk = (ZK_header*)contents;
 
     if (strncmp(zk->signature, "ZKBF", 4)) {
         fprintf(stderr, "Invalid ZK signature: %4s\n", zk->signature);
         return 1;
     }
 
-    c = Checksum(0, size = 0, contents + zk->codeOffset, zk->codeSize);
+    int size;
+    int c = Checksum(0, size = 0, contents + zk->codeOffset, zk->codeSize);
     c = Checksum(c, size += zk->codeSize, contents + zk->patchOffset, zk->patchSize);
     c = Checksum(c, size += zk->patchSize, contents + zk->relocOffset, zk->relocSize);
 
@@ -196,5 +191,5 @@ int main(int argc, char **argv)
     fclose(in);
     xfree(contents);
 
-    return valid ? 0 : 1;
+    return !valid;
 }

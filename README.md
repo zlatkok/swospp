@@ -1,16 +1,16 @@
 # SWOS++
 
 Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Features:
-- play games over the internet
+- play games over the Internet
 - save and replay complete matches
 - in-game control calibration and support for second keyboard player
 - DIY competition editor
-- expand shirt range to 0-255
+- expanded shirt range to 0-255
 - auto-save options, even on fast exit
 - some small original game bug fixes
 - ...and more... :)
 
-Change list can be seen [here](doc/changes.txt).
+Full change list can be seen [here](doc/changes.txt).
 
 
 ## Installation
@@ -37,7 +37,7 @@ To use SWOS++ simply run the game as usual as all features are integrated.
     <tr><td>obj</td><td>object files, as well as executables</tr>
     <tr><td>other</td><td>other sources not belonging to the project</tr>
     <tr><td>patch</td><td>patcher source</tr>
-    <tr><td>pe2bin</td><td>source of converter from Win32 PE to custom executable format</tr>
+    <tr><td>pe2bin</td><td>Win32 PE to custom executable format converter</tr>
     <tr><td>test</td><td>unit tests for various components, and miscellaneous test code</tr>
     <tr><td>var</td><td>various files that don't belong anywhere else, listings, lib files, etc.</tr>
 </table>
@@ -46,7 +46,7 @@ To use SWOS++ simply run the game as usual as all features are integrated.
 ## Software needed for full recompilation
 
 - GNU make
-- subset of any working Unix environment (for shell, and some UNIX utilities)
+- small subset of any working Unix environment (for shell, and some UNIX utilities)
 - GCC 4.9.x (4.8.x might not work)
 - Open Watcom C Compiler (main program used to be compiled with it, but
   nowadays used for test programs only)
@@ -61,8 +61,7 @@ To use SWOS++ simply run the game as usual as all features are integrated.
 Few environment variables need to be set to build and use utility scripts:
 - SWOS        - contains path where SWOS is installed
 - SWOSPP      - contains path to SWOS++ dev root dir
-- SWOS_DIRS   - additional SWOS directories for testing (separated with
-              semicolon)
+- SWOS_DIRS   - additional SWOS directories for testing (separated with semicolon)
 
 
 

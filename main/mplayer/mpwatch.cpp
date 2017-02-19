@@ -979,8 +979,6 @@ static void ApplyWatcherPacket(const WatcherPacket *packet)
         D1 = SignExtend10Bits(packet->sprites[i] & 0x3ff);
         D2 = SignExtend10Bits((packet->sprites[i] >> 10) & 0x3ff);
         D0 = (packet->sprites[i] >> 20) & 0x7ff;
-if(D0==1182||D0==1183)
-WriteToLog("i: %d, x: %d, y: %d, pack: %#x", D0, D1, D2, packet->sprites[i]);
 
         /* handle player numbers greater than 16, they will start from SPR_MAX */
         if (D0 >= SPR_MAX && D0 < SPR_MAX + 256) {

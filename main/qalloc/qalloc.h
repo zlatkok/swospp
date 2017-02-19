@@ -10,7 +10,7 @@ void *qAlloc_(int size, const char *file, int line);
 void *qHeapAlloc_(void *heap, int size, const char *file, int line);
 void ValidateHeap(void *heap);
 int GetMaxAllocSize(int heapSize);
-void checkMemoryLeaks(void *heap, int size);
+void CheckMemoryLeaks(void *heap, int size);
 extern "C" void ExcludeBlocks();
 #else
 void *qAlloc(int size);
