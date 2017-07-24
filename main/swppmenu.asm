@@ -61,10 +61,12 @@ SWOSPPAbout:
 show_menu:
         jmpa ShowMenu
 
+%ifndef OFFLINE_VERSION
 extern multiplayerMenu
 ShowMultiplayerMenu:
         mov  dword [A6], multiplayerMenu
         jmp  short show_menu
+%endif
 
 
 ; about menu
@@ -112,44 +114,53 @@ aboutText:
         ; title
         StartEntry  92, 0, 120, 15
             EntryColor  0x17
+%ifdef OFFLINE_VERSION
+            EntryString 0, "SENSIBLE DAYS"
+%else
             EntryString 0, "SWOS++ MENU"
+%endif
         EndEntry
 
+%ifndef OFFLINE_VERSION
         ; multiplayer! yeah baby!
-        StartEntry 92, 40, 120, 15
-            NextEntries -1, -1, -1, 2
+        StartEntry 92, 40, 120, 15, multiplayerEntry
+            NextEntries -1, -1, -1, currentEntry + 1
             EntryColor 14
             EntryString 0, "MULTIPLAYER"
             OnSelect    ShowMultiplayerMenu
         EndEntry
+%else
+%define swosppMenu_multiplayerEntry -1
+%assign previousEntryY 15
+%endif
 
         ; replays
-        StartEntry 92, 65, 120, 15
-            NextEntries -1, -1, 1, 3
+        StartEntry 92, previousEntryY + 25, 120, 15
+            NextEntries -1, -1, swosppMenu_multiplayerEntry, currentEntry + 1
             EntryColor 14
             EntryString 0, "REPLAYS"
             OnSelect    ShowReplaysMenu
         EndEntry
 
         ; controls
-        StartEntry 92, 90, 120, 15
-            NextEntries -1, -1, 2, 4
+        StartEntry 92, previousEntryY + 25, 120, 15
+            NextEntries -1, -1, currentEntry - 1, currentEntry + 1
             EntryColor  14
             EntryString 0, "CONTROLS"
             OnSelect    ShowControlsMenu
         EndEntry
 
         ; edit/load diy file
-        StartEntry 92, 115, 120, 15
-            NextEntries -1, -1, 3, 5
+        StartEntry 92, previousEntryY + 25, 120, 15
+            NextEntries -1, -1, currentEntry - 1, currentEntry + 1
             EntryColor  14
             EntryString 0, "EDIT/LOAD DIY FILE"
             OnSelect    EditDIYFile
         EndEntry
 
         ; about
-        StartEntry 92, 140, 120, 15
-            NextEntries -1, -1, 4, 6
+        StartEntry 92, previousEntryY + 25, 120, 15
+            NextEntries -1, -1, currentEntry - 1, currentEntry + 1
             EntryColor  14
             EntryString 0, "ABOUT"
             OnSelect    SWOSPPAbout
@@ -157,7 +168,7 @@ aboutText:
 
         ; exit
         StartEntry 102, 185, 100, 15
-            NextEntries -1, -1, 5, -1
+            NextEntries -1, -1, currentEntry - 1, -1
             EntryColor  12
             EntryString 0, aExit
             OnSelect    SetExitMenuFlag

@@ -270,24 +270,22 @@ offset:  size:  desc.
    5       1    player face index
    6       1    is player injured? [0,1]
    7       1    ?
-   8       1    ne znam tacno sta je, ali ako je true igrac trosi samo 25
-                frejmova na uklizavanje umesto 55, mada se kasnije u svakom
-                slucaju vraca na -1 (wtf)
-   9       1    ima uticaja na kriterijum za crveni karton, cini mi se da je
-                kriterijum strozi ako je true
-                moguce cak da je true ako igrac vec ima zuti karton?
+   8       1    not sure what it is exactly, but if it's true player will spend
+                only 25 frames on tackling instead of 55, although it's reset
+                to -1 later in each case (wtf)
+   9       1    this influences red card criteria, seems to be more strict if
+                it's true
+                might be true if player already has a yellow card?
                 cards (offset 10) are copied here right before the game
-  10       1    zuti/crveni kartoni - 1 ako je igrac dobio zuti karton, 3 ako
-                je dobio crveni (bilo direktno, bilo preko dva zuta)
-                bitflags:
-                bit 0 - zuti karton
-                bit 1 - crveni karton
-                opseg je izgleda 0..4
-  11       1    ne znam tacno sta je, ali ako je negativno igrac ne moze biti
-                zamenjen
-  12      14    broj + ime igraca (ili prvo slovo imena + prezime)
-  26       1    valjda zero-terminator za ovo gore
-  27       1    passing (vrednosti 0..7)
+  10       1    yellow/red card bit-flags:
+                bit 0 - yellow card
+                bit 1 - red card (direct, or via double yellow)
+                range seems to be 0..4
+  11       1    not sure what it is, but if it's negative a player can not be
+                substituted
+  12      14    player number + name (or first letter of name + surname)
+  26       1    probably zero terminator for field above
+  27       1    passing (values 0..7)
   28       1    shooting
   29       1    heading
   30       1    tackling

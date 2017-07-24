@@ -12,7 +12,7 @@ static XmlNode *m_optionsNode;
 static XmlNode *m_lastSectionNode;
 
 static bool m_useBIOSForJoystickInput;
-static bool m_calibrateJoysticks;
+static bool m_calibrateJoysticks = true;
 static bool m_runningUnderDosbox;
 
 extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions);
@@ -231,8 +231,10 @@ void InitializeOptions()
     AddXmlNode(m_rootNode = NewEmptyXmlNode("SWOSPP", 6), m_optionsNode = m_lastSectionNode = NewEmptyXmlNode("options", 7));
     RegisterSWOSOptions(RegisterOptions);
     RegisterControlsOptions(RegisterOptions);
+#ifndef OFFLINE_VERSION
     RegisterNetworkOptions(RegisterOptions);
     RegisterUserTactics(RegisterOptions);
+#endif
     ReverseChildren(m_rootNode);
     XmlTreeSnapshot(m_rootNode);       /* default options */
 
@@ -243,8 +245,10 @@ void InitializeOptions()
     }
 
     XmlDeallocateTree(fileRoot);
+#ifndef OFFLINE_VERSION
     if (!ValidateUserMpTactics())
         XmlTreeSnapshot(m_rootNode);    /* additional fixes to default or file options */
+#endif
 }
 
 
@@ -285,6 +289,7 @@ bool DOSBoxDetected()
 */
 
 
+#ifndef OFFLINE_VERSION
 /** GetCommandLine
 
     buff -> buffer to receive the command line
@@ -352,6 +357,7 @@ static const char *ParseJoystickOptions(const char *p)
 
     return p;
 }
+#endif
 
 
 /** ParseCommandLine
@@ -362,6 +368,7 @@ static const char *ParseJoystickOptions(const char *p)
 */
 void ParseCommandLine()
 {
+#ifndef OFFLINE_VERSION
     char cmdLine[257];
     GetCommandLine(cmdLine);
 
@@ -403,6 +410,7 @@ void ParseCommandLine()
 
     WriteToLog("Command line is: \"%s\"", cmdLine);
     DirectModeOnCommandLineParsingDone();
+#endif
 }
 
 

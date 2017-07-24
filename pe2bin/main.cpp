@@ -145,7 +145,7 @@ static void *xmalloc(size_t size)
     void *p = malloc(size);
 
     if (!p) {
-        fprintf("Out of memory, couldn't fulfill request for %d bytes.\n", stderr, size);
+        fprintf(stderr, "Out of memory, couldn't fulfill request for %d bytes.\n", size);
         exit(1);
     }
 

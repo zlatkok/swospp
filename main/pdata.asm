@@ -24,14 +24,18 @@ extern EndLogFile
 ; patch specific data
 section .data
 
-new_message:
+newMessage:
     db "Sensible World Of Soccer V2.0 ", 13, 10
     db "SWOS++ v"
     db verStr
     db 13, 10, "$"
 
-swospp_str:
+swosppTitle:
+%ifdef OFFLINE_VERSION
+    db "SENSIBLE DAYS", 0
+%else
     db "SWOS++", 0
+%endif
 
 
 ; patch-specific code
@@ -110,9 +114,11 @@ ResetControlVars:
         mov  [g_joy1Status], eax
         mov  [setupDatBuffer], ax
 
+%ifndef OFFLINE_VERSION
         mov  al, [pl2Keyboard]
         test al, al                         ; if true, both players are on the keyboard
         jnz  .pl2_kbd
+%endif
 
         call VerifyJoysticks  ; this will prevent controls blocking if there is currently no joystick attached
         WriteToLog "g_joyKbdWord = %hd, after VerifyJoysticks()", dword [g_joyKbdWord]
@@ -267,6 +273,7 @@ HookSaveCoordinatesForHighlights:
         retn
 
 
+%ifndef OFFLINE_VERSION
 ; HookMenuLoop
 ;
 ; This part is crucial for whole network part to work properly. We will execute each
@@ -437,6 +444,7 @@ HookMainMenuSetup:
         call MainMenuSelect
         mov  [A6], eax
         retn
+%endif
 
 
 ; HookSetBenchPlayersNumbers
@@ -508,7 +516,7 @@ PatchStart:
 ; user modifiable part
 
     ; infiltrate starting message
-    PatchOffset Initialization + 0x1c, new_message
+    PatchOffset Initialization + 0x1c, newMessage
 
     ; patch in entry in main menu for our menu
     StartRecord SWOS_MainMenu + 0x9e
@@ -526,7 +534,7 @@ PatchStart:
         dw 14    ; green
         dw 8     ; type 8 - string
         dw 16    ; string flags
-        dd swospp_str
+        dd swosppTitle
         dw 13    ; type 13 - on select function
         dd LoadSWPPMenu
         dw 0     ; type 0 - end of menu entry
@@ -695,6 +703,7 @@ PatchStart:
         nop
     EndRecord
 
+%ifndef OFFLINE_VERSION
     ; hook menu loop to implement OnIdle() for network
     StartRecord MenuProc
         calla HookMenuLoop
@@ -706,15 +715,18 @@ PatchStart:
         calla HookInputText
         times 3 nop
     EndRecord
+%endif
 
     ; return whatever dest pointer reached when length ran out, + 1
     FillRecord swos_libc_strncpy_ + 0x1d, 5, 0x90
 
+%ifndef OFFLINE_VERSION
     ; allow input to be disabled for a while, so user doesn't instantly exit modal menu
     StartRecord CheckControls
         calla CheckInputDisabledTimer
         times 4 nop
     EndRecord
+%endif
 
     ; fix upper half of edx getting dirty in ClearBackground
     StartRecord ClearBackground + 0x3e
@@ -746,10 +758,12 @@ PatchStart:
     ; fix InputText to limit text properly when we start with buffer already filled more than limit
     PatchByte InputText + 0x25d, 0x83
 
+%ifndef OFFLINE_VERSION
     StartRecord InitMainMenuStuff + 0x114
         calla HookMainMenuSetup
         times 3 nop
     EndRecord
+%endif
 
     ; kill this bastard
     PatchByte SetDefaultOptions, 0xc3

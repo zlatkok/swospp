@@ -87,8 +87,10 @@ start:
         WriteToLog "Stack top at entry = %#x, esp = %#x", dword [SWOS_StackTop], esp
         WriteToLog "Stack memory available: %d bytes.", eax
         popfd
+%ifndef OFFLINE_VERSION
         call IPX_IsInstalled    ; test presence of IPX for multiplayer
         WriteToLog "IPX Network supported: %#x", eax
+%endif
 %endif
         call ParseCommandLine
         WriteToLog "Initializing qAlloc..."
@@ -128,8 +130,10 @@ EndProgram:
         call CloseReplayFile            ; close replay file and set header
 
 .no_rpl_save:
+%ifndef OFFLINE_VERSION
         call FinishMultiplayer          ; and get rid of network too
         call FinishMultiplayerGame      ; in case we were in a game
+%endif
         call SaveOptionsIfNeeded        ; save options, but only after they have been restored
 
         pop  eax
@@ -515,18 +519,18 @@ WriteYULetters:
 
 .dj:
         mov  dl, 'D'
-        mov  esi, letter_dj_big
-        cmp  dword [A3], conversion_table_small
+        mov  esi, letterDjBig
+        cmp  dword [A3], conversionTableSmall
         jnz  .draw_char
-        mov  esi, letter_dj_small
+        mov  esi, letterDjSmall
         jmp  short .draw_char
 
 .tj:
         mov  dl, 'C'
-        mov  esi, accent_big
-        cmp  dword [A3], conversion_table_small
+        mov  esi, accentBig
+        cmp  dword [A3], conversionTableSmall
         jnz  .draw_char
-        mov  esi, accent_small
+        mov  esi, accentSmall
         jmp  short .draw_char
 
 .ch:
@@ -541,10 +545,10 @@ WriteYULetters:
         mov  dl, 'S'            ; based on 'S'
 
 .draw_hook:
-        mov  esi, hook_big
-        cmp  dword [A3], conversion_table_small
+        mov  esi, hookBig
+        cmp  dword [A3], conversionTableSmall
         jnz  .draw_char
-        mov  esi, hook_small
+        mov  esi, hookSmall
 
 .draw_char:
         xor  eax, eax
@@ -613,7 +617,7 @@ FixGetTextSize:
 
 .fix_it:
         mov  ax, 7
-        cmp  dword [A3], conversion_table_small
+        cmp  dword [A3], conversionTableSmall
         jz   .small_char
         mov  ax, 9
 
@@ -624,31 +628,31 @@ FixGetTextSize:
 
 ; data section
 section .data
-hook_big:
+hookBig:
     db 8, 3                     ; 8 x 3
     db 0, 2, 2, 0, 2, 2, 8, 0
     db 0, 0, 2, 2, 2, 8, 8, 0
     db 0, 0, 0, 8, 8, 8, 0, 0
 
-hook_small:
+hookSmall:
     db 6, 3                     ; 6 x 3
     db 0, 2, 8, 0, 2, 8
     db 0, 0, 2, 2, 8, 8
     db 0, 0, 0, 8, 8, 0
 
-accent_big:
+accentBig:
     db 8, 3                     ; 8 x 3
     db 0, 0, 0, 0, 2, 2, 8, 0
     db 0, 0 ,0, 2, 2, 8, 0, 0
     db 0, 0, 0, 8, 8, 8, 0, 0
 
-accent_small:
+accentSmall:
     db 6, 3                     ; 6 x 3
     db 0, 0, 0, 0, 2, 8
     db 0, 0, 0, 2, 8, 0
     db 0, 0, 0, 8, 0, 0
 
-letter_dj_big:
+letterDjBig:
     db 9, 8                     ; 9 x 8
     db 0, 2, 2, 2, 2, 2, 2, 0, 0
     db 0, 2, 2, 8, 8, 8, 2, 2, 0
@@ -659,7 +663,7 @@ letter_dj_big:
     db 0, 2, 2, 2, 2, 2, 2, 8, 8
     db 0, 0, 8, 8, 8, 8, 8, 8, 0
 
-letter_dj_small:
+letterDjSmall:
     db 7, 6                     ; 7 x 6
     db 0, 2, 2, 2, 2, 0, 0
     db 0, 2, 8, 8, 8, 2, 0

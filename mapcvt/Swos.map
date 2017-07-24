@@ -3399,7 +3399,7 @@
  0002:0005034C       menu_y
  0002:0005034E       offsetSpriteDat
  0002:00050352       smallCharsTable
- 0002:00050360       conversion_table_small
+ 0002:00050360       conversionTableSmall
  0002:00050440       bigCharsTable
  0002:0005044E       conversion_table_big
  0002:0005052E       camera_x_mod320

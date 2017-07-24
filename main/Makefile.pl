@@ -13,7 +13,8 @@ use Term::ANSIColor;
 
 ##################    configuration section    ##################
 
-my $SWOS_16_17  = 1;    # build for SWOS 16/17 edition
+my $SWOS_16_17      = 0;    # build for SWOS 16/17 edition
+my $OFFLINE_VERSION = 0;    # version without the multiplayer, meant for tournaments
 
 # SWOS++ base file name
 my $BASE_FNAME  = 'swospp';
@@ -21,6 +22,7 @@ my $BASE_FNAME  = 'swospp';
 # list of ignored files, file name without extension will cause all files with
 # that name to be ignored regardless of their extension
 my %IGNORE_SRCS = map { $_ => 1 } qw//;
+my %IGNORE_DIRS = map { $_ => 1 } qw//;
 
 my $CC          = 'g++';
 my $AS          = '..\extra\nasm';
@@ -80,6 +82,7 @@ sub createBin;
 sub recreateCommandLine;
 sub showWarningReport;
 sub handleSWOSAnniversaryVersion;
+sub handleOfflineVersion;
 
 my $FILENAME = $BASE_FNAME . '.bin';
 my $LNK_FILE = $BASE_FNAME . '.lnk';
@@ -127,18 +130,20 @@ my %SRC_EXTENSIONS = map { $_ => 1 } qw/.c .cpp .asm/;
 my %INCLUDES_EXTENSIONS = map { $_ => 1 } qw/inc h/;
 
 handleSWOSAnniversaryVersion();
+handleOfflineVersion();
 
 # go into file loop
 logl("Traversing source directories...");
 find({ wanted => sub
 {
-    my $path = catdir('.', $File::Find::name);
+    my $path = canonpath(catdir('.', $File::Find::name));
     my ($base, $dir, $ext) = fileparse($path, qr/\.[^.]*/);
     my $file = $base . $ext;
 
-    # skip files from debug dir if we're not building debug version
-    return if (substr(canonpath($path), 0, 5) eq 'debug' && $TARGET ne 'dbg');
+    # skip files from debug directory if we're not building debug version
+    return if (substr($path, 0, 5) eq 'debug' && $TARGET ne 'dbg');
     return if ($IGNORE_SRCS{$file} || $IGNORE_SRCS{$base});
+    return if ($IGNORE_DIRS{$dir});
 
     # each subdirectory will be additional include path
     if (-d) {
@@ -604,6 +609,23 @@ sub handleSWOSAnniversaryVersion
         $AFLAGS .= ' -DSWOS_16_17';
     } else {
         $IGNORE_SRCS{'swos1617'} = 1;
+    }
+}
+
+
+sub handleOfflineVersion
+{
+    if ($OFFLINE_VERSION) {
+        if ($SWOS_16_17) {
+            print "Warning: offline version overriding anniversary version.\n";
+            $SWOS_16_17 = 0;
+            handleSWOSAnniversaryVersion();
+        }
+
+        $IGNORE_DIRS{'mplayer\\'} = 1;
+
+        $CFLAGS .= ' -DOFFLINE_VERSION=1';
+        $AFLAGS .= ' -DOFFLINE_VERSION';
     }
 }
 

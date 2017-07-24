@@ -13,7 +13,7 @@ StopAIL
 CDROM_StopAudio
 RestoreOldInt9Handler
 SWOS_StackTop
-conversion_table_small
+conversionTableSmall
 EGA_graphics, word
 currentTeamNumber
 FindFiles, function

@@ -83,7 +83,9 @@ HookMainKeysCheck:
         jz   .skip_key
 
         pop  eax
+%ifndef OFFLINE_VERSION
         call HandleMPKeys
+%endif
         retn
 
 .skip_key:
