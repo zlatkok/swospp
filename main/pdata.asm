@@ -17,6 +17,7 @@ extern MyHilPtrIncrement
 extern MyHilPtrAdd
 extern PrintSmallNumber
 extern PushMenu, PopMenu
+extern SelectMenuMusic
 %ifdef DEBUG
 extern EndLogFile
 %endif
@@ -31,7 +32,7 @@ newMessage:
     db 13, 10, "$"
 
 swosppTitle:
-%ifdef OFFLINE_VERSION
+%ifdef SENSI_DAYS
     db "SENSIBLE DAYS", 0
 %else
     db "SWOS++", 0
@@ -114,7 +115,7 @@ ResetControlVars:
         mov  [g_joy1Status], eax
         mov  [setupDatBuffer], ax
 
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
         mov  al, [pl2Keyboard]
         test al, al                         ; if true, both players are on the keyboard
         jnz  .pl2_kbd
@@ -273,7 +274,7 @@ HookSaveCoordinatesForHighlights:
         retn
 
 
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
 ; HookMenuLoop
 ;
 ; This part is crucial for whole network part to work properly. We will execute each
@@ -703,7 +704,7 @@ PatchStart:
         nop
     EndRecord
 
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
     ; hook menu loop to implement OnIdle() for network
     StartRecord MenuProc
         calla HookMenuLoop
@@ -720,7 +721,7 @@ PatchStart:
     ; return whatever dest pointer reached when length ran out, + 1
     FillRecord swos_libc_strncpy_ + 0x1d, 5, 0x90
 
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
     ; allow input to be disabled for a while, so user doesn't instantly exit modal menu
     StartRecord CheckControls
         calla CheckInputDisabledTimer
@@ -758,7 +759,7 @@ PatchStart:
     ; fix InputText to limit text properly when we start with buffer already filled more than limit
     PatchByte InputText + 0x25d, 0x83
 
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
     StartRecord InitMainMenuStuff + 0x114
         calla HookMainMenuSetup
         times 3 nop
@@ -799,6 +800,14 @@ PatchStart:
     StartRecord Joy2SetStatus + 0x3b
         calla ReadJoystickButtons
     EndRecord
+
+%ifdef SENSI_DAYS
+    ; prefer swos.xmi over menu.xmi
+    StartRecord InitMenuMusic + 0xa
+        calla SelectMenuMusic
+        times 3 nop
+    EndRecord
+%endif
 
 %ifdef DEBUG
     ; don't waste time on opening animations in debug version

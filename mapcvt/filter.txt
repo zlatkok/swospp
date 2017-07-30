@@ -93,6 +93,10 @@ g_joy1Fire1
 g_joy1Fire2
 g_joy2Fire1
 g_joy2Fire2
+g_joy1X
+g_joy1Y
+g_joy2X
+g_joy2Y
 
 ### SWOS original options
 
@@ -401,10 +405,9 @@ PlayMatchMenuSwapPlayers
 showingCpuTeams
 VersusInit, function
 ShowStadiumInit, function
-g_joy1X
-g_joy1Y
-g_joy2X
-g_joy2Y
+InitMenuMusic
+aSwos_xmi
+aMenu_xmi
 
 
 

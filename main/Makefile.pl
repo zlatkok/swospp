@@ -13,8 +13,8 @@ use Term::ANSIColor;
 
 ##################    configuration section    ##################
 
-my $SWOS_16_17      = 0;    # build for SWOS 16/17 edition
-my $OFFLINE_VERSION = 0;    # version without the multiplayer, meant for tournaments
+my $SWOS_16_17  = 0;    # build for SWOS 16/17 edition
+my $SENSI_DAYS  = 0;    # version without the multiplayer, meant for tournaments
 
 # SWOS++ base file name
 my $BASE_FNAME  = 'swospp';
@@ -615,7 +615,7 @@ sub handleSWOSAnniversaryVersion
 
 sub handleOfflineVersion
 {
-    if ($OFFLINE_VERSION) {
+    if ($SENSI_DAYS) {
         if ($SWOS_16_17) {
             print "Warning: offline version overriding anniversary version.\n";
             $SWOS_16_17 = 0;
@@ -624,8 +624,8 @@ sub handleOfflineVersion
 
         $IGNORE_DIRS{'mplayer\\'} = 1;
 
-        $CFLAGS .= ' -DOFFLINE_VERSION=1';
-        $AFLAGS .= ' -DOFFLINE_VERSION';
+        $CFLAGS .= ' -DSENSI_DAYS=1';
+        $AFLAGS .= ' -DSENSI_DAYS';
     }
 }
 

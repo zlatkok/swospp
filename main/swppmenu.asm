@@ -61,7 +61,7 @@ SWOSPPAbout:
 show_menu:
         jmpa ShowMenu
 
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
 extern multiplayerMenu
 ShowMultiplayerMenu:
         mov  dword [A6], multiplayerMenu
@@ -114,14 +114,14 @@ aboutText:
         ; title
         StartEntry  92, 0, 120, 15
             EntryColor  0x17
-%ifdef OFFLINE_VERSION
+%ifdef SENSI_DAYS
             EntryString 0, "SENSIBLE DAYS"
 %else
             EntryString 0, "SWOS++ MENU"
 %endif
         EndEntry
 
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
         ; multiplayer! yeah baby!
         StartEntry 92, 40, 120, 15, multiplayerEntry
             NextEntries -1, -1, -1, currentEntry + 1

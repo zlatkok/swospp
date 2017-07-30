@@ -83,7 +83,7 @@ HookMainKeysCheck:
         jz   .skip_key
 
         pop  eax
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
         call HandleMPKeys
 %endif
         retn

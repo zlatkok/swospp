@@ -87,7 +87,7 @@ start:
         WriteToLog "Stack top at entry = %#x, esp = %#x", dword [SWOS_StackTop], esp
         WriteToLog "Stack memory available: %d bytes.", eax
         popfd
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
         call IPX_IsInstalled    ; test presence of IPX for multiplayer
         WriteToLog "IPX Network supported: %#x", eax
 %endif
@@ -130,7 +130,7 @@ EndProgram:
         call CloseReplayFile            ; close replay file and set header
 
 .no_rpl_save:
-%ifndef OFFLINE_VERSION
+%ifndef SENSI_DAYS
         call FinishMultiplayer          ; and get rid of network too
         call FinishMultiplayerGame      ; in case we were in a game
 %endif
@@ -361,6 +361,32 @@ FixSWOSIntro:
 
 .out:
         retn
+
+
+%ifdef SENSI_DAYS
+; SelectMenuMusic
+;
+; Try loading swos.xmi if it's present (cause it's cooler ;)), if not load the usual menu.xmi
+;
+global SelectMenuMusic
+SelectMenuMusic:
+        mov  edx, aSwos_xmi
+        mov  ax, 0x3d00
+        int  0x21
+        jc   .use_menu_xmi
+
+        mov  ah, 0x3e
+        int  0x21
+        mov  eax, aSwos_xmi
+        jmp  .out
+
+.use_menu_xmi:
+        mov  eax, aMenu_xmi
+
+.out:
+        mov  [A0], eax
+        retn
+%endif
 
 
 %ifdef DEBUG

@@ -231,7 +231,7 @@ void InitializeOptions()
     AddXmlNode(m_rootNode = NewEmptyXmlNode("SWOSPP", 6), m_optionsNode = m_lastSectionNode = NewEmptyXmlNode("options", 7));
     RegisterSWOSOptions(RegisterOptions);
     RegisterControlsOptions(RegisterOptions);
-#ifndef OFFLINE_VERSION
+#ifndef SENSI_DAYS
     RegisterNetworkOptions(RegisterOptions);
     RegisterUserTactics(RegisterOptions);
 #endif
@@ -245,7 +245,7 @@ void InitializeOptions()
     }
 
     XmlDeallocateTree(fileRoot);
-#ifndef OFFLINE_VERSION
+#ifndef SENSI_DAYS
     if (!ValidateUserMpTactics())
         XmlTreeSnapshot(m_rootNode);    /* additional fixes to default or file options */
 #endif
@@ -289,7 +289,7 @@ bool DOSBoxDetected()
 */
 
 
-#ifndef OFFLINE_VERSION
+#ifndef SENSI_DAYS
 /** GetCommandLine
 
     buff -> buffer to receive the command line
@@ -368,7 +368,7 @@ static const char *ParseJoystickOptions(const char *p)
 */
 void ParseCommandLine()
 {
-#ifndef OFFLINE_VERSION
+#ifndef SENSI_DAYS
     char cmdLine[257];
     GetCommandLine(cmdLine);
 
