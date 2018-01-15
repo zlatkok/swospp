@@ -10,7 +10,6 @@
 /* has to be public for the menu */
 Tactics MP_Tactics[6];
 
-
 /** InitMpTactic
 
     tactic -> tactic to initialize
@@ -25,7 +24,6 @@ static void InitMpTactic(Tactics *tactic, const char *name)
     strcpy((char *)tactic, name);
 }
 
-
 /** InitMpTactics
 
     Put user tactics for multiplayer in initial state. We duplicate SWOS initialization
@@ -39,7 +37,6 @@ static void InitMpTactics()
     calla_ebp_safe(InitializeTacticsPositions);
 }
 
-
 extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions)
 {
     InitMpTactics();
@@ -49,12 +46,10 @@ extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions)
         &MP_Tactics[0], &MP_Tactics[1], &MP_Tactics[2], &MP_Tactics[3], &MP_Tactics[4], &MP_Tactics[5]);
 }
 
-
 Tactics *GetUserMpTactics()
 {
     return MP_Tactics;
 }
-
 
 /** ValidateUserMpTactic
 
@@ -93,7 +88,6 @@ static bool ValidateUserMpTactic(const Tactics *tactics)
     return true;
 }
 
-
 /** ValidateUserMpTactics
 
     Validate all user tactics. Call it right after saved user tactics are loaded.
@@ -113,7 +107,6 @@ bool ValidateUserMpTactics()
     return modified;
 }
 
-
 static char *LoadTeam()
 {
     auto teamId = GetCurrentTeamId();
@@ -124,7 +117,6 @@ static char *LoadTeam()
     return teamFileBuffer + 2 + ordinal * sizeof(TeamFile);
 }
 
-
 void InitializeMPOptionsMenu()
 {
     /* stoopid DrawSprite16Pixels has hard-coded width of 384, patch it temporarily so we can draw player icons */
@@ -133,7 +125,6 @@ void InitializeMPOptionsMenu()
     MPOptionsMenuAfterDraw();
 }
 
-
 void MPOptionsMenuAfterDraw()
 {
     D0 = 1;
@@ -141,13 +132,11 @@ void MPOptionsMenuAfterDraw()
     strcpy(((MenuEntry *)A0)->u2.string, GetPlayerNick());
 }
 
-
 void NetworkTimeoutBeforeDraw()
 {
     MenuEntry *entry = (MenuEntry *)A5;
     strcpy(strcpy(entry->u2.string, int2str(GetNetworkTimeout() / 70)), " SECONDS");
 }
-
 
 void SkipFramesBeforeDraw()
 {
@@ -156,13 +145,11 @@ void SkipFramesBeforeDraw()
     strcpy(strcpy(strcpy(entry->u2.string, int2str(numFrames)), " FRAME"), numFrames == 1 ? "" : "S");
 }
 
-
 void IncreaseNetworkTimeout()
 {
     auto timeout = SetNetworkTimeout(GetNetworkTimeout() + 70);
     UpdateNetworkTimeout(timeout);
 }
-
 
 void DecreaseNetworkTimeout()
 {
@@ -170,20 +157,17 @@ void DecreaseNetworkTimeout()
     UpdateNetworkTimeout(timeout);
 }
 
-
 void IncreaseSkipFrames()
 {
     auto frames =  SetSkipFrames(GetSkipFrames() + 1);
     UpdateSkipFrames(frames);
 }
 
-
 void DecreaseSkipFrames()
 {
     auto frames = SetSkipFrames(GetSkipFrames() - 1);
     UpdateSkipFrames(frames);
 }
-
 
 extern char aTeamNotChosen[] asm("aTeamNotChosen");
 
@@ -192,7 +176,6 @@ void mpOptSelectTeamBeforeDraw()
     MenuEntry *entry = (MenuEntry *)A5;
     entry->u2.string = GetCurrentTeamId() == (dword)-1 ? aTeamNotChosen : LoadTeam() + 5;
 }
-
 
 /** ChooseMPTactics
 
@@ -228,7 +211,6 @@ void ChooseMPTactics()
     *userTactics = savedTactics;
     WriteToLog("Finished editing tactics: %s", editTacticsCurrentTactics);
 }
-
 
 void ExitMultiplayerOptions()
 {

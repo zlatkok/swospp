@@ -31,7 +31,6 @@ static int m_resendIndex;
 static bool __attribute__((used)) ReceiveFrame() asm("ReceiveFrame");
 static void __attribute__((used)) SendNextFrame() asm("SendNextFrame");
 
-
 static void SetAllResendFramesState(byte state)
 {
     for (size_t i = 0; i < sizeofarray(m_resendFrames); i++)
@@ -128,18 +127,15 @@ struct FrameHash {
 static FrameHash m_frameHashes[20];
 static int m_frameHashIndex;        /* points to one after the last one */
 
-
 static dword GetActualTeam1Hash()
 {
     return simpleHash((char *)leftTeamData + 24, 145 - 24);
 }
 
-
 static dword GetActualTeam2Hash()
 {
     return simpleHash((char *)rightTeamData + 24, 145 - 24);
 }
-
 
 static void StoreCurrentHash()
 {
@@ -155,14 +151,12 @@ static void StoreCurrentHash()
     }
 }
 
-
 static FrameHash *GetHashAtPos(int spot)
 {
     if (abs(spot) >= sizeofarray(m_frameHashes))
         return nullptr;
     return &m_frameHashes[(spot + m_frameHashIndex - 1 + sizeofarray(m_frameHashes)) % sizeofarray(m_frameHashes)];
 }
-
 
 static void DumpSavedStates()
 {
@@ -175,7 +169,6 @@ static void DumpSavedStates()
         cur = (cur + 1) % sizeofarray(m_frameHashes);
     }
 }
-
 
 /** [DEBUG]
 
@@ -238,7 +231,6 @@ static void PausedLoop();
 static bool IsBench1Allowed();
 static bool IsBench2Allowed();
 
-
 static void InitFrame(Frame *f, word controls, int frameNo, byte state)
 {
     f->type = PT_GAME_CONTROLS;
@@ -254,7 +246,6 @@ static void InitFrame(Frame *f, word controls, int frameNo, byte state)
 #endif
 }
 
-
 static void SendFrame(int frameNo, word controls, byte state)
 {
     Frame frame;
@@ -268,7 +259,6 @@ static void SendFrame(int frameNo, word controls, byte state)
             SendSimplePacket(&m_watcherAddresses[i], (char *)&frame, sizeof(frame));
 }
 
-
 /* We are applying controls for this frame, should be only possible spot where it is allowed.
    Do not touch control word, or it will get propagated into future frames. */
 static void ApplyControls(word controls, int playerNo)
@@ -277,7 +267,6 @@ static void ApplyControls(word controls, int playerNo)
     assert(playerNo == 0 || playerNo == 1);
     *statusWords[playerNo] = controls;
 }
-
 
 static void ApplyFrame(const Frame *frame)
 {
@@ -316,7 +305,6 @@ static void ApplyFrame(const Frame *frame)
         }
     }
 }
-
 
 /* Try to read next frame and store it into framesToRender array, to be ready when the time for rendering comes.
    Return true if packet processed, false if queue empty. */
@@ -418,12 +406,10 @@ static bool __attribute__((used)) ReceiveFrame()
     return true;
 }
 
-
 static bool SendingThisFrame()
 {
     return m_currentFrameNo + (m_currentFrameNo != teamSwitchCounter) + 2 + 2 * m_skipFrames >= m_nextSendFrameNo;
 }
-
 
 /** SendNextFrame
 
@@ -465,18 +451,15 @@ static void __attribute__((used)) SendNextFrame()
     }
 }
 
-
 bool IsBench1Allowed()
 {
     return !replayState && (leftTeamData->playerNumber || leftTeamData->plCoachNum);
 }
 
-
 bool IsBench2Allowed()
 {
     return !replayState && (rightTeamData->playerNumber || rightTeamData->plCoachNum);
 }
-
 
 /** GetControlScanPlayerNumber
 
@@ -486,7 +469,6 @@ static int GetControlScanPlayerNumber()
 {
     return m_teams[(teamSwitchCounter & 1) ^ (teamPlayingUp == 2)]->playerNumber;
 }
-
 
 /* Called when the game ended, on exit from main loop. Send the last frame and cleanup. */
 static void GameEnded()
@@ -552,7 +534,6 @@ static void GameEnded()
     replaySelected = false; /* no replay, we're done */
     calla_ebp_safe(AIL_stop_play);
 }
-
 
 /** HandleMPKeys
 
@@ -623,7 +604,6 @@ int HandleMPKeys(int key)
     return key;
 }
 
-
 /** PollNetworkAndWaitRetrace
 
     Acknowledge any packet that arrives while we're fading in and out before the game, since
@@ -635,7 +615,6 @@ static void PollNetworkAndWaitRetrace()
     calla(WaitRetrace);
 }
 
-
 static void HookNetworkPoll()
 {
     if (m_playerNo == 1) {
@@ -645,7 +624,6 @@ static void HookNetworkPoll()
     }
 }
 
-
 static void UnhookNetworkPoll()
 {
     if (m_playerNo == 1) {
@@ -654,7 +632,6 @@ static void UnhookNetworkPoll()
         PatchDword(ShowStadiumInit, 0x4ed, 0xfffbac68);
     }
 }
-
 
 /* Hook main loop to enable blocking if next frame hasn't arrived yet. */
 void HookMainLoop()
@@ -671,7 +648,6 @@ void HookMainLoop()
     }
     calln(ReadTimerDelta);      /* SWOS doesn't use registers anyway, call the version that doesn't save them */
 }
-
 
 extern void CheckForFastReplay() asm("CheckForFastReplay");
 /* Patch waiting for retrace start, as we might spend some time there, and insert network check. */
@@ -695,7 +671,6 @@ asm(
 ".return:                       \n"
     "ret                        \n"
 );
-
 
 /** HookUpdateStatistics
 
@@ -722,7 +697,6 @@ static void HookUpdateStatistics()
     calla(UpdateStatistics);
 }
 
-
 /** HookGetPlayerAtIndex
 
     in:
@@ -743,7 +717,6 @@ static void HookGetPlayerAtIndex()
     A0 = (dword)&team->players[D1] - TeamFileHeaderSize;
 }
 
-
 /* No input will be registered after this call. */
 static void DisableInput()
 {
@@ -751,25 +724,21 @@ static void DisableInput()
     *(word *)((byte *)Player2StatusProc + 0x8) = 0x15eb;
 }
 
-
 static void EnableInput()
 {
     *(word *)((byte *)Player1StatusProc + 0x8) = 0x1075;
     *(word *)((byte *)Player2StatusProc + 0x8) = 0x1074;
 }
 
-
 int GetSkipFrames()
 {
     return m_skipFrames;
 }
 
-
 int SetSkipFrames(int skipFrames)
 {
     return m_skipFrames = max(0, min(skipFrames, MAX_SKIP_FRAMES));
 }
-
 
 /** ResetSprites
 
@@ -807,7 +776,6 @@ static void ResetSprites()
     *(word *)&ballSprite->y = 0;
     *(word *)&ballSprite->z = 0;
 }
-
 
 /* player 2 on keyboard might have patched this, so we better save it */
 static byte m_joy2SetStatusByte;
@@ -977,7 +945,6 @@ void InitMultiplayerGame(int playerNo, IPX_Address *playerAddresses, int numWatc
     WriteToLog("Skip frames: %d", m_skipFrames);
 }
 
-
 /** FinishMultiplayerGame
 
     Clean up after the game and unpatch.
@@ -1028,7 +995,6 @@ extern "C" void FinishMultiplayerGame()
     if (m_pl2KeyboardWasActive)
         SetSecondPlayerOnKeyboard(true);
 }
-
 
 /** OnGameLoopStart
 
@@ -1151,7 +1117,6 @@ void OnGameLoopStart()
     paused = showingStats = playGame = false;
 }
 
-
 void OnGameLoopEnd()
 {
     WriteToLog(LM_GAME_LOOP, "OnGameLoopEnd()");
@@ -1166,12 +1131,10 @@ void OnGameLoopEnd()
     HexDumpToLog(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
 }
 
-
 byte GetGameStatus()
 {
     return m_gameStatus;
 }
-
 
 /* Take over stats loop. */
 void ShowStatsLoop()
@@ -1198,7 +1161,6 @@ void ShowStatsLoop()
         OnGameLoopEnd();
     }
 }
-
 
 /** PausedLoop
 
@@ -1233,7 +1195,6 @@ void PausedLoop()
     OnGameLoopEnd();
 }
 
-
 /** GetRandomVariables
 
     vars -> buffer for random variables values
@@ -1250,7 +1211,6 @@ void GetRandomVariables(byte *vars, int *size)
     memcpy(vars + 3, &seed2, 3);
     *(word *)(vars + 6) = random_seed;
 }
-
 
 void SetRandomVariables(const char *vars, int size)
 {

@@ -31,7 +31,6 @@ static word m_spriteOffsets[kNumberOfImages];
 
 static Sprite m_players[kNumberOfPlayers];
 
-
 static void PrintString(int x, int y, const char *text)
 {
     D1 = x;
@@ -41,7 +40,6 @@ static void PrintString(int x, int y, const char *text)
     A1 = (dword)smallCharsTable;
     calla(DrawMenuText);
 }
-
 
 static void PrintCredits()
 {
@@ -86,7 +84,6 @@ static void PrintCredits()
     }
 }
 
-
 static char *LoadSpriteFile()
 {
     A0 = (dword)aTeam2_dat;
@@ -95,7 +92,6 @@ static char *LoadSpriteFile()
 
     return teamFileBuffer;
 }
-
 
 static int FixSprites(char *sprites, bool unchain)
 {
@@ -121,7 +117,6 @@ static int FixSprites(char *sprites, bool unchain)
     return p - sprites;
 }
 
-
 static void CopySprites(const char *templateSprites, int spritesSize)
 {
     auto p = editTeamsSaveVarsArea;     /* poor old g_pitchDatBuffer wasn't enough */
@@ -132,7 +127,6 @@ static void CopySprites(const char *templateSprites, int spritesSize)
         p += FixSprites(p, false);
     }
 }
-
 
 static void ApplyColorTable(SpriteGraphics *sprite, const short *colorTable)
 {
@@ -145,7 +139,6 @@ static void ApplyColorTable(SpriteGraphics *sprite, const short *colorTable)
 
     spritesIndex[0] = savedSprite;
 }
-
 
 static void SetSpriteColors(SpriteGraphics *sprites, int numSprites, TeamColor teamColor, PlayerFace playerFace)
 {
@@ -166,14 +159,12 @@ static void SetSpriteColors(SpriteGraphics *sprites, int numSprites, TeamColor t
     }
 }
 
-
 static void ColorAllSprites()
 {
     SetSpriteColors(m_sprites[0], kNumberOfImages, MENU_TEAM_COLOR_RED, PL_FACE_BLACK);
     SetSpriteColors(m_sprites[1], kNumberOfImages, MENU_TEAM_COLOR_GREEN, PL_FACE_GINGER);
     SetSpriteColors(m_sprites[2], kNumberOfImages, MENU_TEAM_COLOR_BLUE, PL_FACE_WHITE);
 }
-
 
 static void InitializeSprites()
 {
@@ -182,7 +173,6 @@ static void InitializeSprites()
     CopySprites(templateSprites, spritesSize);
     ColorAllSprites();
 }
-
 
 static void DrawSprite(SpriteGraphics *sprite, int x, int y)
 {
@@ -197,7 +187,6 @@ static void DrawSprite(SpriteGraphics *sprite, int x, int y)
     spritesIndex[0] = savedSprite;
 }
 
-
 static void UpdatePlayerSpeed(Sprite& player)
 {
     const int MAX_SPEED = 1280;
@@ -205,7 +194,6 @@ static void UpdatePlayerSpeed(Sprite& player)
     /* so the slower players would get greater delay between frames */
     player.frameDelay = max(0, MAX_SPEED - player.speed) / 128 + 6;
 }
-
 
 static void InitializePlayers()
 {
@@ -227,7 +215,6 @@ static void InitializePlayers()
     }
 }
 
-
 static bool PlayersSettled()
 {
     if (playersSettledCounter >= kPlayersSettledDelay)
@@ -236,7 +223,6 @@ static bool PlayersSettled()
     playersSettledCounter++;
     return false;
 }
-
 
 static void UpdatePlayerDirection(Sprite& player, int direction)
 {
@@ -251,12 +237,10 @@ static void UpdatePlayerDirection(Sprite& player, int direction)
     }
 }
 
-
 static bool PlayerArrived(const Sprite& player)
 {
     return player.x.whole() == player.destX && player.y.whole() == player.destY;
 }
-
 
 static bool MovePlayers()
 {
@@ -298,7 +282,6 @@ static bool MovePlayers()
     return movement;
 }
 
-
 static void DrawPlayers()
 {
     /* keep middle player on top */
@@ -315,7 +298,6 @@ static void DrawPlayers()
     }
 }
 
-
 static void DrawSwosUnitedLogo()
 {
     const int kLogoWidth = 24;
@@ -324,7 +306,6 @@ static void DrawSwosUnitedLogo()
 
     DrawBitmap(kSwosUnitedLogoX, kSwosUnitedLogoY, kLogoWidth, kLogoHeight, (char *)swosUnitedLogo);
 }
-
 
 extern "C" void SWOSAnniversaryMenuInit()
 {
@@ -337,7 +318,6 @@ extern "C" void SWOSAnniversaryMenuInit()
     InitializeSprites();
     InitializePlayers();
 }
-
 
 extern "C" void SWOSAnniversaryMenuOnDraw()
 {

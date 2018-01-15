@@ -35,7 +35,6 @@ const byte IsWhat[256] = {
 /* stack probe allocator... we don't need it of course, but no idea how to stop GCC from generating calls to it */
 extern "C" void ___chkstk_ms(size_t) {}
 
-
 /** int2str
 
     in:
@@ -76,7 +75,6 @@ char *int2str(int num)
     return p;
 }
 
-
 /** strrchr
 
     in:
@@ -100,7 +98,6 @@ const char *strrchr(const char *str, int ch)
     return end;
 }
 
-
 /** strcpy
 
     in:
@@ -115,7 +112,6 @@ char *strcpy(char *dst, const char *src)
     while (*dst++ = *src++);
     return dst - 1;
 }
-
 
 /** stricmp
 
@@ -142,7 +138,6 @@ int stricmp(const char *s1, const char *s2)
     return ch1 - ch2;
 }
 
-
 /*
     Appends a copy of the source string to the destination string.
 */
@@ -158,12 +153,10 @@ char *strcat(char *dst, const char *src)
     return dst;
 }
 
-
 void srand(unsigned int seed)
 {
     rand_seed = (seed ^ 0x08070605) - 3479;
 }
-
 
 unsigned int rand()
 {
@@ -172,14 +165,12 @@ unsigned int rand()
     return rand_seed = rnd - 78659;
 }
 
-
 char *strupr(char *s)
 {
     assert(s);
     for (char *p = s; *p = toupper(*p); p++);
     return s;
 }
-
 
 /* Even if compiling with GCC built-in version we still need it for calls from ASM code. */
 void *memcpy(void *in_dst, const void *in_src, size_t n)
@@ -194,7 +185,6 @@ void *memcpy(void *in_dst, const void *in_src, size_t n)
     return in_dst;
 }
 
-
 int memcmp(const void *p, const void *q, size_t n)
 {
     assert(!n || (p && q && (int)n > 0));
@@ -208,7 +198,6 @@ int memcmp(const void *p, const void *q, size_t n)
 
     return 0;   /* both operands are equal */
 }
-
 
 /* stubs for connecting to library routines in SWOS */
 /* keep them non-inline for access from asm */
@@ -227,7 +216,6 @@ int stackavail()
     return result;
 }
 
-
 char *strncpy(char *dst, const char *src, size_t n)
 {
     assert(!n || (dst && src && (int)n > 0));
@@ -243,7 +231,6 @@ char *strncpy(char *dst, const char *src, size_t n)
     return dst;
 }
 
-
 void *memset(void *ptr, int value, size_t num)
 {
     assert(!num || ptr);
@@ -258,7 +245,6 @@ void *memset(void *ptr, int value, size_t num)
 
     return ptr;
 }
-
 
 int strcmp(const char *str1, const char *str2)
 {
@@ -276,7 +262,6 @@ int strcmp(const char *str1, const char *str2)
     return result;
 }
 
-
 int strncmp(const char *str1, const char *str2, size_t n)
 {
     assert(str1 && str2 && (int)n >= 0);
@@ -292,7 +277,6 @@ int strncmp(const char *str1, const char *str2, size_t n)
 
     return result;
 }
-
 
 int strlen(const char *str)
 {
@@ -310,7 +294,6 @@ int strlen(const char *str)
     return result;
 }
 
-
 void segread(struct SREGS *sregs)
 {
     assert(sregs);
@@ -323,7 +306,6 @@ void segread(struct SREGS *sregs)
         : "memory"
     );
 }
-
 
 int int386x(int vec, union REGS *in, union REGS *out, struct SREGS *sregs)
 {
@@ -339,7 +321,6 @@ int int386x(int vec, union REGS *in, union REGS *out, struct SREGS *sregs)
 
     return vec;
 }
-
 
 void exit(int status)
 {
@@ -419,7 +400,6 @@ static int radixValue(char c)
 
     return 37;
 }
-
 
 /** strol
 
@@ -527,7 +507,6 @@ long int strtol(const char *ptr, const char **endptr, int base, int *result)
     return value;
 }
 
-
 /**
     Buffered File support routines, built on top of DOS direct file access functions.
 **/
@@ -558,7 +537,6 @@ static BFile *initBFile(BFile *file, void *buffer, int bufferSize, bool readOnly
     return file;
 }
 
-
 BFile *OpenBFile(DOS_accessMode accessMode, const char *fileName)
 {
     assert_msg(accessMode != F_READ_WRITE, "BFile can't be open for both read and write.");
@@ -572,7 +550,6 @@ BFile *OpenBFile(DOS_accessMode accessMode, const char *fileName)
     return initBFile(file, nullptr, FILE_BUFFER_SIZE, accessMode == F_READ_ONLY, true);
 }
 
-
 bool OpenBFileUnmanaged(BFile *file, void *buffer, int bufferSize, DOS_accessMode accessMode, const char *fileName)
 {
     assert(file);
@@ -580,7 +557,6 @@ bool OpenBFileUnmanaged(BFile *file, void *buffer, int bufferSize, DOS_accessMod
     file->handle = OpenFile(accessMode, fileName);
     return initBFile(file, buffer, bufferSize, accessMode == F_READ_ONLY, false) != nullptr;
 }
-
 
 BFile *CreateBFile(DOS_fileAttributes fileAttribute, const char *fileName)
 {
@@ -594,14 +570,12 @@ BFile *CreateBFile(DOS_fileAttributes fileAttribute, const char *fileName)
     return initBFile(file, nullptr, FILE_BUFFER_SIZE, false, true);
 }
 
-
 bool CreateBFileUnmanaged(BFile *file, void *buffer, int bufferSize, DOS_fileAttributes fileAttribute, const char *fileName)
 {
     assert(file);
     file->handle = CreateFile(fileAttribute, fileName);
     return initBFile(file, buffer, bufferSize, false, false) != nullptr;
 }
-
 
 int FlushBFile(BFile *file)
 {
@@ -628,7 +602,6 @@ int FlushBFile(BFile *file)
 
     return 0;
 }
-
 
 int WriteBFile(BFile *file, const void *pData, int size)
 {
@@ -681,12 +654,10 @@ int WriteBFile(BFile *file, const void *pData, int size)
     }
 }
 
-
 bool PutCharBFile(BFile *file, char c)
 {
     return WriteBFile(file, &c, 1) == 1;
 }
-
 
 int ReadBFile(BFile *file, void *pData, int size)
 {
@@ -735,7 +706,6 @@ int ReadBFile(BFile *file, void *pData, int size)
     return file->readPtr + originalSize - size;
 }
 
-
 int GetCharBFile(BFile *file)
 {
     int c = 0, bytesRead = ReadBFile(file, &c, 1);
@@ -744,7 +714,6 @@ int GetCharBFile(BFile *file)
 
     return c;
 }
-
 
 int PeekCharBFile(BFile *file)
 {
@@ -797,7 +766,6 @@ bool UngetCharBFile(BFile *file, int c)
     return true;
 }
 
-
 int SeekBFile(BFile *file, uchar mode, int ofsHi, int ofsLo)
 {
     /* discard the buffer and seek, unless it's just get current offset request */
@@ -807,7 +775,6 @@ int SeekBFile(BFile *file, uchar mode, int ofsHi, int ofsLo)
     return SeekFile(file->handle, mode, ofsHi, ofsLo);
 }
 
-
 void CloseBFile(BFile *file)
 {
     assert(file && file->buffer);
@@ -816,7 +783,6 @@ void CloseBFile(BFile *file)
     qFree(file->buffer);
     qFree(file);
 }
-
 
 void CloseBFileUnmanaged(BFile *file)
 {

@@ -75,7 +75,6 @@ static dword *GetClientCurrentReceivingId(const IPX_Address *address);
 static dword GetClientNextSendingId(const IPX_Address *address);
 static dword GetClientNextSendingGroupId(const IPX_Address *address);
 
-
 /** AddressMatch
 
     Optimized routine for comparing two IPX addresses. Return true if they match, false if they differ.
@@ -86,7 +85,6 @@ bool AddressMatch(const IPX_Address *a, const IPX_Address *b)
     const dword *aa = (dword *)a, *bb = (dword *)b;
     return aa[0] == bb[0] && aa[1] == bb[1] && aa[2] == bb[2];
 }
-
 
 /** CopyAddress
 
@@ -102,12 +100,10 @@ void CopyAddress(IPX_Address *dest, const IPX_Address *source)
     dst[2] = src[2];
 }
 
-
 void GetOurAddress(IPX_Address *dest)
 {
     CopyAddress(dest, m_ourAddress);
 }
-
 
 #define MOD_ADLER 65521
 
@@ -130,12 +126,10 @@ static dword Adler32(const byte *data, int len)
     return (b << 16) | a;
 }
 
-
 static inline bool IsNetworkTimeoutInRange(word timeout)
 {
     return timeout >= MIN_TIMEOUT && timeout <= MAX_TIMEOUT;
 }
-
 
 word SetNetworkTimeout(word timeout)
 {
@@ -145,19 +139,16 @@ word SetNetworkTimeout(word timeout)
     return m_timeout;
 }
 
-
 word GetNetworkTimeout()
 {
     return m_timeout;
 }
-
 
 static void ResetClientAckIds(ClientAckId *ackId)
 {
     assert(ackId);
     ackId->sendingId = ackId->receivingId = ackId->sendingGroupId = 0;
 }
-
 
 static ClientAckId *FindClientAckId(const IPX_Address *address)
 {
@@ -168,7 +159,6 @@ static ClientAckId *FindClientAckId(const IPX_Address *address)
     return nullptr;
 }
 
-
 /* return current ack id of the client with this address, or nullptr if we don't have them */
 static dword *GetClientCurrentReceivingId(const IPX_Address *address)
 {
@@ -176,13 +166,11 @@ static dword *GetClientCurrentReceivingId(const IPX_Address *address)
     return c ? &c->receivingId : nullptr;
 }
 
-
 static dword GetClientNextSendingId(const IPX_Address *address)
 {
     ClientAckId *c = FindClientAckId(address);
     return c ? ++(*c).sendingId : 0;
 }
-
 
 static void RollbackSendingId(const IPX_Address *address)
 {
@@ -191,13 +179,11 @@ static void RollbackSendingId(const IPX_Address *address)
         c->sendingId--;
 }
 
-
 static dword GetClientNextSendingGroupId(const IPX_Address *address)
 {
     ClientAckId *c = FindClientAckId(address);
     return c ? ++(*c).sendingGroupId : 0;
 }
-
 
 static void RemoveFragmentList(FragmentLink *p, FragmentLink *prev)
 {
@@ -218,7 +204,6 @@ static void RemoveFragmentList(FragmentLink *p, FragmentLink *prev)
     }
 }
 
-
 static void ReleaseFragmentedPackets()
 {
     FragmentLink *p = m_fragmentList;
@@ -230,7 +215,6 @@ static void ReleaseFragmentedPackets()
 
     m_fragmentList = nullptr;
 }
-
 
 static void FindFragmentStart(const IPX_Address *source, dword fragId, FragmentLink **start, FragmentLink **prev)
 {
@@ -245,7 +229,6 @@ static void FindFragmentStart(const IPX_Address *source, dword fragId, FragmentL
         *start = (*start)->next;
     }
 }
-
 
 /** AddPacketFragment
 
@@ -345,7 +328,6 @@ static char *AddPacketFragment(int *bufSize, char *data, int length,
     return nullptr;
 }
 
-
 static void CancelFragmentedPacket(const IPX_Address *source, dword fragId)
 {
     FragmentLink *p, *prev;
@@ -357,7 +339,6 @@ static void CancelFragmentedPacket(const IPX_Address *source, dword fragId)
     else
         WriteToLog("Group id not found.");
 }
-
 
 /** InitializeNetwork
 
@@ -449,7 +430,6 @@ const char *InitializeNetwork()
     return nullptr;
 }
 
-
 void ShutDownNetwork()
 {
     if (m_lowMemory) {
@@ -463,7 +443,6 @@ void ShutDownNetwork()
         m_lowMemory = nullptr;
     }
 }
-
 
 bool ConnectTo(const IPX_Address *dest)
 {
@@ -484,7 +463,6 @@ bool ConnectTo(const IPX_Address *dest)
     return true;
 }
 
-
 void DisconnectFrom(const IPX_Address *dest)
 {
     int i;
@@ -503,13 +481,11 @@ void DisconnectFrom(const IPX_Address *dest)
     WriteToLog("Disconnected from [%#.12s].", dest);
 }
 
-
 void SendBroadcastPacket(const char *data, int length)
 {
     m_sendPacket->type = UNIMPORTANT_PACKET_SIG;
     SendPacket(&m_broadcastAddress, data, length);
 }
-
 
 void SendAck(const IPX_Address *dest, dword id)
 {
@@ -517,7 +493,6 @@ void SendAck(const IPX_Address *dest, dword id)
     m_sendPacket->type = ACK_PACKET_SIG;
     SendPacket(dest, (char *)&id, sizeof(id));
 }
-
 
 void SendSimplePacket(const IPX_Address *dest, const char *data, int length)
 {
@@ -530,7 +505,6 @@ void SendSimplePacket(const IPX_Address *dest, const char *data, int length)
     m_sendPacket->type = UNIMPORTANT_PACKET_SIG;
     SendPacket(dest, data, length);
 }
-
 
 bool SendImportantPacket(const IPX_Address *dest, const char *destBuf, int destSize)
 {
@@ -621,7 +595,6 @@ static void SendPacket(const IPX_Address *dest, const char *data, int length)
         WriteToLog("Error sending packet! Code is %#02x", m_sendPacket->ecb.completionCode);
 }
 
-
 static char *ReceiveNextPacket(int *destSize, IPX_Address *node, int currentPacketIndex)
 {
     static int packetProcessingDepth;
@@ -642,7 +615,6 @@ static char *ReceiveNextPacket(int *destSize, IPX_Address *node, int currentPack
     packetProcessingDepth--;
     return packet;
 }
-
 
 /** ReceivePacket
 
@@ -824,7 +796,6 @@ char *ReceivePacket(int *destSize, IPX_Address *node)
     return destBuf;
 }
 
-
 /** DismissIncomingPackets
 
     Discards any received packet at the same time confirming any pending packet should the
@@ -838,7 +809,6 @@ void DismissIncomingPackets()
     while (char *packet = ReceivePacket(&length, &node))
         qFree(packet);
 }
-
 
 void CancelPackets()
 {
@@ -854,7 +824,6 @@ void CancelPackets()
     ReleaseFragmentedPackets();
 }
 
-
 void CancelSendingPackets()
 {
     if (m_sendPacket->ecb.completionCode != 0xf9)
@@ -863,7 +832,6 @@ void CancelSendingPackets()
     FreeAllUnAck();
     ReleaseFragmentedPackets();
 }
-
 
 /* Unacknowledged pool manipulation */
 
@@ -890,12 +858,10 @@ UnAckPacket *ResendUnacknowledgedPackets()
     return ret;
 }
 
-
 bool UnacknowledgedPacketsPending()
 {
     return m_unAckList;
 }
-
 
 /* Call it with result from ResendUnacknowledgedPackets() if retrying. */
 void ResendTimedOutPacket(UnAckPacket *packet)
@@ -905,7 +871,6 @@ void ResendTimedOutPacket(UnAckPacket *packet)
     m_sendPacket->type = packet->type;
     SendPacket(&packet->address, (const char *)packet->data, packet->size);
 }
-
 
 /* Add important packet that's about to be sent to the list of unacknowledged packets. */
 char *AddUnacknowledgedPacket(const IPX_Address *address, dword id, byte type, const char *data, int size, int offset)
@@ -928,7 +893,6 @@ char *AddUnacknowledgedPacket(const IPX_Address *address, dword id, byte type, c
     p->type = type;
     return (char *)p->data;
 }
-
 
 /* If dest/id in list, remove the packet */
 static void AcknowledgePacket(dword id, const IPX_Address *dest)
@@ -978,7 +942,6 @@ static void ClearClientUnAckQueue(const IPX_Address *node)
     }
 }
 
-
 /************************************
 
   Low level IPX routines and helpers
@@ -986,7 +949,6 @@ static void ClearClientUnAckQueue(const IPX_Address *node)
 *************************************/
 
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-
 
 /* execute real mode interrupt from protected mode */
 static int RM_Interrupt(int num, RM_Info *rm)
@@ -1002,7 +964,6 @@ static int RM_Interrupt(int num, RM_Info *rm)
     return int386x(0x31, &regs, &regs, &sregs);
 }
 
-
 /* get low memory for network driver */
 void *AllocateLowMemory(int size)
 {
@@ -1012,7 +973,6 @@ void *AllocateLowMemory(int size)
     RM_Interrupt(0x21, &rm);
     return rm.flags & 1 ? nullptr : (void *)((rm.eax & 0xffff) << 4);
 }
-
 
 void FreeLowMemory(void *ptr)
 {
@@ -1024,7 +984,6 @@ void FreeLowMemory(void *ptr)
         WriteToLog("Error while freeing low memory block %#0x", ptr);
 }
 
-
 bool32 IPX_IsInstalled()
 {
     RM_Info rm{};
@@ -1033,7 +992,6 @@ bool32 IPX_IsInstalled()
     WriteToLog("IPX FAR entry point should be %#x:%#x", rm.es, rm.edi);
     return (rm.eax & 0xff) == 0xff;
 }
-
 
 /* Note: DOSBox currently doesn't support multiple networks, so we'll just get
    a local node number.
@@ -1048,7 +1006,6 @@ IPX_Address *IPX_GetInterNetworkAddress(char *addr)
     return (IPX_Address *)addr;
 }
 
-
 int IPX_OpenSocket()
 {
     RM_Info rm{};
@@ -1056,7 +1013,6 @@ int IPX_OpenSocket()
     WriteToLog("Result from open socket: %#x, socket = %#x", rm.eax & 0xff, rm.edx);
     return rm.eax & 0xff ? -1 : rm.edx;
 }
-
 
 void IPX_CloseSocket(int socketNumber)
 {
@@ -1066,7 +1022,6 @@ void IPX_CloseSocket(int socketNumber)
     RM_Interrupt(0x7a, &rm);
     WriteToLog("Closed socket: %#x", socketNumber & 0xffff);
 }
-
 
 /** IPX_OnIdle
 
@@ -1082,7 +1037,6 @@ void IPX_OnIdle()
     RM_Interrupt(0x7a, &rm);
 }
 
-
 void IPX_Listen(ECB *ecb)
 {
     RM_Info rm{};
@@ -1093,7 +1047,6 @@ void IPX_Listen(ECB *ecb)
     if (rm.eax & 0xff)
         WriteToLog("IPX_Listen failed, error code: %d", rm.eax & 0xff);
 }
-
 
 void IPX_Send(ECB *ecb)
 {
@@ -1106,7 +1059,6 @@ void IPX_Send(ECB *ecb)
         WriteToLog("IPX_Send failed, error code: %d", rm.eax & 0xff);
 }
 
-
 void IPX_Cancel(ECB *ecb)
 {
     RM_Info rm{};
@@ -1118,7 +1070,6 @@ void IPX_Cancel(ECB *ecb)
         WriteToLog("IPX_Cancel failed, error code: %d", rm.eax & 0xff);
 }
 
-
 uint IPX_GetMaximumPacketSize()
 {
     RM_Info rm{};
@@ -1127,7 +1078,6 @@ uint IPX_GetMaximumPacketSize()
     WriteToLog("IPX retry count is %hu", rm.ecx);
     return rm.eax;
 }
-
 
 /** IPX_Disconnect
 

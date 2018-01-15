@@ -89,7 +89,6 @@ void GetDIYFilenames()
     m_readFiles = i;
 }
 
-
 extern "C" void EditDIYFile()
 {
     A0 = (dword)"EDIT/LOAD DIY FILE";
@@ -136,7 +135,6 @@ extern "C" void EditDIYFile()
     A6 = (dword)&edit_DIY_Menu;
     calla(ShowMenu);
 }
-
 
 extern "C" void DIYUpdateList()
 {
@@ -192,7 +190,6 @@ extern "C" void DIYUpdateList()
     }
 }
 
-
 extern "C" void DIYFileSelected()
 {
     MenuEntry *m = (MenuEntry *)A5;
@@ -214,6 +211,7 @@ extern "C" void DIYFileSelected()
         g_gameType = 0;
         return;
     }
+
     for (int i = 0; i < g_numSelectedTeams; i++)   /* init sorted teams list */
         m_sortedTeams[i] = i;
 
@@ -235,7 +233,6 @@ extern "C" void DIYFileSelected()
     calla(ShowMenu);
 }
 
-
 extern "C" void DIYEditScrollUp()
 {
     if (m_lineOffset > 0) {
@@ -245,7 +242,6 @@ extern "C" void DIYEditScrollUp()
     }
 }
 
-
 extern "C" void DIYEditScrollDown()
 {
     if (m_lineOffset + 15 < m_readFiles) {
@@ -254,7 +250,6 @@ extern "C" void DIYEditScrollDown()
         calla(DrawMenu);
     }
 }
-
 
 extern "C" void DIYTeamsListInit()
 {
@@ -352,7 +347,6 @@ extern "C" void DIYTeamsListInit()
         mExit->upEntry = columnSize - 1;
 }
 
-
 extern "C" void DIYTeamsOnSelect()
 {
     MenuEntry *m = (MenuEntry *)A5;
@@ -365,7 +359,6 @@ extern "C" void DIYTeamsOnSelect()
     m->u1.entryColor += *control == 3;
     m->downEntryDis = *control;
 }
-
 
 extern "C" void DIYTeamsExit()
 {

@@ -19,7 +19,6 @@ extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions);
 extern "C" void RegisterControlsOptions(RegisterOptionsFunc registerOptions);
 extern "C" void RegisterUserTactics(RegisterOptionsFunc registerOptions);
 
-
 /** SaveOptionsIfNeeded
 
     Save options unless there are no changes.
@@ -39,7 +38,6 @@ void SaveOptionsIfNeeded()
     SaveXmlFile(m_rootNode, "swospp.xml", checkIfModified);
 }
 
-
 static XmlNodeType getIntType(int length)
 {
     switch (length) {
@@ -57,7 +55,6 @@ static XmlNodeType getIntType(int length)
         return XML_EMPTY;
     }
 }
-
 
 /** GetXmlNodeName
 
@@ -80,7 +77,6 @@ static const char *GetXmlNodeName(const char *p, char *nameBuff, int maxSize, in
 
     return p;
 }
-
 
 /** RegisterOptions
 
@@ -213,7 +209,6 @@ void __cdecl RegisterOptions(const char *section, int sectionLen, const char *de
     }
 }
 
-
 void RegisterSWOSOptions(RegisterOptionsFunc registerOptions)
 {
     registerOptions("SWOS", 4, "Original SWOS options", 21,
@@ -222,7 +217,6 @@ void RegisterSWOSOptions(RegisterOptionsFunc registerOptions)
         &gameLength, &autoReplays, &menuMusic, &autoSaveHighlights,
         &allPlayerTeamsEqual, &pitchType, &commentary, &chairmanScenes);
 }
-
 
 void InitializeOptions()
 {
@@ -251,7 +245,6 @@ void InitializeOptions()
 #endif
 }
 
-
 /** SetDOSBoxDefaultOptions
 
     Invoke this when DOSBox has been successfully detected to set default options.
@@ -265,29 +258,24 @@ void SetDOSBoxDefaultOptions()
     m_runningUnderDosbox = true;
 }
 
-
 bool GetUseBIOSJoystickRoutineOption()
 {
     return m_useBIOSForJoystickInput;
 }
-
 
 bool GetCalibrateJoysticksOption()
 {
     return m_calibrateJoysticks;
 }
 
-
 bool DOSBoxDetected()
 {
     return m_runningUnderDosbox;
 }
 
-
 /*
     Command line stuff
 */
-
 
 #ifndef SENSI_DAYS
 /** GetCommandLine
@@ -329,7 +317,6 @@ static void GetCommandLine(char *buff)
     );
 }
 
-
 static const char *GetBoolValue(const char *p, bool& value)
 {
     if (*p == '=' && (p[1] == '1' || p[1] == '0')) {
@@ -339,7 +326,6 @@ static const char *GetBoolValue(const char *p, bool& value)
 
     return p;
 }
-
 
 static const char *ParseJoystickOptions(const char *p)
 {
@@ -358,7 +344,6 @@ static const char *ParseJoystickOptions(const char *p)
     return p;
 }
 #endif
-
 
 /** ParseCommandLine
 
@@ -412,7 +397,6 @@ void ParseCommandLine()
     DirectModeOnCommandLineParsingDone();
 #endif
 }
-
 
 const char *GetStringEnd(const char *start)
 {

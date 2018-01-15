@@ -57,7 +57,6 @@ const char *InitMultiplayer()
     return nullptr;
 }
 
-
 void FinishMultiplayer()
 {
     if (m_mpActive) {
@@ -70,7 +69,6 @@ void FinishMultiplayer()
     m_mpActive = false;
 }
 
-
 const char *GetGameName()
 {
     auto directGameName = GetDirectGameName();
@@ -79,12 +77,10 @@ const char *GetGameName()
     return m_gameName;
 }
 
-
 void SetGameName(const char *newGameName)
 {
     *strncpy(m_gameName, newGameName, sizeof(m_gameName) - 1) = '\0';
 }
-
 
 const char *GetPlayerNick()
 {
@@ -94,12 +90,10 @@ const char *GetPlayerNick()
     return m_playerNick;
 }
 
-
 void SetPlayerNick(const char *newPlayerNick)
 {
     *strncpy(m_playerNick, newPlayerNick, sizeof(m_playerNick) - 1) = '\0';
 }
-
 
 void ApplySavedTeamData(TeamFile *team)
 {
@@ -115,7 +109,6 @@ void ApplySavedTeamData(TeamFile *team)
 
     WriteToLog("No saved team data for %s", team->name);
 }
-
 
 void StoreTeamData(const TeamFile *team)
 {
@@ -137,7 +130,6 @@ void StoreTeamData(const TeamFile *team)
     m_savedTeamData[i].teamId = team->getId();
 }
 
-
 char *InitGameName()
 {
     if (!m_gameName[0]) {
@@ -158,9 +150,7 @@ char *InitGameName()
     return m_gameName;
 }
 
-
 static MP_Options *GetMPOptionsPtr();
-
 
 /* Update this whenever MP_Options get changed! */
 void registerMPOptions(RegisterOptionsFunc registerOptions)
@@ -171,7 +161,6 @@ void registerMPOptions(RegisterOptionsFunc registerOptions)
         "%1d/skipFrames" "%1d" "%2d/networkTimeout", GetMPOptionsPtr);
 }
 
-
 void registerPlayMatchMenuOptions(RegisterOptionsFunc registerOptions)
 {
     static_assert(sizeof(SavedTeamData) == 24 && sizeofarray(m_savedTeamData) == 5, "Saved positions changed.");
@@ -180,7 +169,6 @@ void registerPlayMatchMenuOptions(RegisterOptionsFunc registerOptions)
         "%n" "%24b/team1" "%24b/team2" "%24b/team3" "%24b/team4" "%24b/team5",
         &m_savedTeamData[0], &m_savedTeamData[1], &m_savedTeamData[2], &m_savedTeamData[3], &m_savedTeamData[4]);
 }
-
 
 /** RegisterNetworkOptions
 
@@ -195,7 +183,6 @@ extern "C" void RegisterNetworkOptions(RegisterOptionsFunc registerOptions)
     registerPlayMatchMenuOptions(registerOptions);
 
 }
-
 
 /** Generate some funny random nicknames for starters, if nothing saved.
     Rand seed has to be initialized first. */
@@ -247,14 +234,12 @@ void InitPlayerNick()
     }
 }
 
-
 /***
 
    Multiplayer options handling.
    =============================
 
 ***/
-
 
 MP_Options *SetMPOptions(const MP_Options *newOptions)
 {
@@ -263,7 +248,6 @@ MP_Options *SetMPOptions(const MP_Options *newOptions)
 
     return const_cast<MP_Options *>(newOptions);
 }
-
 
 /* Return currently active MP options for options manager. */
 static MP_Options *GetMPOptionsPtr()
@@ -274,7 +258,6 @@ static MP_Options *GetMPOptionsPtr()
     assert(m_mpOptions.size == sizeof(m_mpOptions));
     return m_savedClientOptions ? m_savedClientOptions : &m_mpOptions;
 }
-
 
 /** GetMPOptions
 
@@ -287,7 +270,6 @@ MP_Options *GetMPOptions(MP_Options *destOptions)
     assert(m_mpOptions.size == sizeof(m_mpOptions));
     return (MP_Options *)memcpy(destOptions, &m_mpOptions, sizeof(m_mpOptions));
 }
-
 
 /** ApplyMPOptions
 
@@ -310,7 +292,6 @@ void ApplyMPOptions(const MP_Options *options)
     SetNetworkTimeout(options->networkTimeout);
 }
 
-
 /** GetFreshMPOptions
 
     in:
@@ -330,14 +311,12 @@ MP_Options *GetFreshMPOptions(MP_Options *options)
     return options;
 }
 
-
 bool CompareMPOptions(const MP_Options *newOptions)
 {
     assert(newOptions->size <= m_mpOptions.size && m_mpOptions.size == sizeof(m_mpOptions));
     return memcmp(m_savedClientOptions ? m_savedClientOptions : &m_mpOptions,
         newOptions, min(newOptions->size, sizeof(m_mpOptions))) == 0;
 }
-
 
 /** SaveClientOptions
 
@@ -353,55 +332,46 @@ void SaveClientMPOptions()
         memcpy(m_savedClientOptions, &m_mpOptions, sizeof(m_mpOptions));
 }
 
-
 void ReleaseClientMPOptions()
 {
     qFree(m_savedClientOptions);
     m_savedClientOptions = nullptr;
 }
 
-
 int GetNumSubstitutes()
 {
     return m_numSubstitutes;
 }
-
 
 int SetNumSubstitutes(byte newNumSubs)
 {
     return m_numSubstitutes = newNumSubs;
 }
 
-
 int GetMaxSubstitutes()
 {
     return m_maxSubstitutes;
 }
-
 
 int SetMaxSubstitutes(byte maxSubs)
 {
     return m_maxSubstitutes = maxSubs;
 }
 
-
 void UpdateSkipFrames(int frames)
 {
     m_mpOptions.skipFrames = frames;
 }
-
 
 void UpdateNetworkTimeout(word networkTimeout)
 {
     m_mpOptions.networkTimeout = networkTimeout;
 }
 
-
 dword GetCurrentTeamId()
 {
     return m_currentTeamId;
 }
-
 
 void SetCurrentTeamId(dword teamId)
 {

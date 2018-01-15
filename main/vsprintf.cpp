@@ -45,7 +45,6 @@ static void FloatFormat(char *buf, va_list *args, Specification *spec);
 
 int __cdecl vsprintf(char *buf, const char *fmt, va_list args);
 
-
 int __cdecl sprintf(char *buf, const char *fmt, ...)
 {
     va_list va;
@@ -57,7 +56,6 @@ int __cdecl sprintf(char *buf, const char *fmt, ...)
 
     return ret;
 }
-
 
 int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
 {
@@ -141,7 +139,6 @@ int __cdecl vsprintf(char *buf, const char *fmt, va_list args)
     return spec.output_count;
 }
 
-
 static const char *GetSpecification(const char *p, Specification *spec, va_list *arg)
 {
     /* default is right align */
@@ -217,7 +214,6 @@ static const char *GetSpecification(const char *p, Specification *spec, va_list 
     return p;
 }
 
-
 void ResetSpecification(Specification *spec)
 {
     spec->alignment = 0;
@@ -225,7 +221,6 @@ void ResetSpecification(Specification *spec)
     spec->zero_pad = spec->space_pad = spec->sign_prefix = spec->sharp = false;
     spec->is_short = spec->is_long = spec->is_short_short = false;
 }
-
 
 static char *FormString(Specification *spec, va_list *args, char *buffer)
 {
@@ -396,7 +391,6 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
     return arg;
 }
 
-
 static void SetZeroPad(Specification *spec)
 {
     int n;
@@ -411,7 +405,6 @@ static void SetZeroPad(Specification *spec)
         }
     }
 }
-
 
 static void FixedPointFormat(char *buffer, int value, Specification *spec)
 {
@@ -441,7 +434,6 @@ static void FloatFormat(char *, va_list *, Specification *) {}
 /* helper convert routines */
 static const char kAlphabet[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-
 /* Get quotient and reminder using single division. */
 static int __udiv(int value, int *divQuot)
 {
@@ -455,7 +447,6 @@ static int __udiv(int value, int *divQuot)
     );
     return value;
 }
-
 
 static char *utoa(unsigned int value, char *buffer, int radix)
 {
@@ -480,7 +471,6 @@ static char *utoa(unsigned int value, char *buffer, int radix)
     return buffer;
 }
 
-
 static char *itoa (int value, char *buffer, int radix)
 {
     char *p = buffer;
@@ -493,7 +483,6 @@ static char *itoa (int value, char *buffer, int radix)
     utoa(value, p, radix);
     return buffer;
 }
-
 
 char *ultoa(unsigned long value, char *buffer, unsigned radix)
 {
@@ -515,7 +504,6 @@ char *ultoa(unsigned long value, char *buffer, unsigned radix)
     while (*p++ = *--q);
     return buffer;
 }
-
 
 char *ltoa (long value, char *buffer, int radix)
 {

@@ -33,7 +33,6 @@ DeclareExceptionHandler(12);
 DeclareExceptionHandler(13);
 extern "C" void Exception14Handler();           // inline this one below
 
-
 /** ExceptionHandler
 
     Will save registers and point return address for our user-mode handler to use.
@@ -69,7 +68,6 @@ asm(
     "retf                       \n"
 );
 
-
 /* Seems this is the only DPMI service DOS/4GW is supporting for this purpose. */
 static bool InstallExceptionHandler(int exceptionNo, void (*handler)())
 {
@@ -86,7 +84,6 @@ static bool InstallExceptionHandler(int exceptionNo, void (*handler)())
     );
     return result;
 }
-
 
 static const char *getExceptionName(int exceptionNo)
 {
@@ -115,7 +112,6 @@ static const char *getExceptionName(int exceptionNo)
 
     return exceptionNames[exceptionNo];
 }
-
 
 /** UserExceptionHandler
 
@@ -150,7 +146,6 @@ void UserExceptionHandler()
      PrintToStderr(buf, charCount + 1);
      EndProgram(true);
 }
-
 
 /** InstallCrashLogger
 

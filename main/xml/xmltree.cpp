@@ -8,7 +8,6 @@ static unsigned int xmlHeapIndex;
 
 static XmlNodeType GetAttributeType(const char *value, int length);
 
-
 static void *XmlAlloc(int size)
 {
     char *p = &xmlHeap[xmlHeapIndex];
@@ -22,7 +21,6 @@ static void *XmlAlloc(int size)
     return p;
 }
 
-
 static void XmlFree(void *ptr)
 {
     if (!ptr)
@@ -35,7 +33,6 @@ static void XmlFree(void *ptr)
 #endif
 }
 
-
 static char *XmlStrdup(const char *str, int size)
 {
     char *duplicate = (char *)XmlAlloc(size + 1);
@@ -47,24 +44,20 @@ static char *XmlStrdup(const char *str, int size)
     return duplicate;
 }
 
-
 void XmlFreeAll()
 {
     XmlFree(xmlHeap);
 }
-
 
 void XmlDeallocateTree(XmlNode *tree)
 {
     XmlFree(tree);
 }
 
-
 XmlNode *NewEmptyXmlNode(const char *name, int nameLen)
 {
     return NewXmlNode(name, nameLen, XML_EMPTY, 0, false);
 }
-
 
 XmlNode *NewXmlNode(const char *name, int nameLen, XmlNodeType type, int length, bool alloc)
 {
@@ -97,7 +90,6 @@ XmlNode *NewXmlNode(const char *name, int nameLen, XmlNodeType type, int length,
     return x;
 }
 
-
 XmlNode *AddXmlNode(XmlNode *parent, XmlNode *child)
 {
     /* insert into children list */
@@ -106,14 +98,12 @@ XmlNode *AddXmlNode(XmlNode *parent, XmlNode *child)
     return parent;
 }
 
-
 void SetFunc(XmlNode *node, void *(*func)())
 {
     node->type = XML_FUNC;
     node->value.func = func;
     node->length = 0;
 }
-
 
 void RefreshFuncData(const XmlNode *node)
 {
@@ -127,7 +117,6 @@ void RefreshFuncData(const XmlNode *node)
         ofs += child->length;
     }
 }
-
 
 static void SnapshotNode(XmlNode *node)
 {
@@ -161,7 +150,6 @@ static void SnapshotNode(XmlNode *node)
     }
 }
 
-
 void XmlTreeSnapshot(XmlNode *root)
 {
     while (root) {
@@ -170,7 +158,6 @@ void XmlTreeSnapshot(XmlNode *root)
         root = root->nextChild;
     }
 }
-
 
 static bool NodeUnmodified(const XmlNode *node)
 {
@@ -216,7 +203,6 @@ bool XmlTreeUnmodified(const XmlNode *root)
     return true;
 }
 
-
 /** NodesEqual
 
     src -> XML node 1 to compare
@@ -230,7 +216,6 @@ static bool NodesEqual(const XmlNode *src, const XmlNode *dst)
     assert(src && dst);
     return src->nameLength == dst->nameLength && src->nameHash == dst->nameHash && !strcmp(src->name, dst->name);
 }
-
 
 static void ConvertNumberToString(char *dst, int dstSize, char *from, int fromSize)
 {
@@ -259,7 +244,6 @@ static void ConvertNumberToString(char *dst, int dstSize, char *from, int fromSi
     *strncpy(dst, convVal, dstSize - 1) = '\0';
 }
 
-
 static int convertStringToNumber(const char *src, int srcLen)
 {
     char convBuf[33];
@@ -268,7 +252,6 @@ static int convertStringToNumber(const char *src, int srcLen)
     convBuf[copyLen] = '\0';
     return strtol(convBuf, nullptr, 0, nullptr);
 }
-
 
 /** MergeNodes
 
@@ -373,7 +356,6 @@ static void MergeNodes(XmlNode *dstNode, const XmlNode *srcNode)
     }
 }
 
-
 /** XmlMergeTrees
 
     destTree -> authoritative tree for structure, receives results of merging
@@ -404,7 +386,6 @@ void XmlMergeTrees(XmlNode *destTree, const XmlNode *srcTree)
     }
 }
 
-
 static XmlAttribute *FindAttribute(const XmlNode *node, const char *attrName, uint32_t hash)
 {
     XmlAttribute *attr;
@@ -418,7 +399,6 @@ static XmlAttribute *FindAttribute(const XmlNode *node, const char *attrName, ui
     return nullptr;
 }
 
-
 static bool CheckNodeType(XmlNodeType type, const char *name, const char *value)
 {
     UNUSED(name);
@@ -431,7 +411,6 @@ static bool CheckNodeType(XmlNodeType type, const char *name, const char *value)
 
     return true;
 }
-
 
 bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const char *value, int valueLen)
 {
@@ -475,7 +454,6 @@ bool AddXmlNodeAttribute(XmlNode *node, const char *name, int nameLen, const cha
     return false;
 }
 
-
 static XmlNodeType GetAttributeType(const char *value, int length)
 {
     uint32_t hash;
@@ -504,7 +482,6 @@ static XmlNodeType GetAttributeType(const char *value, int length)
     return XML_TYPE_MAX;
 }
 
-
 const char *XmlNodeTypeToString(XmlNodeType nodeType, size_t *length)
 {
     struct TypeString {
@@ -531,7 +508,6 @@ const char *XmlNodeTypeToString(XmlNodeType nodeType, size_t *length)
     return typeNames[nodeType].name;
 }
 
-
 bool AddXmlContent(XmlNode *node, XmlNodeType type, void *content, int size)
 {
     assert(node && content && size > 0);
@@ -544,7 +520,6 @@ bool AddXmlContent(XmlNode *node, XmlNodeType type, void *content, int size)
     node->length = size;
     return true;
 }
-
 
 const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_t attrNameLen, size_t *valLen)
 {
@@ -569,7 +544,6 @@ const char *GetXmlNodeAttribute(const XmlNode *node, const char *attrName, size_
     return nullptr;
 }
 
-
 void GetXmlNodeAttributes(const XmlNode *node, XmlAttributeInfo *attrInfo)
 {
     size_t i = 0;
@@ -586,7 +560,6 @@ void GetXmlNodeAttributes(const XmlNode *node, XmlAttributeInfo *attrInfo)
 
     assert(i == node->numAttributes);
 }
-
 
 void ReverseChildren(XmlNode *root)
 {

@@ -44,7 +44,6 @@ void DebugPrintString(char *str, uint x, uint y, int color, dword flags)
         PrintString(buf, x, y, big, color, 0);
 }
 
-
 /** Convert
 
     n   - number to convert
@@ -82,7 +81,6 @@ char *Convert(unsigned int n, char *inBuf)
     return (char *)buf + i;
 }
 
-
 void OutputChar(char c)
 {
     char buf[9];
@@ -90,7 +88,6 @@ void OutputChar(char c)
     Convert(c, buf);
     DebugPrintString(buf, x, y, 2, flags);
 }
-
 
 void OutputNumber(unsigned int c)
 {
@@ -116,7 +113,6 @@ void OutputNumber(unsigned int c)
     DebugPrintString(buf + i, x, y, 2, flags);
 }
 
-
 void OutputString(char *str)
 {
     char buf[16 + 1];
@@ -127,7 +123,6 @@ void OutputString(char *str)
 
     DebugPrintString(buf, x, y, 2, flags);
 }
-
 
 /* ConvertFrac
 
@@ -163,7 +158,6 @@ char *ConvertFrac(char *buf, int frac, int digits)
     return buf;
 }
 
-
 void OutputFixedPoint(int fixed)
 {
     char buf[13], *p;
@@ -175,7 +169,6 @@ void OutputFixedPoint(int fixed)
     DebugPrintString(buf, x, y, 2, flags);
 }
 
-
 void OutputMantissa(int fixed)
 {
     char buf[8];
@@ -185,7 +178,6 @@ void OutputMantissa(int fixed)
 
     DebugPrintString(buf, x, y, 2, flags);
 }
-
 
 void HexDump(char *start)
 {
@@ -207,7 +199,6 @@ void HexDump(char *start)
     }
     DebugPrintString(buf, x, y, 2, flags);
 }
-
 
 extern "C" void DumpVariables()
 {
@@ -271,7 +262,6 @@ extern "C" void DumpVariables()
         disabled = false;
     }
 }
-
 
 extern "C" void ToggleDebugOutput()
 {

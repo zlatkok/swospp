@@ -21,12 +21,10 @@ static char logBuf[3 * 1024];
 int __cdecl vsprintf(char *buf, const char *fmt, va_list arg);
 int __cdecl sprintf(char *buf, const char *fmt, ...);
 
-
 extern void swos_libc_exit(int);
 extern void ShutDownNetwork();
 
 static void WriteToLogFuncV(const char *fmt, va_list args);
-
 
 extern "C" __attribute((noreturn)) void AssertFailedMsg(const char *file, int line, const char *msg)
 {
@@ -53,13 +51,11 @@ extern "C" __attribute((noreturn)) void AssertFailedMsg(const char *file, int li
     EndProgram(true);
 }
 
-
 extern "C" __attribute((noreturn)) void AssertFailed(const char *file, int line)
 {
     asm("int 1");
     AssertFailedMsg(file, line, nullptr);
 }
-
 
 /** StartLogFile
 
@@ -82,7 +78,6 @@ extern "C" void StartLogFile()
     WriteToLog("The current local time is: %s", timeStr);
 }
 
-
 /** EndLogFile
 
     Writes ending message and closes log file.
@@ -93,7 +88,6 @@ extern "C" void EndLogFile()
     if (logFile.handle > 4)
         CloseBFileUnmanaged(&logFile);
 }
-
 
 /** FlushLogFile
 
@@ -106,7 +100,6 @@ extern "C" void FlushLogFile()
         "Failed to open debug log file.");
     SeekBFile(&logFile, SEEK_END, 0, 0);
 }
-
 
 /** WriteToLogFunc
 
@@ -124,7 +117,6 @@ void WriteToLogFunc(dword messageClass, const char *fmt, ...)
     }
 }
 
-
 /** WriteToLogFunc
 
     fmt - printf format string
@@ -139,7 +131,6 @@ extern "C" void __cdecl WriteToLogFunc(const char *fmt, ...)
     WriteToLogFuncV(fmt, va);
     va_end(va);
 }
-
 
 /** WriteToLogFuncV
 
@@ -164,7 +155,6 @@ static void WriteToLogFuncV(const char *fmt, va_list args)
 #endif
 }
 
-
 /** WriteToLogFuncNoStamp
 
     str - printf format string
@@ -184,7 +174,6 @@ void __cdecl WriteToLogFuncNoStamp(const char *str, ...)
     WriteBFile(&logFile, logBuf, length);
     PutCharBFile(&logFile, '\n');
 }
-
 
 /** HexDumpToLog
 
@@ -233,7 +222,6 @@ void HexDumpToLog(const void *inAddr, int length, const char *title)
     }
     WriteToLogFuncNoStamp("");
 }
-
 
 /** HexDumpToLogM
 

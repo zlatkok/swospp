@@ -29,7 +29,6 @@ void DrawSprite(int x, int y, int width, int height, const char *spriteData, int
     );
 }
 
-
 /** DrawSpriteInGame
 
     Just a helper routine, wrapper around DrawSprite. All the work is done by SWOS.
@@ -40,13 +39,11 @@ static void DrawSpriteInGame(int x, int y, const SpriteGraphics *s)
     DrawSprite(x, y, s->wquads * 16, s->nlines, s->data, 0);
 }
 
-
 static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
 {
     deltaColor = 0;
     DrawSprite(x, y, s->wquads * 16, s->nlines, s->data, -1);
 }
-
 
 /** GetSmallNumberStringLength
 
@@ -68,7 +65,6 @@ static int GetSmallNumberStringLength(const char *num, const byte *digitWidths, 
     }
     return len;
 }
-
 
 /** PrintSmallNumber
 
@@ -121,7 +117,6 @@ void PrintSmallNumber(int num, int x, int y, bool32 inGame)
     }
 }
 
-
 /** Text2Sprite
 
     Renders text into a specified sprite. This is wrapper around SWOS call that preserves ebp.
@@ -145,7 +140,6 @@ int Text2Sprite(int x, int y, int spriteIndex, const char *text, const void *cha
     calla(SWOS_Text2Sprite);
     return D0 ? -1 : D1;
 }
-
 
 /** DrawBitmap
 

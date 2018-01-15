@@ -184,12 +184,12 @@ player faces, used during tactics editing (perhaps elsewhere too)
 189 - empty sprite, also located in edit teams menu, as last, invisible entry
 
 trophies
-215 - sampion u prvenstvu
-216 - pobednik turnira po pozivu
-217 - osvajac kupa
-218 - ???
-219 - kup evropskih sampiona
-220 - kup pobednika kupova
+215 - Premier division champion
+216 - Invitation tournament winner
+217 - Cup winner
+218 - ??? (unknown trophy)
+219 - European Champions Cup
+220 - Cup Winners Cup
 221 - UEFA Cup
 222 - World Championship
 223 - European Championship
@@ -198,17 +198,16 @@ trophies
 235-242 second   -||-
 243-250 third    -||-
 
-255-270 brojevi + imena igraca, ispisuju se u levom gornjem uglu ekrana,
-        oznacavaju igraca koji trenutno ima loptu; tim 1
-271-286 brojevi + imena igraca za tim 2
-Ovi sprajtovi se popunjavaju pred utakmicu, inicijalno su prazni.
+255-270 numbers + player names, written in top left corner of the screen, that
+        mark the player with the ball
+271-286 numbers + player names for team 2
+These sprites are filled before the game, initally they're empty.
 
-307 - ime prvog tima
-308 Ova dva sprajta imaju nekakva posebna svojstva, i koristi se posebna
-    procedura za crtanje.
+307 - first team name
+308 - second team name
 
-310-317 - prostor u koji ce se upisati strelci golova za prvi tim
-318-325 -                    - || -                      drugi tim
+310-317 - space to use for goal scorers, for team 1
+318-325 -         - || -                     team 2
 
 330 - sprite for current game time ("118 mins." when uninitialized)
 
@@ -244,11 +243,13 @@ team2 bench players
 
 === Sprite decoding algorithm
 
-- linija se deli na cetiri "ravni", 0, 1, 2 i 3 (wquads * 8 / 4)
-- svaki piksel se sastoji iz cetiri bita
-- svaki piksel je sastavljen od po jednog bita iz svake ravni
-- prvi piksel se sastoji iz najvisih bitova iz ravni 3, 2, 1, 0 respektivno
-- drugi piksel se sastoji od sledecih bitova (sestih)
+- line is split in four "planes", 0, 1, 2 i 3 (wquads * 8 / 4)
+- each pixel consists of four bits
+- each pixel is composed out of one bit from each plane
+- first pixel is composed of highest bits from plane 3, 2, 1, 0 in that order
+- second pixel is composed of next bits
+- we move bit by bit to the right, until the end of the line
+- this process is repeated nlines times, until all lines are processed
 - tako se ide bit po bit nadesno, do kraja linije
 - ovaj proces se ponavlja nlines puta dok se ne obrade sve linije
 

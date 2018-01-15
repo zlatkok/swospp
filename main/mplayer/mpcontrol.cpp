@@ -11,7 +11,6 @@
 #include "mplayer.h"
 #include "qalloc.h"
 
-
 /* keep track of commands received from the network */
 static dword m_networkControlQueue[KEY_BUFFER_SIZE];
 static signed char m_numCommands;
@@ -25,7 +24,6 @@ static word m_waitingStartTick;
 static void (*m_startTheGameFunction)();
 
 static void InitializeTheGame();
-
 
 /** BroadcastControls
 
@@ -51,7 +49,6 @@ void BroadcastControls(byte controls, word longFireFlag)
     }
 }
 
-
 /** AddControlsToNetworkQueue
 
     controls     - SWOS' bitfield of controls (i.e. joy1Status)
@@ -68,7 +65,6 @@ static void AddControlsToNetworkQueue(byte controls, word longFireFlag)
         WriteToLog("Command buffer full. Lost a command.");
 }
 
-
 /* Return -1 to signal we should get the real key. */
 dword GetControlsFromNetwork()
 {
@@ -78,14 +74,12 @@ dword GetControlsFromNetwork()
     return m_numCommands > 0 ? m_networkControlQueue[--m_numCommands] : 0;
 }
 
-
 void InitializeNetworkKeys()
 {
     /* if we're controlling player send ping packet ASAP */
     m_lastPacketTime = IsOurPlayerControlling() ? 0 : g_currentTick;
     m_numCommands = 0;
 }
-
 
 /** HandleNetworkKeys
 
@@ -147,7 +141,6 @@ void HandleNetworkKeys()
     qFree(packet);
 }
 
-
 /** SaveTeamChanges
 
     Any change done to lineup in play match menu will be reflected on teams stored in selectedTeams.
@@ -159,7 +152,6 @@ static void SaveTeamChanges()
     assert(playerTeamIndex == 0 || playerTeamIndex == 1);
     StoreTeamData(&g_selectedTeams[playerTeamIndex]);
 }
-
 
 /** SwitchToNextControllingState
 
@@ -225,7 +217,6 @@ int SwitchToNextControllingState(void (*startTheGameFunction)())
     return false;
 }
 
-
 static void InitializeTheGame()
 {
     /* game about to go! */
@@ -274,13 +265,11 @@ static void InitializeTheGame()
     m_startTheGameFunction();
 }
 
-
 static bool ModalTimeoutElapsed()
 {
     const int kModalDialogDelay = 10;   /* only display modal dialog if waiting longer than this (in ticks) */
     return g_currentTick - m_waitingStartTick > kModalDialogDelay;
 }
-
 
 /** WaitForKeysConfirmation
 

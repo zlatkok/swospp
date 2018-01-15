@@ -59,7 +59,6 @@ static void initializeParser(const char *fileName, void *heap, int heapSize)
     xmlRoot = nullptr;
 }
 
-
 #ifdef DEBUG
 static void report(const char *text)
 {
@@ -68,7 +67,6 @@ static void report(const char *text)
 #else
 #define report(text) ((void)0)
 #endif
-
 
 static const char *SymToStr(XmlSymbol sym)
 {
@@ -96,7 +94,6 @@ static const char *SymToStr(XmlSymbol sym)
     }
 }
 
-
 static void *XmlAlloc(int size)
 {
     void *mem = qHeapAlloc(xmlHeap, size);
@@ -107,7 +104,6 @@ static void *XmlAlloc(int size)
 
     return mem;
 }
-
 
 static char *XmlStrdup(char *data, int len)
 {
@@ -123,12 +119,10 @@ static char *XmlStrdup(char *data, int len)
     return nullptr;
 }
 
-
 static void XmlFree(void *ptr)
 {
     qHeapFree(xmlHeap, ptr);
 }
-
 
 static bool PushNode(XmlNode *node)
 {
@@ -148,7 +142,6 @@ static bool PushNode(XmlNode *node)
     return true;
 }
 
-
 static XmlNode *PopNode()
 {
     XmlNodeListElem *elem = nodeStack;
@@ -157,20 +150,17 @@ static XmlNode *PopNode()
     return elem->node;
 }
 
-
 static XmlNode *TopNode()
 {
     assert(xmlHeap && nodeStack);
     return nodeStack->node;
 }
 
-
 static XmlNode *PeekTopNode()
 {
     assert(xmlHeap);
     return nodeStack ? nodeStack->node : nullptr;
 }
-
 
 /** GetXmlEscape
 
@@ -253,7 +243,6 @@ static char GetXmlEscape(BFile *file)
     return 0;
 }
 
-
 /** GetStringEscape
 
     file -> buffered XML file to read from
@@ -330,7 +319,6 @@ static int GetStringEscape(BFile *file)
     return -1;
 }
 
-
 /** SkipXmlComment
 
     file -> buffered XML file to read from
@@ -364,7 +352,6 @@ static void SkipXmlComment(BFile *file)
 
     UngetCharBFile(file, c);
 }
-
 
 /** GetText
 
@@ -467,7 +454,6 @@ static int GetText(BFile *file, bool inTag, char *buf, int bufSize)
     return p - buf;
 }
 
-
 /** GetSymbol
 
     file    -> buffered file to read from
@@ -536,7 +522,6 @@ static XmlSymbol GetSymbol(BFile *file, char *buf, int *bufSize)
     return (*bufSize = GetText(file, inTag, buf, *bufSize)) ? XML_SYM_TEXT : GetSymbol(file, buf, bufSize);
 }
 
-
 static bool Expect(XmlSymbol expected, XmlSymbol given)
 {
     if (expected != given) {
@@ -547,7 +532,6 @@ static bool Expect(XmlSymbol expected, XmlSymbol given)
 
     return true;
 }
-
 
 static bool FixXmlNodeContent(XmlNode *node)
 {
@@ -658,7 +642,6 @@ static bool AddXmlPartialContent(XmlNode *node, char *content, int size)
 
     return true;
 }
-
 
 /** ProcessSymbol
 
@@ -794,7 +777,6 @@ static bool ProcessSymbol(XmlSymbol sym, char *buf, int bufSize)
     return false;
 }
 
-
 bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFunction symProc)
 {
     XmlSymbol sym;
@@ -840,7 +822,6 @@ bool LoadXmlFile(XmlNode **root, const char *fileName, XmlSymbolProcessingFuncti
     return success;
 }
 
-
 static bool NeedsQuotes(const char *str, size_t len)
 {
     assert(str);
@@ -863,7 +844,6 @@ static bool NeedsQuotes(const char *str, size_t len)
     }
     return false;
 }
-
 
 /* saves a lot of typing :P */
 #define OUT_CHAR(c)         { if (!PutCharBFile(file, c)) return false; }
@@ -939,7 +919,6 @@ static bool WriteStringToFile(BFile *file, const char *string, size_t stringLen,
     }
 }
 
-
 static bool WriteNodeContent(BFile *file, const XmlNode *node, int indent)
 {
     int val = 0;
@@ -975,7 +954,6 @@ static bool WriteNodeContent(BFile *file, const XmlNode *node, int indent)
     numStr = int2str(val);
     return WriteBFile(file, numStr, strlen(numStr));
 }
-
 
 static bool WriteTreeToFile(BFile *file, const XmlNode *root, int indent)
 {
@@ -1069,7 +1047,6 @@ static bool WriteTreeToFile(BFile *file, const XmlNode *root, int indent)
 
     return true;
 }
-
 
 bool SaveXmlFile(XmlNode *root, const char *fileName, bool checkIfNeeded)
 {

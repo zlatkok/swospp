@@ -113,9 +113,7 @@ static void DisconnectClient(int playerIndex, bool sendDisconnect);
 static void SendListGamesRequest();
 static void SendWaitingGamesReport();
 
-
 /* === public functions */
-
 
 /** GetState
 
@@ -125,7 +123,6 @@ MP_State GetState()
 {
     return m_state;
 }
-
 
 /** SwitchToState
 
@@ -137,7 +134,6 @@ void SwitchToState(MP_State state)
     m_state = state;
 }
 
-
 /** IsOurPlayerControlling
 
     Return true if our player is currently in control in setting up lineup menu.
@@ -148,7 +144,6 @@ bool IsOurPlayerControlling()
     return isControlling(m_ourPlayerIndex);
 }
 
-
 /** GetNumPlayers
 
     Return number of players that we are currently connected too (includes watchers too).
@@ -157,7 +152,6 @@ int GetNumPlayers()
 {
     return m_numConnectedPlayers;
 }
-
 
 /** GetPlayer
 
@@ -169,7 +163,6 @@ NetPlayer *GetPlayer(int index)
     return &m_connectedPlayers[index];
 }
 
-
 /** GetOurPlayerIndex
 
     Return our player index (zero based).
@@ -178,7 +171,6 @@ int GetOurPlayerIndex()
 {
     return m_ourPlayerIndex;
 }
-
 
 /** GetControllingPlayerAddress
 
@@ -193,7 +185,6 @@ IPX_Address *GetControllingPlayerAddress()
 
     return nullptr;
 }
-
 
 /** GetCurrentPlayerTeamIndex
 
@@ -219,14 +210,12 @@ int GetCurrentPlayerTeamIndex()
     return 0;
 }
 
-
 /* Team setting up is canceled, go back to lobby. */
 void GoBackToLobby()
 {
     WriteToLog("Exit pressed, going back to lobby.");
     SwitchToState(m_weAreTheServer ? ST_WAITING_TO_START : ST_GAME_LOBBY);
 }
-
 
 void InitMultiplayerLobby()
 {
@@ -236,14 +225,12 @@ void InitMultiplayerLobby()
     m_inLobby = false;
 }
 
-
 void FinishMultiplayerLobby()
 {
     qFree(m_lobbyState);
     m_lobbyState = nullptr;
     CleanUpPlayers();
 }
-
 
 void DisbandGame()
 {
@@ -269,9 +256,7 @@ void DisbandGame()
     m_inLobby = false;
 }
 
-
 /* Internal routines */
-
 
 static void CleanUpPlayers()
 {
@@ -281,7 +266,6 @@ static void CleanUpPlayers()
     }
     m_numConnectedPlayers = 0;
 }
-
 
 /** LoadTeam
 
@@ -333,7 +317,6 @@ static bool LoadTeam(dword teamId, TeamFile *destTeam)
     return true;
 }
 
-
 /* This is an important thing to do, otherwise play match menu will be working with teams in wrong
    locations, and will fail to write changes properly. So make it look like as if team was loaded from
    friendly game team selection. */
@@ -341,7 +324,6 @@ static TeamFile *AddTeamToSelectedTeams(const TeamFile *team)
 {
     return (TeamFile *)memcpy(&g_selectedTeams[g_numSelectedTeams++], team, sizeof(TeamFile));
 }
-
 
 /* Return player index from IPX address. */
 static int FindPlayer(const IPX_Address *node)
@@ -354,7 +336,6 @@ static int FindPlayer(const IPX_Address *node)
 
     return i;
 }
-
 
 static void InitPlayer(NetPlayer *player, const char *name, const char *teamName, const IPX_Address *address, word joinId)
 {
@@ -377,7 +358,6 @@ static void InitPlayer(NetPlayer *player, const char *name, const char *teamName
     player->joinId = joinId;
     player->lastPingTime = 0;
 }
-
 
 /** HandleChatLine
 
@@ -427,7 +407,6 @@ static void HandleChatLine(int senderIndex, const char *text, byte color)
     }
 }
 
-
 static void DisconnectClient(int playerIndex, bool sendDisconnect)
 {
     assert(m_numConnectedPlayers < MAX_PLAYERS);
@@ -460,14 +439,12 @@ static void DisconnectClient(int playerIndex, bool sendDisconnect)
     }
 }
 
-
 static void FormatPlayerLeftMessage(char *buf, int playerIndex)
 {
     auto end = strcpy(buf, m_connectedPlayers[playerIndex].getName());
     strupr(buf);
     strcpy(end, " LEFT.");
 }
-
 
 static void ServerHandlePlayerLeftPacket(const char *packet, int length, const IPX_Address *node)
 {
@@ -491,7 +468,6 @@ static void ServerHandlePlayerLeftPacket(const char *packet, int length, const I
     FormatPlayerLeftMessage(buf, playerIndex);
     HandleChatLine(-1, buf, 10);
 }
-
 
 static bool ClientHandlePlayerLeftPacket(const char *packet, int length, const IPX_Address *node)
 {
@@ -532,14 +508,12 @@ static bool ClientHandlePlayerLeftPacket(const char *packet, int length, const I
     return true;
 }
 
-
 /***
 
    Game Lobby menu GUI interfacing.
    =================================
 
 ***/
-
 
 void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const LobbyState *),
     void (*errorFunc)(), void (*onGameEndFunc)(), bool weAreTheServer)
@@ -584,7 +558,6 @@ void CreateNewGame(const MP_Options *options, void (*updateLobbyFunc)(const Lobb
     m_currentChatLine = -1;
 }
 
-
 void UpdateMPOptions(const MP_Options *newOptions)
 {
     assert(m_weAreTheServer);
@@ -600,7 +573,6 @@ void UpdateMPOptions(const MP_Options *newOptions)
 
     SetMPOptions(newOptions);
 }
-
 
 static void SetFlags(int bit, bool set)
 {
@@ -619,18 +591,15 @@ static void SetFlags(int bit, bool set)
     }
 }
 
-
 void SetPlayerOrWatcher(bool isWatcher)
 {
     SetFlags(0, isWatcher);
 }
 
-
 void SetPlayerReadyState(bool isReady)
 {
     SetFlags(1, isReady);
 }
-
 
 /** SetTeam
 
@@ -661,7 +630,6 @@ char *SetTeam(TeamFile *newTeam, dword teamId)
     return newTeam->name;
 }
 
-
 /* User has typed a chat line. */
 void AddChatLine(const char *line)
 {
@@ -676,7 +644,6 @@ void AddChatLine(const char *line)
         SendImportantPacket(&m_connectedPlayers[0].address, packet, length);
     }
 }
-
 
 /** CanGameStart
 
@@ -702,7 +669,6 @@ bool32 CanGameStart()
 
     return numReadyPlayers == 2 && numNonReadyPlayers == 0;
 }
-
 
 /** SetupTeams
 
@@ -736,14 +702,12 @@ void SetupTeams(void (*modalSyncFunc)(), ShowTeamsMenuFunction showTeamsMenuFunc
     EnterSyncingState(modalSyncFunc, showTeamsMenuFunc);
 }
 
-
 /***
 
    Game lobby menu internal logic.
    ================================
 
 ***/
-
 
 /* Called from main network loop to dispatch server traffic in the game lobby. */
 static void CheckIncomingServerLobbyTraffic()
@@ -926,7 +890,6 @@ static void CheckIncomingServerLobbyTraffic()
     qFree(packet);
 }
 
-
 /* Send ping packet to clients periodically, so we can detect client disconnects even if they're idle. */
 static void SendPingPackets()
 {
@@ -939,7 +902,6 @@ static void SendPingPackets()
     }
 }
 
-
 static void PingServer()
 {
     word timeout = GetNetworkTimeout(), currentTime = g_currentTick, pingPacket = PT_PING;
@@ -948,7 +910,6 @@ static void PingServer()
         m_lastPingTime = currentTime;
     }
 }
-
 
 /* Network loop in game lobby for clients. */
 static bool CheckIncomingClientLobbyTraffic()
@@ -1072,7 +1033,6 @@ static bool CheckIncomingClientLobbyTraffic()
     return true;
 }
 
-
 static bool GotAllTeamsAndTactics()
 {
     int numPlayers = 0;
@@ -1087,7 +1047,6 @@ static bool GotAllTeamsAndTactics()
 
     return !m_weAreTheServer || numPlayers > 1;
 }
-
 
 /* Multiplayer game just ended. Get the results and go back to corresponding state. */
 void GameFinished()
@@ -1106,14 +1065,12 @@ void GameFinished()
     }
 }
 
-
 static void MenuTransitionAfterTheGame()
 {
     /* must refresh menu before the fade in, and after menu conversion */
     if (m_state == ST_GAME_LOBBY || m_state == ST_WAITING_TO_START)
         m_updateLobbyFunction(PutOurPlayerOnTop(InitLobbyState(m_lobbyState)));
 }
-
 
 /** HandleSyncTimeouts
 
@@ -1157,7 +1114,6 @@ static bool HandleSyncTimeouts()
     return true;
 }
 
-
 /** SyncFailed
 
     Timeout has expired and we haven't managed to sync everybody, so return to the lobby.
@@ -1179,7 +1135,6 @@ static void SyncFailed()
     CancelSendingPackets();
 }
 
-
 static void ShowTeamsMenu(TeamFile *team1, TeamFile *team2)
 {
     assert(m_showTeamsMenuFunction && team1 && team2);
@@ -1191,7 +1146,6 @@ static void ShowTeamsMenu(TeamFile *team1, TeamFile *team2)
     MenuTransitionAfterTheGame();
     IPX_OnIdle();
 }
-
 
 /** ServerSyncSuccess
 
@@ -1235,7 +1189,6 @@ static bool32 ServerSyncSuccess()
 
     return false;
 }
-
 
 static bool32 HandleSyncOkPacket(char *packet, const IPX_Address& node)
 {
@@ -1297,7 +1250,6 @@ static bool32 HandleSyncOkPacket(char *packet, const IPX_Address& node)
 
     return true;
 }
-
 
 /** SyncOnIdle
 
@@ -1411,7 +1363,6 @@ static bool32 SyncOnIdle()
     return false;
 }
 
-
 /* Create lobby state to send to a connecting player or GUI. */
 static LobbyState *InitLobbyState(LobbyState *state)
 {
@@ -1436,7 +1387,6 @@ static LobbyState *InitLobbyState(LobbyState *state)
     return state;
 }
 
-
 static void SwapLobbyStatePlayerSpot(LobbyState *state, int i1, int i2)
 {
     assert(state);
@@ -1452,7 +1402,6 @@ static void SwapLobbyStatePlayerSpot(LobbyState *state, int i1, int i2)
     state->playerFlags[i1] = state->playerFlags[i2];
     state->playerFlags[i2] = iTmp;
 }
-
 
 /** PutOurPlayerOnTop
 
@@ -1476,14 +1425,12 @@ static LobbyState *PutOurPlayerOnTop(LobbyState *state)
     return state;
 }
 
-
 /***
 
    Join game menu GUI interfacing.
    ===============================
 
 ***/
-
 
 /** Called by GUI upon entering join game menu. We are given a function which
     will be used to update GUI after any changes. Start off with refreshing
@@ -1510,14 +1457,12 @@ void EnterWaitingToJoinState(SendWaitingToJoinReport updateFunc, int findGamesTi
     SendWaitingGamesReport();
 }
 
-
 /* Called by GUI when the user is requesting games list refresh. */
 void RefreshList()
 {
     if (!m_joinGamesState.refreshing)
         EnterWaitingToJoinState();
 }
-
 
 /* User is leaving join games menu, cease all network activity. */
 void LeaveWaitingToJoinState()
@@ -1527,7 +1472,6 @@ void LeaveWaitingToJoinState()
     m_numWaitingGames = 0;
     CancelSendingPackets();
 }
-
 
 /** JoinGame
 
@@ -1584,14 +1528,12 @@ void JoinGame(int index, bool (*modalUpdateFunc)(int, const char *),
     SwitchToState(ST_TRYING_TO_JOIN_GAME);
 }
 
-
 /***
 
    Join game menu internal logic.
    ==============================
 
 ***/
-
 
 /** SendListGamesRequest
 
@@ -1605,7 +1547,6 @@ static void SendListGamesRequest()
     SendBroadcastPacket(request, length);
 }
 
-
 /* Send state report for GUI to update. */
 static void SendWaitingGamesReport()
 {
@@ -1616,7 +1557,6 @@ static void SendWaitingGamesReport()
     m_joinGamesState.waitingGames[i] = (char *)-1;      /* terminate with -1    */
     m_waitingToJoinReportFunc(&m_joinGamesState);       /* dispatch to the GUI  */
 }
-
 
 /** UpdateGameList
 
@@ -1639,7 +1579,6 @@ static void UpdateGameList()
         }
     }
 }
-
 
 /** CheckForWaitingGameReply
 
@@ -1704,7 +1643,6 @@ static void CheckForWaitingGameReply()
     }
 }
 
-
 /** ClientJoinsGame
 
     in:
@@ -1745,7 +1683,6 @@ static void ClientJoinsGame(LobbyState *lobbyState, const char *ourTeamName)
 
     m_enterGameLobbyFunction();
 }
-
 
 static bool32 JoiningGameOnIdle(LobbyState *lobbyState)
 {
@@ -1835,7 +1772,6 @@ static bool32 JoiningGameOnIdle(LobbyState *lobbyState)
     return false;
 }
 
-
 /***
 
    Sync state and setting up teams.
@@ -1843,13 +1779,11 @@ static bool32 JoiningGameOnIdle(LobbyState *lobbyState)
 
 ***/
 
-
 static void ResetSyncFlags()
 {
     for (int i = 0; i < MAX_PLAYERS; i++)
         m_connectedPlayers[i].setUnsynced();
 }
-
 
 static void EnterSyncingState(void (*modalSyncFunction)(), ShowTeamsMenuFunction showTeamsMenuFunction)
 {
@@ -1879,7 +1813,6 @@ static void EnterSyncingState(void (*modalSyncFunction)(), ShowTeamsMenuFunction
         }
     }
 }
-
 
 /** ControllingPlayerTimedOut
 
@@ -1918,9 +1851,7 @@ void ControllingPlayerTimedOut(int i)
     m_setupTeamsOnErrorFunction(serverDown);
 }
 
-
 /* =============== */
-
 
 /** HandleTimeouts
 
@@ -1999,7 +1930,6 @@ static bool HandleTimeouts()
 
     return true;
 }
-
 
 /** NetworkOnIdle
 

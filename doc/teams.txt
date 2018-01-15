@@ -292,53 +292,53 @@ offset:  size:  desc.
   31       1    ball control
   32       1    speed
   33       1    finishing
-  34       1    0..7, nesto za golmana, indeks u tablicu pointera
-                koji se upisuje u ofs24
-  35       1    or-uj sa player_file ofs103 & 0xff1f, bitovi 7,6 i 5 su nesto
-                - izgleda brzina treperenja crvenog krsta kada je igrac
-                povredjen; ako je ovo nula, igrac nije povredjen; ako celo
-                polje nije nula, a 5. bit nije setovan, onda je valjda trajna
-                povreda
-                5. bit oznacava laksu povredu (0x20)
-                bitovi 5, 6 i 7 oznacavaju stepen povrede, i na osnovu njihove
-                vrednosti na brzinu igraca se dodaje hendikep preko tablice:
+  34       1    0..7, related to goalkeeper, index into a table of pointers
+                which ends up written to ofs24
+  35       1    OR with player_file ofs103 & 0xff1f, bits 7,6 and 5 mean
+                something - seems to be red cross blinking speed when a player
+                is injured; if this is zero player is not injured; if whole
+                field is not zero, and bit 5 isn't set, seems to be permanent
+                injury
+                5th bit marks light injury (0x20)
+                bits 5, 6 and 7 represent degree of injury, and based on their
+                value player speed value gets handicapped via the table:
                 0, -96, -128, -160, -192, -224, -256, -288
-  36       1    [0,1,2] ako je igrac igrao na utakmici, skoro uvek je 2, nekad
-                i jedan (ali to moze znaciti i da je igrao pa je zamenjen), a
-                nula je kada je igrac zavrsio utakmicu na klupi (nekad je i 1
-                u ovom slucaju)
-                u prvom i 46. minutu: ukoliko igrac ima 0 ili 1 zuti karton, i
-                ukoliko ovo polje nije 2, upisuje se kec
-                na poluvremenu i kraju partije: ukoliko ima 0 ili 1 zuti
-                karton, i ukoliko je ovo polje jedan, upisi 2
-                izgleda u kom je poluvremenu igrao igrac
+  36       1    [0,1,2] if a player entered the game it's almost always 2,
+                sometimes 1 (but that can mean he played and got substituted),
+                and zero if he ended the game on the bench (sometimes it's 1 in
+                this case too)
+                in 1st and 46th minute: if player has 0 or 1 yellow cards, and
+                this field isn't 2, write 1
+                at half-time and full-time: if a player has 0 or 1 yellow
+                cards, and if this field is 1, write 2
+                seems to be number of half in which player played
   37       1    player face index [0,1,2,3]
   38      23    full name of the player
 
-61 je velicina strukture igraca. Igraci su izgleda poredjani po brojevima u
-file strukturi.
+61 is the size of player structure. Players seems to be sorted by numbers
+inside the file structure.
 
-Dalje sledi 686 nepoznatih bajtova, koji su u hil-ovima uvek nule.
+686 unknown bytes follow, which are always zero in hil files.
 
 
 ===============================================================================
-Struktura koja sadrzi opste informacije o timovima:
+Structure containing general informations about teams:
 
 offset:  size:  desc.
 -------  -----  -----
-   0       4    pointer na suparnicki tim (istu ovu strukturu)
-   4       2    kontrole igraca:
-                0 - kompjuter
-                1 - player 1 (sta god je namesteno u setup-u)
+   0       4    pointer to opponent team (this same structure)
+   4       2    player controls:
+                0 - CPU
+                1 - player 1 (whatever was selected  in setup)
                 2 - player 2              -//-
-                od ovoga zavisi da li se poziva Player1StatusProc ili 2, i
-                odatle se kontrole kopiraju u ovu strukturu
-   6       2    broj igraca koji trenira ovaj tim (0 - niko nije trener, tim
-                kontrolise kompjuter ili igrac direktno)
-   8       2    da li je neki igrac trener ovog tima? (255 = da)
-  10       4    ptr na in-game strukturu tima
-  14       4    pointer na podatke za statistiku
-  18       2    broj tima (1 ili 2)
+                this controls whether Player1StatusProc or 2 is called, and
+                from there the controls get copied into this structure
+   6       2    number of the player coaching this team (0 - nobody is
+                coaching, team is directly controled by player or CPU)
+   8       2    is any player coach of this team? (255 = yes)
+  10       4    pointer to in-game team structure
+  14       4    pointer to statistics data
+  18       2    team number (1 or 2)
   20       4    pointer na tablicu pointera na sprajtove svojih igraca
                 (in-game Sprites), ima ih tacno 11
   24       4    ptr u pitch_cvt_table

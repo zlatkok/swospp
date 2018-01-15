@@ -8,7 +8,6 @@ struct Ball {
     int arg;
 } static m_balls[kMaxBalls];
 
-
 const char kBall1[] = {
     0, 3, 2, 0,
     2, 2, 2, 3,
@@ -59,14 +58,12 @@ void InitBalls()
     }
 }
 
-
 extern "C" void InitCounter()
 {
     counter = 0;
     srand(g_currentTick);
     InitBalls();
 }
-
 
 extern "C" void AnimateBalls()
 {
@@ -94,7 +91,6 @@ extern "C" void AnimateBalls()
         InitBalls();
     }
 }
-
 
 void DrawBitmapClipped(int x, int y, int width, int height, const char *data)
 {

@@ -48,42 +48,35 @@ static void push(dword *stack, int *stackptr, dword addr)
     stack[(*stackptr)++] = addr;
 }
 
-
 static void addCodeSWOSCFixup(dword addr)
 {
     push(codeSWOSCodeFixup, &cscPtr, addr);
 }
-
 
 static void addCodeSWOSDFixup(dword addr)
 {
     push(codeSWOSDataFixup, &csdPtr, addr);
 }
 
-
 static void addCodeBaseFixup(dword addr)
 {
     push(codeBaseFixup, &cbPtr, addr);
 }
-
 
 static void addPatchSWOSCFixup(dword addr)
 {
     push(patchSWOSCodeFixup, &pscPtr, addr);
 }
 
-
 static void addPatchSWOSDFixup(dword addr)
 {
     push(patchSWOSDataFixup, &psdPtr, addr);
 }
 
-
 static void addPatchBaseFixup(dword addr)
 {
     push(patchBaseFixup, &pbPtr, addr);
 }
-
 
 static int checksum(dword c, int i, unsigned char *mem, int memSize)
 {
@@ -99,11 +92,9 @@ static int checksum(dword c, int i, unsigned char *mem, int memSize)
     return c;
 }
 
-
 enum RelocSections {
     CODE, DATA, RDATA, PATCH, SWOS, INVALID,
 };
-
 
 struct Section {
     const char *name;
@@ -121,7 +112,6 @@ struct Section {
     { ".ptdata", PATCH },
 };
 
-
 enum SectionsNeeded {
     SEC_TEXT,
     SEC_DATA,
@@ -131,14 +121,11 @@ enum SectionsNeeded {
     SEC_PTDATA
 };
 
-
 /* not so much strict ordering, all we need is to process rdata (exports) before ptdata */
 static int sectionOrder[] = { SEC_TEXT, SEC_DATA, SEC_RDATA, SEC_PTDATA, SEC_RELOC, SEC_SWOS };
 
-
 #define sizeofarray(x) (sizeof(x)/sizeof(x[0]))
 #define SECTS_NEEDED sizeofarray(sects)
-
 
 static void *xmalloc(size_t size)
 {
@@ -151,7 +138,6 @@ static void *xmalloc(size_t size)
 
     return p;
 }
-
 
 static bool *getIgnoredSections(const SectionHeader *sectionHeaders, size_t numSections)
 {
@@ -178,7 +164,6 @@ static bool *getIgnoredSections(const SectionHeader *sectionHeaders, size_t numS
     return ignoredSections;
 }
 
-
 static bool isIgnoredSection(bool *ignoredSections, dword address, const SectionHeader *sectionHeaders, size_t numSections)
 {
     for (size_t i = 0; i < numSections; i++) {
@@ -188,7 +173,6 @@ static bool isIgnoredSection(bool *ignoredSections, dword address, const Section
 
     return false;
 }
-
 
 static int calculateChecksum(uint rdataOffset, uint rdataSize, uint patchOffset, uint patchSize)
 {
@@ -226,7 +210,6 @@ static void safefread(void *buffer, size_t size, size_t count, FILE *stream)
     }
 }
 
-
 static void safefwrite(const void *buffer, size_t size, size_t count, FILE *stream)
 {
     if (fwrite(buffer, size, count, stream) != count && size) {
@@ -235,7 +218,6 @@ static void safefwrite(const void *buffer, size_t size, size_t count, FILE *stre
     }
 }
 
-
 static void safefseek(FILE *stream, long offset, int origin)
 {
     if (fseek(stream, offset, origin)) {
@@ -243,7 +225,6 @@ static void safefseek(FILE *stream, long offset, int origin)
         exit(1);
     }
 }
-
 
 static void getDestinationFilename(const char *fileArg, char *dest, size_t destLen, const char *ext)
 {
@@ -266,7 +247,6 @@ static void getDestinationFilename(const char *fileArg, char *dest, size_t destL
         dest[destLen - 1] = '\0';
 }
 
-
 static const char *getSectionName(dword value, const SectionHeader *sectionHeaders, size_t numSections)
 {
     static char sectionName[9];
@@ -281,7 +261,6 @@ static const char *getSectionName(dword value, const SectionHeader *sectionHeade
     return "<unknown section>";
 }
 
-
 static int getRelocSectionFixupPointingTo(dword value)
 {
     for (size_t i = 0; i < SECTS_NEEDED; i++)
@@ -290,7 +269,6 @@ static int getRelocSectionFixupPointingTo(dword value)
 
     return -1;
 }
-
 
 static RelocSections displacementRelocFix(dword value, uchar *fromSectBuf, dword ofs, uint rdataOffset)
 {
@@ -317,13 +295,11 @@ static RelocSections displacementRelocFix(dword value, uchar *fromSectBuf, dword
     return INVALID;
 }
 
-
 static void reportInvalidFixup(const char *from, const char *to, dword offset)
 {
     fprintf(stderr, "Invalid fixup encountered, `%s' -> `%s', offset %u\n", from, to, offset);
     exit(1);
 }
-
 
 static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHeader *sectionHeaders,
     size_t numSections, int *warnings, uint bssOffset, uint rdataOffset, uint rdataSize, uint patchOffset, uint patchSize)
@@ -503,7 +479,6 @@ static void generateRelocations(const PE_OptionalHeader *peopt, const SectionHea
 
     free(ignoredSections);
 }
-
 
 int __cdecl main(int argc, char **argv)
 {

@@ -19,7 +19,6 @@ static int Checksum(dword c, int i, unsigned char *mem, int memSize)
     return c;
 }
 
-
 static void saferead(char *fname, void *buf, size_t size, size_t cnt, FILE *f)
 {
     if (fread(buf, size, cnt, f) != cnt && size) {
@@ -111,7 +110,6 @@ static void WritePatchData(uchar *p, int patch_size)
         }
     }
 }
-
 
 int main(int argc, char **argv)
 {

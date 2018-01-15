@@ -39,7 +39,6 @@ uchar Char2Sprite(char c, uint big)
     return spr;
 }
 
-
 /** GetStringLength
 
     str   - string to "measure"
@@ -106,7 +105,6 @@ void GetStringLength(char *str, int *w, int *h, uint align, uint big)
     }
     *w = len; *h = height;
 }
-
 
 /** PrintString
 
@@ -215,7 +213,6 @@ void PrintString(char *str, int x, int y, bool big, int color, uint align)
         }
     }
 }
-
 
 /** PrintNumber
 

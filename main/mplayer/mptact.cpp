@@ -19,7 +19,6 @@ static void RestoreTactics();
 static void OnChangeTactics(word newTactics, TeamGeneralInfo *benchTeam);
 void SkipTacticsIinit() asm("SkipTacticsIinit");
 
-
 void InitTacticsContextSwitcher(const Tactics *player1CustomTactics, const Tactics *player2CustomTactics)
 {
     assert(playMatchTeam1Ptr && playMatchTeam2Ptr);
@@ -56,7 +55,6 @@ void InitTacticsContextSwitcher(const Tactics *player1CustomTactics, const Tacti
     PatchCall(SetupPlayers, 0x466, SkipTacticsIinit);
 }
 
-
 void DisposeTacticsContextSwitcher()
 {
     PatchDword(ShowFormationMenu, 0x26, 0x189ea366);
@@ -67,7 +65,6 @@ void DisposeTacticsContextSwitcher()
     PatchDword(ChangeFormationIfFiring, 0x119, &pl2Tactics);
 }
 
-
 /* Discard return address (return to caller's caller), and unpatch us. */
 asm (
 "SkipTacticsIinit:                      \n"
@@ -76,7 +73,6 @@ asm (
     "mov  dword ptr [esi - 3], offset A1 \n"
     "ret                                \n"
 );
-
 
 /** VirtualizeTactics
 
@@ -120,14 +116,12 @@ static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team
     team->tactics = newTactics;
 }
 
-
 /* Return index of player which requested bench. */
 static int getBenchTeamIndex()
 {
     assert(benchTeam && (benchTeam->playerNumber == 1 || benchTeam->playerNumber == 2));
     return (benchTeam == rightTeamData) ^ (teamPlayingUp == 2);
 }
-
 
 /* Restore tactics to "being able to show" state. Called when player opens up bench menu. */
 static void RestoreTactics()
@@ -147,7 +141,6 @@ static void RestoreTactics()
     /* show real index regardless of what we have set it to */
     selectedFormationEntry = *m_plRealTactics[benchTeamIndex];
 }
-
 
 /** OnChangeTactics
 

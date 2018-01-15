@@ -120,7 +120,6 @@ static void DrawSubstitutesMenuHook();
 static void DrawFormationMenuHook();
 static void EnqueueSubstituteSampleHook();
 
-
 /** InitWatchers
 
     weAreWatching - informs if we are player or watcher
@@ -169,7 +168,6 @@ void CleanupWatchers()
     PatchDword(SubstitutePlayerIfFiring, 0x3e9, 0xfffae294);
 }
 
-
 /** HandleWatcherPacket
 
     packet      -> points to packet data
@@ -209,7 +207,6 @@ bool HandleWatcherPacket(const char *packet, int length, int currentTick, bool *
     return false;
 }
 
-
 /** WatcherTimeout
 
     Return true if we haven't received a watcher packet for a while.
@@ -218,7 +215,6 @@ bool WatcherTimeout(word networkTimeout)
 {
     return m_lastWatcherTick + networkTimeout < g_currentTick;
 }
-
 
 /** CreateWatcherPacket
 
@@ -269,8 +265,6 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
             /* skip out of screen sprites, but don't do that check for high player numbers */
             if (s->pictureIndex >= SPR_MAX || (x < 336 && y < 200 && x >= -sg->width && y >= -sg->nlines)) {
                 *destSprites++ = PackSprite(s->pictureIndex, x, y, s->saveSprite);
-if (s->pictureIndex == 1182 || s->pictureIndex == 1183)
-WriteToLog("i: %d, x: %d, y: %d, pack: %#x", s->pictureIndex, x, y, destSprites[-1]);
                 numSprites++;
             }
         }
@@ -326,7 +320,6 @@ WriteToLog("i: %d, x: %d, y: %d, pack: %#x", s->pictureIndex, x, y, destSprites[
     return (char *)m_watcherPackets;
 }
 
-
 /* Apply data from watcher packet to SWOS internal state. */
 void ApplyWatcherPacket()
 {
@@ -343,7 +336,6 @@ void ApplyWatcherPacket()
     }
 }
 
-
 const char *GetEndGameWatcherPacket(int *length)
 {
     assert(m_watcherPackets);
@@ -354,12 +346,10 @@ const char *GetEndGameWatcherPacket(int *length)
     return (const char *)m_watcherPackets;
 }
 
-
 /*
     internal routines
     -----------------
 */
-
 
 /** DrawSpriteHook
 
@@ -400,13 +390,11 @@ asm (
     "ret    \n"
 );
 
-
 static void DrawSubstitutesMenuHook()
 {
     hookFlags.showingSubsMenu = true;
     calla(SWOS_DrawSubstitutesMenu);
 }
-
 
 static void DrawFormationMenuHook()
 {
@@ -414,14 +402,12 @@ static void DrawFormationMenuHook()
     calla(SWOS_DrawFormationMenu);
 }
 
-
 /* Try capturing moment when substitute was made so watcher can play that sound too. */
 static void EnqueueSubstituteSampleHook()
 {
     hookFlags.enqueueSubstituteSample = true;
     calla(EnqueueSubstituteSample);
 }
-
 
 static dword PackSprite(dword spriteIndex, int x, int y, bool saveSprite)
 {
@@ -431,7 +417,6 @@ static dword PackSprite(dword spriteIndex, int x, int y, bool saveSprite)
         spriteIndex -= 9000 + 1187 - SPR_MAX;
     return packedSprite | ((saveSprite != 0) << 31) | ((spriteIndex & 0x7ff) << 20);
 }
-
 
 /** VerifyPacket
 
@@ -498,7 +483,6 @@ static bool VerifyPacket(const WatcherPacket *wp, int length)
     return true;
 }
 
-
 /* starting sprites for scrolling advertisements */
 static const byte adSpriteIndices[] = { SPR_ADVERT_1_PART_1, SPR_ADVERT_2_PART_1, SPR_ADVERT_3_PART_1 };
 static byte **adDataPointers[] = { advert1Pointers, advert2Pointers, advert3Pointers };
@@ -513,7 +497,6 @@ static void PackAdData(WatcherPacket *wp)
     }
 }
 
-
 static void ApplyAdData(const WatcherPacket *wp)
 {
     assert(sizeofarray(adSpriteIndices) == sizeofarray(adDataPointers));
@@ -527,7 +510,6 @@ static void ApplyAdData(const WatcherPacket *wp)
         }
     }
 }
-
 
 /** PackBenchData
 
@@ -602,7 +584,6 @@ static int PackBenchData(BenchInfo *benchInfo)
     return packetLength;
 }
 
-
 /** PackScorers
 
     scorers     -> array of SWOS scorer structures for one team
@@ -667,7 +648,6 @@ static byte *PackScorers(const SWOS_ScorerInfo *scorers, byte *destScorers, byte
     return destScorers;
 }
 
-
 /** SetTimeSprite
 
     gameTime - 3 digits of game time stored in 3 bytes (low byte is least significant), with values 0..9
@@ -703,14 +683,12 @@ static void SetTimeSprite(dword gameTime)
     calla(CopySprite);
 }
 
-
 static void DrawFormationMenu(const FormationMenuData *formationData)
 {
     selectedFormationEntry = formationData->selectedFormationEntry;
     deltaColor = 16;    /* DrawFormationMenu is expecting this */
     calla(SWOS_DrawFormationMenu);
 }
-
 
 /** SetupTeamForSubs
 
@@ -777,7 +755,6 @@ static void SetupTeamForSubs(TeamGeneralInfo *team, const BenchMenuPlayer *bench
     }
 }
 
-
 static void DrawSubstitutesMenu(const SubsMenuData *subsData)
 {
     SetupTeamForSubs(leftTeamData, subsData->players[0]);
@@ -798,7 +775,6 @@ static void DrawSubstitutesMenu(const SubsMenuData *subsData)
     calla(SWOS_DrawSubstitutesMenu);
 }
 
-
 static void ApplyBenchData(const BenchInfo *benchInfo)
 {
     HexDumpToLog(LM_WATCHER, benchInfo, sizeof(BenchInfo), "bench info");
@@ -810,7 +786,6 @@ static void ApplyBenchData(const BenchInfo *benchInfo)
     else if (benchInfo->showingFormationMenu)
         DrawFormationMenu((const FormationMenuData *)&benchInfo[1]);
 }
-
 
 /** GetSurname
 
@@ -832,7 +807,6 @@ static const char *GetSurname(const TeamGame *team, int index)
     return surname;
 }
 
-
 /** GetIndex
 
     team        -> in-game team of the player
@@ -852,7 +826,6 @@ static int GetIndex(const TeamGame *team, int shirtNumber)
     assert_msg(false, "Non existent scorer registered.");
     return 0;
 }
-
 
 /* Render received scorer list into scorer sprites (per team function). */
 static byte *ApplyScorerList(byte *scorers, int numScorers, int teamNumber, Sprite *scorerSprites)
@@ -925,7 +898,6 @@ static byte *ApplyScorerList(byte *scorers, int numScorers, int teamNumber, Spri
     return scorers;
 }
 
-
 /* Sign extend 10-bit value to full 32-bit integer. */
 static int SignExtend10Bits(int val)
 {
@@ -933,12 +905,10 @@ static int SignExtend10Bits(int val)
     return s.x = val;
 }
 
-
 static bool IsBenchSprite(int spriteNo)
 {
     return spriteNo >= SPR_COACH1_SITTING_1 && spriteNo <= SPR_TEAM_2_RESERVE_6;
 }
-
 
 /* Prepare contents of this watcher packet for rendering. */
 static void ApplyWatcherPacket(const WatcherPacket *packet)
@@ -1014,7 +984,6 @@ static void ApplyWatcherPacket(const WatcherPacket *packet)
     }
 }
 
-
 /** GetWatcherPacketsData
 
     Returns various data about watcher packets.
@@ -1050,7 +1019,6 @@ static WatcherPacket *GetWatcherPacketsData(int *emptySpotIndex, int *numPackets
 
     return oldestPacket;
 }
-
 
 /* We have received a packet from the player, so put it in the buffer.
    If there's no room overwrite oldest packet. */

@@ -23,7 +23,6 @@ static char m_commFile[9];
 static word m_directConnectTimeout = 30 * 70;       /* default timeout if nothing given */
 static int m_directGameIndex = -1;
 
-
 /** GetDirectGameName
 
     Return pointer to the direct mode game name. Must always return a valid pointer.
@@ -33,7 +32,6 @@ const char *GetDirectGameName()
 {
     return m_directGameName;
 }
-
 
 void SetDirectGameName(bool isServer, const char *start, const char *end)
 {
@@ -45,7 +43,6 @@ void SetDirectGameName(bool isServer, const char *start, const char *end)
     m_directGameName[m_directGameNameLength] = '\0';
 }
 
-
 void SetNickname(const char *start, const char *end)
 {
     assert(end + 1 >= start);
@@ -53,13 +50,11 @@ void SetNickname(const char *start, const char *end)
     *strncpy(m_directGameNickname, start, min(end - start + 1, NICKNAME_LEN)) = '\0';
 }
 
-
 void SetCommFile(const char *start, const char *end)
 {
     assert(end + 1 >= start);
     *strncpy(m_commFile, start, min(end - start + 1, (int)sizeof(m_commFile) - 1)) = '\0';
 }
-
 
 void SetTimeout(const char *start, const char *end)
 {
@@ -76,12 +71,10 @@ void SetTimeout(const char *start, const char *end)
     m_directConnectTimeout = newTimeout;
 }
 
-
 const char *GetDirectGameNickname()
 {
     return m_directGameNickname;
 }
-
 
 void DirectModeOnCommandLineParsingDone()
 {
@@ -98,7 +91,6 @@ void DirectModeOnCommandLineParsingDone()
         PatchByte(Initialization, 0x19, 1);
     }
 }
-
 
 /** ShowErrorAndQuit
 
@@ -119,7 +111,6 @@ extern "C" void ShowErrorAndQuit(const char *message /* = nullptr*/)
     SwitchToPrevVideoMode();
     EndProgram(false);
 }
-
 
 /** MainMenuSelect
 
@@ -146,7 +137,6 @@ extern "C" const char *MainMenuSelect()
 #endif
 }
 
-
 static word m_connectingAnimationTimer;
 
 /** SearchForTheDirectConnectGame
@@ -168,12 +158,10 @@ static void SearchForTheDirectConnectGame(const WaitingToJoinReport *report)
     }
 }
 
-
 static constexpr int GetConnectingEntryIndex()
 {
     return 1;
 }
-
 
 static MenuEntry *GetConnectingEntry()
 {
@@ -181,7 +169,6 @@ static MenuEntry *GetConnectingEntry()
     calla_ebp_safe(CalcMenuEntryAddress);
     return (MenuEntry *)A0;
 }
-
 
 static int m_connectingStringLength;
 static word m_connectingStartTick;
@@ -199,7 +186,6 @@ extern "C" void SearchForTheGameInit()
     m_connectingAnimationTimer = m_connectingStartTick = g_currentTick;
     EnterWaitingToJoinState(SearchForTheDirectConnectGame, m_directConnectTimeout);
 }
-
 
 /** UpdateConnectingAnimation
 
@@ -228,7 +214,6 @@ static void UpdateConnectingAnimation()
     }
 }
 
-
 /** HideSearchDialog
 
     Hides all menu elements related to game search.
@@ -240,7 +225,6 @@ static void HideSearchDialog()
     for (int i = 0; i < numEntriesToHide; i++, entry++)
         entry->invisible = true;
 }
-
 
 /** UpdateGameSearch
 
