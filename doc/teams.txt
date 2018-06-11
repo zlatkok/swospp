@@ -339,35 +339,33 @@ offset:  size:  desc.
   10       4    pointer to in-game team structure
   14       4    pointer to statistics data
   18       2    team number (1 or 2)
-  20       4    pointer na tablicu pointera na sprajtove svojih igraca
-                (in-game Sprites), ima ih tacno 11
-  24       4    ptr u pitch_cvt_table
-                na osnovu pravca u kome je okrenut golman (0..7), iz neke
-                tablice se stavlja pointer ovamo
-                ta tablica:
-                word 6   - brzina sprajta
-                word 8   - takodje neka brzina
+  20       4    pointer to a table of pointers to sprites of its players
+                (in-game Sprites), there are exactly 11 of them
+  24       4    based on a direction which the goalkeeper is facing (0..7) a
+                pointer from some table is written here
+                that table:
+                word 6   - sprite speed
+                word 8   - also some speed
                 word 48
                 word 52
                 word 54
                 word 58
-                za igrace je uvek jedna ista tablica
-  28       2    taktika tima
-  30       2    non-stop tajmer, povecava se do 10, pa onda opet na nulu
-  32       4    pointer na sprajt strukturu igraca koji se kontrolise
-                (ofs12 tog sprajta mora biti nula)
-  36       4    izgleda pointer na igraca koji prima pas
-  40       2    da li nas igrac kontrolise loptu?
-  42       2    nesto za turn flags (broj nekog bita)
-                ovde se upise camera direction
-  44       2    joy1_final_status
-                trenutni pravac, ili -1 ako nista nije pritisnuto
-                ne menja se ako pravac nije dozvoljen (recimo suprotan pravac
-                pri izvodjenju auta)
-  46       2    joy1_final_status (dva puta)
-                sadrzi trenutni pravac ili -1 ako nista nije pritisnuto
-                menja se za svaki frejm
-  48       1    brza vatra; vrlo brzo pucanje (-1 = true)
+                for the player it's always one fixed table
+  28       2    team tactics
+  30       2    non-stop running timer, goes up to 10, then goes back to zero
+                again
+  32       4    pointer to sprite structure of controlled player
+                (ofs12 of that sprite has to be zero)
+  36       4    seems to be pointer to the player that's receiving a pass
+  40       2    is our player controlling the ball?
+  42       2    something about turn flags (some bit number)
+                camera direction gets written here
+  44       2    current direction, or -1 if nothing is pressed
+                it doesn't change if direction isn't allowed (say opposite
+                direction when taking throw-in)
+  46       2    current direction, or -1 if nothing is pressed
+                changes with each frame
+  48       1    rapid fire; very quick firing (-1 = true)
   49       1    short fire flag; kratak pritisak na dugme; ali ne brzo
                 uzastopno, inace se setuje ofs48 (-1 = true)
                 nesto duze pucanje, samo u jednom frejmu setovano na -1

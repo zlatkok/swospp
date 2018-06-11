@@ -255,139 +255,137 @@ team2 bench players
 
 
 === In-game sprite struktura
-Ovo bi u stvari trebalo da se nazove Player struktura, ali gotovo sad :).
+This should perhaps be named Player structure, but too late now :).
 
-offset  duzina   opis
-------  ------   ----
-  0        2     da li ce sprajt biti u highlights-ima? 0 = ne, !0 = da
-                 broj tima! za loptu, sudiju, korner zastavicu = 3
-                 0 = sprajtovi koji ne ulaze u highlights
-  2        2     redni broj igraca (majice)
-  4        2     ??? (nula za vreme utakmice)
-                 mozda nekakav picture offset za neki specifican sprajt
-  6        4     pointer to an animation table, it changes depending if the
-                 player is running, tackling or heading; can change without
-                 ball (say rolling on the pitch injured, or getting booked)
-                 table structure:
-                 - first word is the number of cycles between image transitions
-                 - after that the array of 32 pointers to image indices tables
-                   follows; they are actually grouped into 4 categories of 8
-                   pointers each:
-                       0 - player, team 1
-                       1 - player, team 2
-                       2 - goalkeeper, team 1
-                       3 - goalkeeper, team 2
-                 - inside the category pointer is indexed based on sprite
-                   direction 0..7
-                 - in index table special indices exist:
-                     = 999   - reset index to zero
-                     = 100   - subtract one of the indices
-                     <= 101  - add 100 + this to index
-                     -99..-1 - seems to be delay value
-                     otherwise - negate, add to frame delay and write to timer
- 10        2     initial direction for the animation
- 12        1     stanje igraca
-                 poredi se sa y;
-                 ako je razlicito od nule, igrac se ne markira
-                 kod lopte je non-stop = 255 (proveriti opet)
-                 kod igraca se gleda samo bajt, i vrednosti su:
-                 0  - trci
-                 1  - klizeci start
-                 3  - skrsen
-                 4  - kod golmana, boksuje loptu, hvata loptu
-                 5  - izvodi aut
-                 6  - kod golmana, baca se, niska lopta
-                 7  - kod golmana, baca se, visoka lopta
-                 9  - udara glavom
-                 12 - dobija karton (zuti ili crveni)
-                 13 - povredjen
-                 14 - tuzan, kada je izgubio
-                 15 - srecan, kada je pobedio
-                 jos muguce vrednosti su: 8, 10, 11 - ostalo izaziva pucanje
-                 programa
- 13        1     brojac koliko ce dugo igrac ostati na zemlji nakon sto je
-                 oboren ili povredjen
-                 u stvari koliko vremena ce biti "neoperativan"; ovo se polje
-                 koristi i kad igrac izvodi aut, udara glavom, itd...
- 14        2     ??? (kod lopte uvek 0)
- 16        2     nesto za x
- 18        2     nesto za y
-                 kod sudije, igraca i senke lopte ovo je dword, pointer na
-                 nesto
-                 ovde se upisuje dword iz tablice za sprajtove
-                 izgleda pointer na niz indeksa slicica
- 20        2     mozda nastavak prethodnog polja
-                 izgleda da je polje 18 pointer na niz indeksa sa slicicama
-                 sprajtova koje se prikazuju (niz wordova) i izgleda da se
-                 zavrsava sa negativnim clanom
-                 mozda je cak i unija, jer se negde ofs18 koristi kao word
- 22        2     indeks slicice koja se trenutno prikazuje
- 24        2     ??? upisuje se prvi word iz tablica za sprajtove
-                 mozda broj slicica, ili najvisi indeks
- 26        2     ciklicni tajmer za slicice, vrti se kad god je sprajt vidljiv
-                 kada dodje na nulu, crta se sledeca slicica
- 28        2     neograniceni tajmer slicica, sa zastojem
- 30        4     x koordinata u fiksnom zarezu signed word.signed word (na +2 offset-u je celi deo)
- 34        4     y koordinata u fiksnom zarezu
- 38        4     z koordinata u fiksnom zarezu (ima smisla samo kod lopte)
- 42        2     pravac u kome je igrac okrenut, 0..7 (0 = gore, 4 = dole...)
-                        0
-                    7   |   1
-                        |
-                   6 ---+--- 2
-                        |
-                    5   |   3
-                        4
-                 za loptu -1 ako je van igre
- 44        2     brzina igraca
-                 mnozi se sa some_pitch_related_value2
-                 ofs6 iz pitch_cvt tabele
- 46        4     delta x, u fiksnom zarezu word.word (pomeraj po x)
- 50        4     delta y, u fiksnom zarezu word.word (pomeraj po y)
- 54        4     delta z, u fiksnom zarezu word.word (pomeraj po z)
- 58        2     destination x, whole part
- 60        2     destination y, whole part
- 62        6     ??? (kod lopte 62, 64 = 0, 66 = -1 const.)
- 68        2     is_visible, da li je sprajt vidljiv? !0 - da, 0 - ne
- 70        2     indeks slicice sprajta, ako je negativno nema slicicu
- 72        2     flag za snimanje sprajta: 1 - nemoj da snimas, !1 - snimaj
- 74        4     sqr(x igraca - x lopte) + sqr(y igraca - y lopte)
- 78        4
- 82        2     rezultat iz tmp01 (pravac i smer 0..255)
- 84        2     da li je sprajt crtan u prethodnom ciklusu? 0 = ne, 1 = da
- 86        2     ??? mozda true za igraca, false za golmana
-                 kod lopte uvek nula
- 88        4     ??? kod lopte uvek nula
- 92        2     pravac u kome je igrac okrenut 0..7 (0 = gore, 4 = dole...)
- 94        2     ako se igrac krece, vrednost je 255, ako stoji 0
-                 (tretira se kao bajt)
- 96        2     nesto u vezi faulova (setuje se na 1 pri prvom faulu i ostaje
-                 tako dugo vreme, resetuje se gotovo random)
-                 ako je 2, nakon krljanja ce se samo pustiti komentar za faul
-                 recimo tackle state, 1 ako igrac uklizava, 2 za uspesno uklizavanje
-                 (uspeva da pokupi loptu)
- 98        2     ??? nesto u vezi udaranja glavudzom
-100        2     ??? vrednosti 0,1,2,3
-                 izgleda se inicijalizuje na 1, ako je ofs 142 tima != 0 (za igrace)
-                 za golmane = 3
-                 u MovePlayers, ako je lopta van igre ako je 1 stavi na 2
-102        2     ako je < 0, igrac ima crveni karton, ako je > 0 igrac ima zuti
-                 karton, ako je nula, nema kartona
-104        2     izgleda nesto u vezi povreda, izgleda ako je -2 => povreda
-                 moze biti i -1 i -2
-                 stepen povrede, pocetna vrednost za tajmer povrede (koliko ce
-                 se dugo igrac valjati po terenu) (bajt)
-                 video sam vrednosti 60, 70 i 80
-106        2     brojac, umanjuje se za jedan dok je igrac u klizecem startu
-                 moze se i povecavati za jedan, nepoznato zasto
-                 menja se samo dok je igrac blizu lopte
-108        2     da li je igrac izbacen, tj. da li je dobio crveni karton?
-                 (1 = true)
+offset  length  description
+------  ------  -----------
+   0        2   team number; for the ball, referee, corner flag = 3
+                0 = sprites that are not shown in the highlights
+   2        2   player ordinal (shirt number)
+   4        2   ??? (zero during the game)
+                perhaps some sortf of picture offset for some specific sprite
+   6        4   pointer to an animation table, it changes depending if the
+                player is running, tackling or heading; can change without
+                ball (say rolling on the pitch injured, or getting booked)
+                table structure:
+                - first word is the number of cycles between image transitions
+                - after that the array of 32 pointers to image indices tables
+                  follows; they are actually grouped into 4 categories of 8
+                  pointers each:
+                    0 - player, team 1
+                    1 - player, team 2
+                    2 - goalkeeper, team 1
+                    3 - goalkeeper, team 2
+                - inside the category pointer is indexed based on sprite
+                  direction 0..7
+                - in index table special indices exist:
+                    = 999   - reset index to zero
+                    = 100   - subtract one of the indices
+                    <= 101  - add 100 + this to index
+                    -99..-1 - seems to be delay value
+                    otherwise - negate, add to frame delay and write to timer
+  10        2   initial direction for the animation
+  12        1   player state
+                - if it's non-zero, player is not marked
+                - ball has it 255 constantly (but check this again)
+                - known values are:
+                    0  - running
+                    1  - tackling
+                    3  - on the ground (tackled)
+                    4  - for the goalkeeper, jumping in place, boxing or catching the ball
+                    5  - performing a throw-in
+                    6  - for the goalkeeper, diving, low ball
+                    7  - for the goalkeeper, diving, high ball
+                    9  - heading
+                    12 - being booked
+                    13 - injured
+                    14 - sad, lost the game
+                    15 - happy, won the game
+                other possible values are: 8, 10, 11 - anything else results in
+                program crashing
+  13        1   count-down of how long the player will stay on the ground after
+                being tackled; actually how long the player will be
+                "inoperable"; this field is also used when player takes
+                throw-in, heads the ball, etc...
+  14        2   ??? (ball has it 0 always)
+  16        2   something for x
+  18        2   something for y
+                for referee, player and ball shadow this is a dword, pointer to
+                something; dword from sprite table is written here; seems to be
+                a pointer to an array of picture indices
+  20        2   might be continuation of previous field
+                seems like field 18 is a pointer to array of indices of
+                pictures of sprites that are shown (array of words), array
+                seems to end with a negative member
+                could be a union, since there are places where ofs18 is used as
+                a word
+  22        2   index of currently shown picture
+  24        2   ??? upisuje se prvi word iz tablica za sprajtove
+                mozda broj slicica, ili najvisi indeks
+  26        2   ciklicni tajmer za slicice, vrti se kad god je sprajt vidljiv
+                kada dodje na nulu, crta se sledeca slicica
+  28        2   neograniceni tajmer slicica, sa zastojem
+  30        4   x koordinata u fiksnom zarezu signed word.signed word (na +2 offset-u je celi deo)
+  34        4   y koordinata u fiksnom zarezu
+  38        4   z koordinata u fiksnom zarezu (ima smisla samo kod lopte)
+  42        2   pravac u kome je igrac okrenut, 0..7 (0 = gore, 4 = dole...)
+                       0
+                   7   |   1
+                       |
+                  6 ---+--- 2
+                       |
+                   5   |   3
+                       4
+                za loptu -1 ako je van igre
+  44        2   brzina igraca
+                mnozi se sa some_pitch_related_value2
+                ofs6 iz pitch_cvt tabele
+  46        4   delta x, u fiksnom zarezu word.word (pomeraj po x)
+  50        4   delta y, u fiksnom zarezu word.word (pomeraj po y)
+  54        4   delta z, u fiksnom zarezu word.word (pomeraj po z)
+  58        2   destination x, whole part
+  60        2   destination y, whole part
+  62        6   ??? (kod lopte 62, 64 = 0, 66 = -1 const.)
+  68        2   is_visible, da li je sprajt vidljiv? !0 - da, 0 - ne
+  70        2   indeks slicice sprajta, ako je negativno nema slicicu
+  72        2   flag za snimanje sprajta: 1 - nemoj da snimas, !1 - snimaj
+  74        4   sqr(x igraca - x lopte) + sqr(y igraca - y lopte)
+  78        4
+  82        2   rezultat iz tmp01 (pravac i smer 0..255)
+  84        2   da li je sprajt crtan u prethodnom ciklusu? 0 = ne, 1 = da
+  86        2   ??? mozda true za igraca, false za golmana
+                kod lopte uvek nula
+  88        4   ??? kod lopte uvek nula
+  92        2   pravac u kome je igrac okrenut 0..7 (0 = gore, 4 = dole...)
+  94        2   ako se igrac krece, vrednost je 255, ako stoji 0
+                (tretira se kao bajt)
+  96        2   nesto u vezi faulova (setuje se na 1 pri prvom faulu i ostaje
+                tako dugo vreme, resetuje se gotovo random)
+                ako je 2, nakon krljanja ce se samo pustiti komentar za faul
+                recimo tackle state, 1 ako igrac uklizava, 2 za uspesno uklizavanje
+                (uspeva da pokupi loptu)
+  98        2   ??? nesto u vezi udaranja glavudzom
+1 00        2   ??? vrednosti 0,1,2,3
+                izgleda se inicijalizuje na 1, ako je ofs 142 tima != 0 (za igrace)
+                za golmane = 3
+                u MovePlayers, ako je lopta van igre ako je 1 stavi na 2
+1 02        2   ako je < 0, igrac ima crveni karton, ako je > 0 igrac ima zuti
+                karton, ako je nula, nema kartona
+1 04        2   izgleda nesto u vezi povreda, izgleda ako je -2 => povreda
+                moze biti i -1 i -2
+                stepen povrede, pocetna vrednost za tajmer povrede (koliko ce
+                se dugo igrac valjati po terenu) (bajt)
+                video sam vrednosti 60, 70 i 80
+1 06        2   brojac, umanjuje se za jedan dok je igrac u klizecem startu
+                moze se i povecavati za jedan, nepoznato zasto
+                menja se samo dok je igrac blizu lopte
+1 08        2   da li je igrac izbacen, tj. da li je dobio crveni karton?
+                (1 = true)
 
-Duzina 110 bajtova.
+Length 110 bytes.
 
 
-=== Konverzija boja sprajta
+=== Sprite color conversion
 
 Boje:
 

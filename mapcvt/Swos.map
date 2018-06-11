@@ -217,7 +217,7 @@
  0001:0000B604       WaitForDrawingEnd
  0001:0000B611       screen_drawing_now
  0001:0000B617       WaitForRetraceEnd
- 0001:0000B624       retrace_in_progress
+ 0001:0000B624       RetraceInProgress
  0001:0000BC61       Text2Sprite
  0001:0000BF38       AdjustFansColor
  0001:0000BF68       EGAAdjustFansColor
@@ -3089,10 +3089,10 @@
  0002:000093E0       venezuela_table
  0002:000093EC       ghana_table
  0002:000093F8       all_countries_list
- 0002:0000958C       career_file_buffer
- 0002:0000958E       tmd_file_buffer
+ 0002:0000958C       careerFileBuffer
+ 0002:0000958E       tmdFileBuffer
  0002:00016B50       currentSeasonShowing
- 0002:00016B52       staying_in_old_club
+ 0002:00016B52       stayingInOldClub
  0002:00016B5E       youreSacked
  0002:00016B60       retired
  0002:00016B66       club_business_active
@@ -3240,7 +3240,7 @@
  0002:000314C9       EGA_graphics
  0002:000314CB       setupDatBuffer
  0002:000314CD       soundOff
- 0002:000314CF       musicOff
+ 0002:000314CF       g_musicOff
  0002:000314D1       g_joyKbdWord
  0002:000314D7       videoSpeedIndex
  0002:000314DF       g_joy1XValue
@@ -3334,8 +3334,8 @@
  0002:0003ED0A       controls_status
  0002:0003ED0C       menuBlinkCounter
  0002:0003ED10       charTables
- 0002:0003ED20       numbers_buffer
- 0002:0003ED28       shirt_col_table
+ 0002:0003ED20       numbersBuffer
+ 0002:0003ED28       shirtColorTable
  0002:0003ED32       aDataTeam_nnn
  0002:0003ED40       aCustoms_edt
  0002:0003ED4C       aCurrent_cmp
@@ -3476,7 +3476,7 @@
  0002:00050DA8       savedRandState
  0002:00050DAA       big_S_Sprite
  0002:00050E18       corner_flag_sprite
- 0002:00050E86       advert_ingame_sprites
+ 0002:00050E86       advertIngameSprites
  0002:000511F6       referee_sprite
  0002:000512D2       currentTimeSprite
  0002:00051340       result_on_halftime
@@ -3827,8 +3827,8 @@
  0002:0005F5AE       oldPlayerPositionsArray
  0002:0005F5CE       team1SelectedPlayerIndex
  0002:0005F5D0       team2SelectedPlayerIndex
- 0002:0005F5D2       ball_row
- 0002:0005F5D4       ball_column
+ 0002:0005F5D2       ballRow
+ 0002:0005F5D4       ballColumn
  0002:0005F5D6       editTacticsBallLocation
  0002:0005F5D8       chooseTacticsTeamPtr
  0002:0005F5DC       editTacticsPlayerNumbers
@@ -3861,9 +3861,9 @@
  0002:000708EA       plg_D0_param
  0002:000708EC       isGameFriendly
  0002:000708F0       second_leg
- 0002:000708F2       save_pitch_type_or_season
- 0002:000708F4       save_friendly_pitch_type
- 0002:000708F6       save_friendly_season
+ 0002:000708F2       savePitchTypeOrSeason
+ 0002:000708F4       saveFriendlyPitchType
+ 0002:000708F6       saveFriendlySeason
  0002:000708F8       gameCanceled
  0002:000708FA       pl1Tactics
  0002:000708FC       pl2Tactics
@@ -3983,14 +3983,14 @@
  0002:0007809C       hilMaxSubstitutes
  0002:0007809E       hil_start_of_goals_buffer
  0002:0007CAD6       ingameHilBuffer
- 0002:000A66CE       num_replays_in_hil_file
+ 0002:000A66CE       numReplaysInHilFile
  0002:000A66D0       scene_number
  0002:000A66D2       some_flip_flag
  0002:000A66DC       menuCycleTimer
- 0002:000A66E2       tile_orgx
- 0002:000A66E4       screen_orgx
- 0002:000A66E6       tile_orgy
- 0002:000A66E8       screen_orgy
+ 0002:000A66E2       tileOriginalX
+ 0002:000A66E4       screenOriginalX
+ 0002:000A66E6       tileOriginalY
+ 0002:000A66E8       screenOriginalY
  0002:000A66EA       vscreen_delta_x
  0002:000A66EC       vscreen_delta_y
  0002:000A66F0       screen_orgx_copy
@@ -4002,7 +4002,7 @@
  0002:000A6758       vsPtr
  0002:000A675C       screenWidth
  0002:000A6764       num_sprites_saved
- 0002:000A6766       saved_sprites
+ 0002:000A6766       savedSprites
  0002:000A7768       array_03
  0002:000A8768       clipped
  0002:000A876A       menuitem_colortable
@@ -4047,7 +4047,7 @@
  0002:000A8A71       team_no_that_scored
  0002:000A8A73       team_data_ptr
  0002:000A8A77       team_scored_ptr
- 0002:000A8A7B       fans_sides_swapped
+ 0002:000A8A7B       fansSidesSwapped
  0002:000A8A7D       pl_name_for_message
  0002:000A8A81       nat_teams_rand_limit1
  0002:000A8A83       num_national_teams
@@ -4097,7 +4097,7 @@
  0002:000AFE7E       some_memory_flag
  0002:000AFE84       sample_index
  0002:000AFE88       sample_index2
- 0002:000AFE8C       sample_handle
+ 0002:000AFE8C       sampleHandle
  0002:000AFE90       last_good_tackle_sample
  0002:000AFE92       last_jump_header_sample
  0002:000AFE94       last_penalty_goal_sample
@@ -4560,14 +4560,14 @@
  0002:000B99BE       little_players_cvt_table
  0002:000B99DE       editTacticsPlayerPositions
  0002:000B99F6       prev_game_time
- 0002:000B99F8       marked_player_number
+ 0002:000B99F8       markedPlayerNumber
  0002:000B99FA       editTacticsPitchStatus
  0002:000B99FC       chosenTactics
  0002:000B9A00       editTacticsPlayerX
  0002:000B9A02       editTacticsBallRow
  0002:000B9A04       editTacticsBallColumn
  0002:000B9A06       editTacticsLastBallLocation
- 0002:000B9A0A       flip_on_off
+ 0002:000B9A0A       flipOnOff
  0002:000B9A0C       tacticsChangedFlag
  0002:000B9A10       chooseTacticsMenu
  0002:000B9B26       import_tactics_menu
@@ -4624,16 +4624,16 @@
  0002:000BCB6A       stadiumMenu
  0002:000BCFD2       stadiumMenuLittlePlayer
  0002:000BCFD4       little_player_sprite_generic
- 0002:000BCFD6       little_players_col_table
+ 0002:000BCFD6       littlePlayersColorTable
  0002:000BCFF6       little_players_spr_table
  0002:000BCFFE       aStad_256
  0002:000BD007       aFlag_256
  0002:000BD010       anim_patts_rnd_table
- 0002:000BD050       animated_patterns
+ 0002:000BD050       animatedPatterns
  0002:000BD060       patternsGoalCounter
  0002:000BD062       showFansCounter
  0002:000BD064       anim_patts_index
- 0002:000BD066       pattern_possibility
+ 0002:000BD066       patternPossibility
  0002:000BD068       otherTeamScored
  0002:000BD06A       animPatternsState
  0002:000BD418       tours_table
@@ -4654,7 +4654,7 @@
  0002:000BD7BC       aFourStarsString2
  0002:000BD7C2       alreadyScoredTable
  0002:000BD7CE       firstGoalScoredTable
- 0002:000BD7DA       pitch_numbers_table
+ 0002:000BD7DA       pitchNumbersTable
  0002:000BD7EA       goal_ptr_minus_4_copy
  0002:000BD7EE       current_goal_ptr_copy
  0002:000BD7F2       goal_ptr_copy
@@ -4676,11 +4676,11 @@
  0002:000BD894       yellow_card_table
  0002:000BD8B2       red_card_table
  0002:000BD8D0       second_yellow_table
- 0002:000BD92B       faces_freq
- 0002:000BD92E       team1_pl_col_table
- 0002:000BD94E       team2_pl_col_table
- 0002:000BD96E       col_table_reserves
- 0002:000BD9AE       big_numbers_col_conv_table
+ 0002:000BD92B       facesFrequency
+ 0002:000BD92E       team1PlayersColorTable
+ 0002:000BD94E       team2PlayersColorTable
+ 0002:000BD96E       colorTableReserves
+ 0002:000BD9AE       bigNumbersColorConversionTable
  0002:000BDA5C       faces_array_1
  0002:000BDA5F       faces_array_2
  0002:000BDA62       goalie_table
@@ -4691,16 +4691,16 @@
  0002:000BDA80       timeDelta
  0002:000BDA82       gameLenSecondsTable
  0002:000BDA8A       end_game_counter
- 0002:000BDA8C       pitch_normal
- 0002:000BDAA7       pitch_dry
- 0002:000BDAC2       pitch_wet
- 0002:000BDADD       pitch_soft
- 0002:000BDAF8       pitch_hard
- 0002:000BDB13       pitch_frozen
- 0002:000BDB2E       pitch_muddy
- 0002:000BDB4F       pitch_types_table
- 0002:000BDB6B       pitch_type_seasonal_probabilities
- 0002:000BDBBF       pitch_type_probabilities
+ 0002:000BDA8C       pitchNormalColorTable
+ 0002:000BDAA7       pitchDryColorTable
+ 0002:000BDAC2       pitchWetColorTable
+ 0002:000BDADD       pitchSoftColorTable
+ 0002:000BDAF8       pitchHardColorTable
+ 0002:000BDB13       pitchFrozenColorTable
+ 0002:000BDB2E       pitchMuddyColorTable
+ 0002:000BDB4F       pitchTypeColorTables
+ 0002:000BDB6B       pitchTypeSeasonalProbabilities
+ 0002:000BDBBF       pitchTypeProbabilities
  0002:000BDBC6       aEngland_1
  0002:000BDBCE       aWestGermany
  0002:000BDBE0       teamSwitchCounter
@@ -4799,7 +4799,7 @@
  0002:000BE16A       big_S_index
  0002:000BE16C       corner_flag_picture_indices
  0002:000BE18C       pitch_fans_cvt_table
- 0002:000BE1B0       passing_state
+ 0002:000BE1B0       passingState
  0002:000BE1B2       ball_next_x
  0002:000BE1B4       ball_next_y
  0002:000BE1BA       play_referee_whistle_sample
@@ -4937,7 +4937,7 @@
  0002:000C46C0       sample_index3
  0002:000C46CC       htimer1
  0002:000C46D0       EOS_var3
- 0002:000C46D4       XMIDI_handle
+ 0002:000C46D4       xmidiHandle
  0002:000C46D8       AIL_debug_file
  0002:000C46E0       AIL_SYS_DEBUG_flag
  0002:000C46EC       AIL_procedure_level

@@ -173,6 +173,8 @@ char *strupr(char *s)
 }
 
 /* Even if compiling with GCC built-in version we still need it for calls from ASM code. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull-compare"
 void *memcpy(void *in_dst, const void *in_src, size_t n)
 {
     char *dst = (char *)in_dst;
@@ -184,6 +186,7 @@ void *memcpy(void *in_dst, const void *in_src, size_t n)
 
     return in_dst;
 }
+#pragma GCC diagnostic pop
 
 int memcmp(const void *p, const void *q, size_t n)
 {

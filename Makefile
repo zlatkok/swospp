@@ -17,8 +17,12 @@ OBJ_DIR  := obj
 BIN_DIR  := bin
 DIST_DIR := dist
 DOC_DIR  := doc
+VAR_DIR  := var
 DBG_DIR  := $(OBJ_DIR)/dbg
 REL_DIR  := $(OBJ_DIR)/rel
+
+$(shell mkdir -p $(BIN_DIR))
+$(shell mkdir -p $(VAR_DIR))
 
 all : rel dbg
 

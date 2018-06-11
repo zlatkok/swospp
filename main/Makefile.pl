@@ -60,7 +60,7 @@ my $LST_DIR = '../var';
 my $BMP_DIR = '../bitmap';
 
 # directories to copy final binary to
-my $dirList = $ENV{'SWOS_DIRS'} || 'd:\\games\\swos2 d:\\games\\swos3';
+my $dirList = $ENV{'SWOS_DIRS'} || 'd:\\games\\swos2;d:\\games\\swos3';
 $dirList =~ s/^"+|"+$//g;
 my @DEST_DIRS = split(/;/, $dirList);
 
