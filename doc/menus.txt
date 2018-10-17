@@ -9,14 +9,14 @@ following registers:
 A5 - pointer to entry which is receiving the event
 A0 - pointer to function itself (since it's called indirectly through A0)
 
-Upon entry to init and afterDraw function of the menu A6 will point to menu
+Upon entry, init and afterDraw functions of the menu will have A6 point to menu
 header.
 
 Header (size 22 bytes):
 
-           +0  - init function
+           +0  - init function (invoked only once, converting the menu)
            +4  - afterDraw function (invoked when returning to this menu)
-           +8  - onDraw function (invoked each frame)
+           +8  - onDraw function (invoked each frame, before drawing the items)
            +12 - pointer to currently selected entry
            +16 - number of entries in the menu
            +18 - pointer to the end of the menu (including additional
@@ -283,7 +283,7 @@ TIP 13: (on select funkcija - samo pucanje)
 
 ofs46 = 32
 ofs42 = dword
-funkcija on_select
+funkcija onSelect
 ---------------------------
 TIP 14: (on select funkcija - sve kontrole dolaze u obzir)
 
@@ -646,8 +646,8 @@ Parametri:
      D3 - width
      D4 - height
 
-frame_colors_table db 1, 9, 1, 9, 1, 9, 1, 9, 6, 9, 6, 4, 15, 4, 1, 9, 1, 9, 1,
-                   db 3, 1, 9, 13, 8, 10, 9, 1, 9, 1, 9, 1, 9
+frameColorsTable db 1, 9, 1, 9, 1, 9, 1, 9, 6, 9, 6, 4, 15, 4, 1, 9, 1, 9, 1,
+                 db 3, 1, 9, 13, 8, 10, 9, 1, 9, 1, 9, 1, 9
 
 - prvo konvertuj boju uz pomoc gornje tablice
 - na x i y koordinatama nacrtaj vertikalnu liniju duzine width
@@ -656,7 +656,7 @@ frame_colors_table db 1, 9, 1, 9, 1, 9, 1, 9, 6, 9, 6, 4, 15, 4, 1, 9, 1, 9, 1,
 - vertikalna linija na x + width - 1, y, duzine height
 - tako se dobija rectangle oko zadane stavke
 
-Iz frame_colors_table se koristi svaka druga boja (parna), jer se indeksira
+Iz frameColorsTable se koristi svaka druga boja (parna), jer se indeksira
 wordom. Moguce boje za okvir su:
 
 0  - siva
@@ -678,8 +678,8 @@ wordom. Moguce boje za okvir su:
 
 Jedinstvenih boja ima 5.
 
-Svetleci kursor
----------------
+Shining cursor
+--------------
 
 Njega crta DrawSelected. Svaki frejm se povecava promenljiva
 game_timer_index, koja se koristi kao indeks u tablicu koja sadrzi boje:
@@ -750,7 +750,7 @@ if (A5.controls_flag == -1 || A5.controls_flag & D7) {
         call CDROM_StopAudio
         call TryMIDIPlay
     }
-    controls_status = D7;
+    controlsStatus = D7;
     - izvrsi menu selected proc
 }
 

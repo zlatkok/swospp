@@ -33,12 +33,12 @@ SetPrevVideoModeEndProgram
 EndProgram, prefix SWOS_, function
 CommonMenuExit
 nextGoalPtr
-goal_base_ptr
+goalBasePtr
 g_currentMenu, Menu *
-current_hil_ptr
-hil_num_goals
-hil_file_buffer
-hil_filename
+currentHilPtr
+hilNumGoals
+hilFileBuffer
+hilFilename
 ShowHighlights
 GetFilenameAndExtension
 SelectFileToSaveDialog
@@ -59,7 +59,7 @@ DrawMenuText, function
 DrawSprite, prefix SWOS_, function
 FlipInMenu
 DrawMenuTextCentered
-lin_adr_384k, char *
+linAdr384k, char *
 ShowErrorMenu, function
 aExit, array char
 SetExitMenuFlag, function
@@ -156,7 +156,7 @@ DoContinueAbortMenu
 aContinue
 aAbort
 ChooseTeamsDialog
-found_filenames_buffer
+foundFilenamesBuffer
 BenchCheckControls
 SaveCoordinatesForHighlights
 inSubstitutesMenu, word
@@ -195,7 +195,7 @@ ReadGamePort, prefix SWOS_, function
 DrawOuterFrame
 bigCharsTable, pointer char
 aOk
-color_table_shine
+colorTableShine
 DrawMenuFrame
 PIT_countdown
 ProgramPIT
@@ -203,9 +203,9 @@ CheckControls
 fire
 videoSpeedIndex
 menuCycleTimer
-final_controls_status
+finalControlsStatus
 keyCount
-short_fire
+shortFire
 GetKey, function
 aDataTeam_nnn, array char
 aCustoms_edt, array char
@@ -213,7 +213,7 @@ aReplay
 FilterKeys
 Int9KeyboardHandler
 convertKeysTable
-inputing_text_ok
+inputingTextOk
 
 ### custom tactics
 
@@ -236,18 +236,18 @@ PlayMatchSelected
 ExitPlayMatch
 main_loop, function
 ReadTimerDelta, function
-pl1_fire
-pl2_fire
+pl1Fire
+pl2Fire
 teamSwitchCounter, word
 InitTeamsData, function
-left_team_player_no, word
-left_team_coach_no, word
-right_team_player_no, word
-right_team_coach_no, word
+leftTeamPlayerNo, word
+leftTeamCoachNo, word
+rightTeamPlayerNo, word
+rightTeamCoachNo, word
 leftTeamData, array TeamGeneralInfo
 rightTeamData, array TeamGeneralInfo
 SetupPlayers, function
-random_seed, word
+randomSeed, word
 stoppageTimer, volatile word
 TimerProc, function
 CalculateIfPlayerWinsBall, function
@@ -385,7 +385,7 @@ FillSkinColorConversionTable, function
 ConvertSpriteColors, function
 editTeamsSaveVarsArea, array char
 DoUnchainSpriteInMenus, function
-angleCoeficients, array const short[32][32]
+kAngleCoeficients, array const short[32][32]
 defaultPlayerDestinations, array const short[8][2]
 MovePlayer, function
 playerRunningAnimTable, array const char
@@ -408,6 +408,7 @@ ShowStadiumInit, function
 InitMenuMusic
 aSwos_xmi
 aMenu_xmi
+DrawBackPattern
 
 
 

@@ -1,4 +1,4 @@
-# Create variable list for DOSBox debugger. Place it directly in SWOS game directory.
+# Create variable list for DOSBox debugger. Place it directly to SWOS game directory.
 
 $codeSWOS = 0x220000;
 $dataSWOS = 0x2c1000;

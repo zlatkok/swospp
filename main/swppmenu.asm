@@ -650,7 +650,7 @@ DrawShiningFrame:
         mov  [currentMenuFrame], ax
         and  eax, 7
         shl  eax, 1
-        mov  esi, color_table_shine
+        mov  esi, colorTableShine
         mov  ax, [esi + eax]
         mov  [D0], ax
         jmpa DrawMenuFrame

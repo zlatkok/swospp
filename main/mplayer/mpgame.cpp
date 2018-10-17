@@ -871,11 +871,11 @@ void InitMultiplayerGame(int playerNo, IPX_Address *playerAddresses, int numWatc
 
     /* wire up player 1 to locally controlled team, and player 2 to remotely controlled */
     if (playerNo == 1 || playerNo == 2) {
-        left_team_player_no = playerNo;
-        left_team_coach_no = 0;
-        right_team_player_no = playerNo ^ 3;
-        right_team_coach_no = 0;
-        WriteToLog("left_team_player_no = %d, right_team_player_no = %d", left_team_player_no, right_team_player_no);
+        leftTeamPlayerNo = playerNo;
+        leftTeamCoachNo = 0;
+        rightTeamPlayerNo = playerNo ^ 3;
+        rightTeamCoachNo = 0;
+        WriteToLog("leftTeamPlayerNo = %d, rightTeamPlayerNo = %d", leftTeamPlayerNo, rightTeamPlayerNo);
         /* prevent SWOS from resetting variables we just set */
         *(word *)((char *)SetupPlayers + 0x2cd) = 0x04eb;
         *(word *)((char *)SetupPlayers + 0x45f) = 0x04eb;
@@ -1209,7 +1209,7 @@ void GetRandomVariables(byte *vars, int *size)
     *size = 8;
     memcpy(vars, &seed, 3);
     memcpy(vars + 3, &seed2, 3);
-    *(word *)(vars + 6) = random_seed;
+    *(word *)(vars + 6) = randomSeed;
 }
 
 void SetRandomVariables(const char *vars, int size)
@@ -1218,6 +1218,6 @@ void SetRandomVariables(const char *vars, int size)
     if (size >= 8) {
         memcpy(&seed, vars, 3);
         memcpy(&seed2, vars + 3, 3);
-        random_seed = *(word *)(vars + 6);
+        randomSeed = *(word *)(vars + 6);
     }
 }

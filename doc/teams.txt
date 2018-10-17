@@ -342,18 +342,24 @@ offset:  size:  desc.
   20       4    pointer to a table of pointers to sprites of its players
                 (in-game Sprites), there are exactly 11 of them
   24       4    based on a direction which the goalkeeper is facing (0..7) a
-                pointer from some table is written here
+                pointer to some table is written here
+                for the player it's always one fixed table
                 that table:
                 word 6   - sprite speed
-                word 8   - also some speed
-                word 48
+                word 8   - also some speed (goalkeeper when diving)
+                word 10  - table, 16 words, indices into coordinate table used when deciding if
+                           goalkeeper should dive (I think)
+                           values 0..7
+                word 48  - gets compared with high 4 bits of stoppageTimer
+                           after that the keeper claimed comment is played
                 word 52
                 word 54
-                word 58
-                for the player it's always one fixed table
+                word 58  - gets compared to random value based on bits 4-7 of
+                           stoppageTimer
   28       2    team tactics
-  30       2    non-stop running timer, goes up to 10, then goes back to zero
-                again
+  30       2    holds index of the player which gets updated at current frame
+                (of the players in the field, [0..10])
+                goalkeepers are exception, they are updated each frame
   32       4    pointer to sprite structure of controlled player
                 (ofs12 of that sprite has to be zero)
   36       4    seems to be pointer to the player that's receiving a pass
@@ -380,9 +386,9 @@ offset:  size:  desc.
   56       2    pravac igraca koji kontrolise loptu:
                         0
                     7   |   1
-                        |
+                      \ | /
                    6 ---+--- 2
-                        |
+                      / | \
                     5   |   3
                         4
                 (menja se samo dok igrac zaista kontrolise loptu)
@@ -472,18 +478,22 @@ offset:  size:  desc.
  128       2    passing flag; setovan bez obzira da li se dodaje u prazno;
                 resetovanje nije bas najbolje uradjeno
                 ako je razlicito od nule, oduzmi jedan
+                after touch is applied as pass/kick based on this
  130       2    AI tajmer; inkrementuje se u svakom frejmu ako kompjuter
                 kontrolise tim; ne resetuje se nikad
  132       2    AI; tajmer, init na 4; setuje se random
- 134       2    ???
+ 134       2    ??? index into some table, could be 0,1,2 (could it be kick
+                strength? :))
  136       2    ???
  138       2    ??? (tajmer)
                 nula za vreme utakmice
+                possibly timer, while active ball can't be won over from the
+                player that controls it
  140       2    true ako golman vodi loptu kao obican igrac
                 koliko sam video, za vreme utakmice nula
  142       2    ako je != 0 preskoci AI
                 ne apdejtuj loptu ako je true
- 144       1    joy1_secondary_fire - -1 dok se drzi drugo dugme, 0 dok je
+ 144       1    joy1SecondaryFire - -1 dok se drzi drugo dugme, 0 dok je
                 pusteno
 
 Velicina 145 bajtova.

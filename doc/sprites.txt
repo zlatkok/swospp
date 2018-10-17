@@ -250,11 +250,9 @@ team2 bench players
 - second pixel is composed of next bits
 - we move bit by bit to the right, until the end of the line
 - this process is repeated nlines times, until all lines are processed
-- tako se ide bit po bit nadesno, do kraja linije
-- ovaj proces se ponavlja nlines puta dok se ne obrade sve linije
 
 
-=== In-game sprite struktura
+=== In-game sprite structure
 This should perhaps be named Player structure, but too late now :).
 
 offset  length  description
@@ -328,12 +326,13 @@ offset  length  description
   30        4   x koordinata u fiksnom zarezu signed word.signed word (na +2 offset-u je celi deo)
   34        4   y koordinata u fiksnom zarezu
   38        4   z koordinata u fiksnom zarezu (ima smisla samo kod lopte)
+                -1 when player is controlling the ball
   42        2   pravac u kome je igrac okrenut, 0..7 (0 = gore, 4 = dole...)
                        0
                    7   |   1
-                       |
+                     \ | /
                   6 ---+--- 2
-                       |
+                     / | \
                    5   |   3
                        4
                 za loptu -1 ako je van igre
@@ -353,8 +352,10 @@ offset  length  description
   78        4
   82        2   rezultat iz tmp01 (pravac i smer 0..255)
   84        2   da li je sprajt crtan u prethodnom ciklusu? 0 = ne, 1 = da
+                is ball out of play, or with goalkeeper
   86        2   ??? mozda true za igraca, false za golmana
                 kod lopte uvek nula
+                is goalkeeper playing like an ordinary player
   88        4   ??? kod lopte uvek nula
   92        2   pravac u kome je igrac okrenut 0..7 (0 = gore, 4 = dole...)
   94        2   ako se igrac krece, vrednost je 255, ako stoji 0
@@ -365,21 +366,22 @@ offset  length  description
                 recimo tackle state, 1 ako igrac uklizava, 2 za uspesno uklizavanje
                 (uspeva da pokupi loptu)
   98        2   ??? nesto u vezi udaranja glavudzom
-1 00        2   ??? vrednosti 0,1,2,3
+                set to 1 after strong header
+ 100        2   ??? vrednosti 0,1,2,3
                 izgleda se inicijalizuje na 1, ako je ofs 142 tima != 0 (za igrace)
                 za golmane = 3
                 u MovePlayers, ako je lopta van igre ako je 1 stavi na 2
-1 02        2   ako je < 0, igrac ima crveni karton, ako je > 0 igrac ima zuti
+ 102        2   ako je < 0, igrac ima crveni karton, ako je > 0 igrac ima zuti
                 karton, ako je nula, nema kartona
-1 04        2   izgleda nesto u vezi povreda, izgleda ako je -2 => povreda
+ 104        2   izgleda nesto u vezi povreda, izgleda ako je -2 => povreda
                 moze biti i -1 i -2
                 stepen povrede, pocetna vrednost za tajmer povrede (koliko ce
                 se dugo igrac valjati po terenu) (bajt)
                 video sam vrednosti 60, 70 i 80
-1 06        2   brojac, umanjuje se za jedan dok je igrac u klizecem startu
+ 106        2   brojac, umanjuje se za jedan dok je igrac u klizecem startu
                 moze se i povecavati za jedan, nepoznato zasto
                 menja se samo dok je igrac blizu lopte
-1 08        2   da li je igrac izbacen, tj. da li je dobio crveni karton?
+ 108        2   da li je igrac izbacen, tj. da li je dobio crveni karton?
                 (1 = true)
 
 Length 110 bytes.

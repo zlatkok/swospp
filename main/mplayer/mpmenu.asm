@@ -1037,7 +1037,7 @@ extern ShowErrorAndQuit, FinishMultiplayerGame
 DisplayErrorAndExit:
         calla FadeOutToBlack
         calla LoadFillAndSwtitle
-        mov  eax, [lin_adr_384k]
+        mov  eax, [linAdr384k]
         mov  [vsPtr], eax
         mov  word [screenWidth], 320
         mov  word [cameraX], 0
@@ -1362,7 +1362,7 @@ ChatLineInput:
         mov  ebx, [esi + MenuEntry.string]
         push ebx
         mov  dword [A0], ebx
-        mov  word [inputing_text_ok], 0
+        mov  word [inputingTextOk], 0
         calla InputText
         pop  ebx
         mov  eax, [D0]
@@ -1389,7 +1389,7 @@ EnterInputTextHook:
         retn
 
 .out:
-        mov  ax, [short_fire]
+        mov  ax, [shortFire]
         or   ax, ax
         retn
 
@@ -1587,7 +1587,7 @@ GameLobbyBeforeDraw:
         calla SetCurrentEntry
 
 .fix_chat_input_line:
-        cmp  word [inputing_text_ok], 0
+        cmp  word [inputingTextOk], 0
         jnz  .chat_input_ok
 
         push byte gameLobbyMenu_chatInput
@@ -1952,13 +1952,13 @@ HookPlayMatchSelected:
 
 .continue:
         cmp  eax, 1
-        mov  byte [pl1_fire], 1             ; must set these, as they will be used to determine
-        mov  byte [pl2_fire], 0             ; player numbers in teams later
+        mov  byte [pl1Fire], 1              ; must set these, as they will be used to determine
+        mov  byte [pl2Fire], 0              ; player numbers in teams later
         jz   StartTheGameCallback.out
 
 StartTheGameCallback:
-        mov  byte [pl1_fire], 0
-        mov  byte [pl2_fire], 1
+        mov  byte [pl1Fire], 0
+        mov  byte [pl2Fire], 1
 
 .out:
         jmpa PlayMatchSelected

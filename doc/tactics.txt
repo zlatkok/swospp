@@ -24,7 +24,7 @@ quadrant of the pitch, and position 34 corresponds to top left. Player positions
 in the tactics file are quadrants where player will be heading if the ball is in
 certain quadrant. For players, pitch is divided into 240 positions, 16 rows x 15
 columns. X quadrants increase from right to left, y from bottom to top. Note
-that goalkeeper doesn't count, as he has special movement logic.
+that goalkeeper doesn't count, as he has a special movement logic.
 
 Tactics are always applied as if upper goal is ours, and we're attacking towards
 bottom goal. For 2nd player indices are reversed when indexing the positions.

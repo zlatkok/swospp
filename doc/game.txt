@@ -1,6 +1,6 @@
-=== Razni podaci o samoj igri
+=== Various data about the game itself
 
-=== Brzina igraca
+=== Player speed
 
 Igracu koji kontrolise loptu brzina se smanjuje na 87.5% kapaciteta (zato ga
 odbrambeni tako lako stizu). A kada je postignut gol, i igraci trce ka svojim
@@ -265,3 +265,9 @@ frame (it will be at least 1).
 === Misc.
 
 U neg_term_spr_array se nalaze svi sprajtovi koje igra iscrtava po frejmu.
+
+
+=== Team ofs 24 for goalkeepers
+
+Indexed based on skill (which is itself calculated based on price):
+

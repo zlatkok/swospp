@@ -273,7 +273,7 @@ endstruc
 ;
 ; %1 - string flags
 ; %2 - pointer to actual table:
-;      dd pointer to string index variable
+;      dd pointer to string index variable (word)
 ;      dw string index variable starting value
 ;      dd... pointers to strings (on select must take care of changing index)
 
@@ -340,7 +340,7 @@ endstruc
 
 ; LeftSkip
 ;
-; %1 - menu entry that gets seleceted if this one is disabled or invisible
+; %1 - menu entry that gets selected if this one is disabled or invisible
 ; %2 - new direction if     - // -
 ;      (0 = up, 1 = right, 2 = down, 3 = left)
 ;      Can be used to change direction in search of next entry.

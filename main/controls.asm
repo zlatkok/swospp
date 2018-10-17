@@ -587,7 +587,7 @@ DrawSelectKeysMenu:
         add  cl, '1'
         mov  [aSelectKeysForPlayer + 23], cl
         mov  ecx, edx
-        mov  esi, [lin_adr_384k]
+        mov  esi, [linAdr384k]
         mov  edi, esi
         add  esi, 131072
         mov  ecx, 16000
@@ -1213,7 +1213,7 @@ DrawJoystickCalibrationMenuBase:
 
         add  cl, '1'
         mov  byte [joyMenuTitle + 30], cl
-        mov  esi, [lin_adr_384k]
+        mov  esi, [linAdr384k]
         mov  edi, esi
         add  esi, 131072
         mov  ecx, 16000

@@ -265,7 +265,7 @@ HookSaveCoordinatesForHighlights:
         jnz  .cancel
 
 .its_ok:
-        mov  eax, [current_hil_ptr]
+        mov  eax, [currentHilPtr]
         mov  [A1], eax
         retn
 
@@ -338,10 +338,10 @@ CheckInputDisabledTimer:
 .no_key:
         mov  word [lastKey], 0
         mov  word [keyCount], 0
-        mov  word [final_controls_status], -1
+        mov  word [finalControlsStatus], -1
         mov  byte [convertedKey], 0
         mov  word [fire], 0
-        mov  word [short_fire], 0
+        mov  word [shortFire], 0
         pop  eax                            ; skip entire function
         retn
 
@@ -389,7 +389,7 @@ CheckInputDisabledTimer:
         shr  eax, 5
         and  eax, 1
         neg  eax
-        mov  [short_fire], ax               ; we will get short fire each time it's issued
+        mov  [shortFire], ax                ; we will get short fire each time it's issued
         mov  [longFireFlag], cx
         retn
 
@@ -398,7 +398,7 @@ CheckInputDisabledTimer:
         pop  ebx
         call ebx                            ; let CheckControls execute in full
         xor  eax, eax                       ; al = controls byte
-        cmp  word [final_controls_status], -1   ; make sure we don't flood
+        cmp  word [finalControlsStatus], -1 ; make sure we don't flood
         jz   .check_short_fire
 
         mov  al, [controlWord]              ; send real controls for player1, keyboard or joystick
@@ -408,7 +408,7 @@ CheckInputDisabledTimer:
 
 .check_short_fire:
         and  al, ~0x20
-        cmp  byte [short_fire], 0
+        cmp  byte [shortFire], 0
         jz   .check_long_fire
         or   al, 0x20                       ; short fire is generated periodically
 

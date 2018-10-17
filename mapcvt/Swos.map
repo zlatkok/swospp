@@ -32,14 +32,18 @@
  0001:000049CD       ChooseTeamForEditTactics
  0001:00004C3A       RotatePlayersLeft
  0001:00004CD9       FormTopSkillsString
- 0001:000051CC       SoccerBinStuff
+ 0001:000051CC       InitIntroAnimation
  0001:000052D3       PlayIntroAnimation
  0001:00005375       SoccerBinCopySec3To4
  0001:00005397       OpenSoccerBin
  0001:000053B2       CloseSoccerBin
  0001:000053BD       ReadFromSoccerBin
- 0001:0000552D       WaitForTickChange
+ 0001:000053E6       IntroDrawFrame
+ 0001:0000552D       WaitForIntroTickChange
+ 0001:0000553D       BumpIntroTimers
  0001:00005574       CopySoccerBinSection
+ 0001:00005584       IntroWaitNextFrameInterval
+ 0001:0000559D       IntroEnsureFrameDataLoaded
  0001:00005758       SWOS
  0001:000058C1       ToMainGameLoop
  0001:000059B7       StartMainGameLoop
@@ -56,21 +60,24 @@
  0001:00006B62       DrawReplayContinueMenu
  0001:00006C99       DrawMenuBack150x20
  0001:00006F90       DrawReplayContinueShiningFrame
- 0001:000071B3       RenderFrame
- 0001:0000734D       DrawFrame
+ 0001:000071B3       PlayReplayFrame
+ 0001:0000734D       PlayHighlightsLoop
  0001:000074C5       ViewHighlights
  0001:000074FD       ViewHighLightsMain
+ 0001:0000763E       FillColorfulnessTable
+ 0001:0000767C       FillColorfulnessTableElement
+ 0001:00007AE3       SortColorsByIntensity
  0001:00007B4C       FixupInitialCharset
  0001:00007B67       FixupCharset
  0001:00007B80       LoadSoundEffects
  0001:00007C25       LoadIntroCheers
  0001:00007CD1       LoadEndingSample
  0001:00007DC3       LoadCommentary
- 0001:00007E29       PlayBallBounceSample
+ 0001:00007E29       PlayCrowdNoiseSample
  0001:00007E8B       PlayMissGoalSample
  0001:00007EDF       PlayHomeGoalSample
  0001:00007F33       PlayHomeGoalSample2
- 0001:00007F87       PlayRefereeWhistleSample
+ 0001:00007F87       PlayRefereeEndGameWhistleSample
  0001:00007FCD       PlayEndGameWhistleSample
  0001:00008013       PlayFoulWhistleSample
  0001:00008059       PlayKickSample
@@ -79,12 +86,13 @@
  0001:000080E6       PlayFansChant4lSample
  0001:0000812C       PlayFansChant10lSample
  0001:00008172       PlayFansChant8lSample
- 0001:000081B8       PlayIntroCheerSample
+ 0001:000081B8       PlayIntroChantSample
  0001:000081ED       PlayResultSample
  0001:000083F4       PlaySamples
  0001:0000858D       TurnCrowdChantsOn
  0001:000085C5       TurnCrowdChantsOff
  0001:000085DD       nullsub_26
+ 0001:000085DE       PlayStartGameSample
  0001:0000866B       LoadAndPlayEndingSample
  0001:00008707       EnqueueCornerSample
  0001:00008711       EnqueueThrowInSample
@@ -128,11 +136,11 @@
  0001:00009083       LoadAndPlayEndGameComment
  0001:000090FE       ShowChairmanScene
  0001:000092BE       Initialization
- 0001:00009584       AllocateDOSMemory
+ 0001:00009584       AllocateDosMemory
  0001:00009629       CDROM_DriverError
  0001:00009637       CalcMaxBlock
  0001:0000968A       MemAllocError
- 0001:000096CB       CriticalErrorHandler
+ 0001:000096CB       InitializationError
  0001:00009744       end_program
  0001:0000976E       nullsub_2
  0001:0000977D       NumberToString6Digits
@@ -167,11 +175,11 @@
  0001:0000A2B3       SetControlWord
  0001:0000A45F       nullsub_32
  0001:0000A460       FillPalettes
- 0001:0000A4B7       StopMIDI
- 0001:0000A4D0       TryMIDIPlay
+ 0001:0000A4B7       StopMidi
+ 0001:0000A4D0       TryMidiPlay
  0001:0000A4F9       InitMenuMusic
  0001:0000A6AE       GetKey
- 0001:0000A911       DumpSampleIndex
+ 0001:0000A911       DumpSfxSampleChannel
  0001:0000A929       DumpTimerVariables
  0001:0000A9CC       DumpBallAndControlVariables
  0001:0000ABDB       TeamHexDumpToSecondMonitor
@@ -181,7 +189,7 @@
  0001:0000ACAD       WriteHexByte
  0001:0000ACBE       WriteNibble
  0001:0000ACCF       hexDigits
- 0001:0000ACE0       null_string
+ 0001:0000ACE0       nullString
  0001:0000ACE1       aCentre2
  0001:0000ACEB       aRawjoy1
  0001:0000ACF5       aRawjoy2
@@ -208,7 +216,7 @@
  0001:0000B225       set_some_more_cd_rom_stuff
  0001:0000B284       set_some_cd_rom_stuff
  0001:0000B36B       CDROM_ControlAudio
- 0001:0000B3D6       FadeOutXMIDI
+ 0001:0000B3D6       FadeOutXmidi
  0001:0000B417       FadeOutCDAudio
  0001:0000B4A1       CDROM_Seek
  0001:0000B50A       RequestToCDRom
@@ -219,7 +227,7 @@
  0001:0000B617       WaitForRetraceEnd
  0001:0000B624       RetraceInProgress
  0001:0000BC61       Text2Sprite
- 0001:0000BF38       AdjustFansColor
+ 0001:0000BF38       AdjustFanColor
  0001:0000BF68       EGAAdjustFansColor
  0001:0000C137       ConvertSpriteColors
  0001:0000C3D2       UnchainSpriteInMenus
@@ -244,7 +252,8 @@
  0001:0000D4D7       TextToGoalScorersSprites
  0001:0000D5D1       ClearScorerNamesSprites
  0001:0000D622       PrepareMenuForFadeIn
- 0001:0000D65C       LoadTitleAndSomeMoreStuff
+ 0001:0000D640       DummyProc01
+ 0001:0000D65C       LoadTitleAndStartMusic
  0001:0000D672       ShowMenu
  0001:0000D6F3       RestorePreviousMenu
  0001:0000D782       SetCurrentEntry
@@ -288,40 +297,40 @@
  0001:0000FAD5       ConvertMenu
  0001:0000FE2A       convert_menu_switch
  0001:0000FF58       next_entry
- 0001:0000FFB9       invisible_item
- 0001:0000FFCA       set_positions
- 0001:0001002B       left_skip
+ 0001:0000FFB9       invisibleItem
+ 0001:0000FFCA       setPositions
+ 0001:0001002B       leftSkip
  0001:00010036       right_skip
- 0001:00010041       up_skip
- 0001:0001004C       down_skip
- 0001:00010098       on_select_fire_only
- 0001:000100C1       on_select
- 0001:000100F8       before_draw_func
- 0001:00010115       after_draw_func
+ 0001:00010041       upSkip
+ 0001:0001004C       downSkip
+ 0001:00010098       onSelectFireOnly
+ 0001:000100C1       onSelect
+ 0001:000100F8       beforeDrawFunc
+ 0001:00010115       afterDrawFunc
  0001:00010132       func1
- 0001:0001015B       entry_frame
+ 0001:0001015B       entryFrame
  0001:00010192       sprite1
- 0001:000101C9       invalid_type
+ 0001:000101C9       invalidType
  0001:00010200       func2
- 0001:00010235       string_entry
- 0001:000102A9       string_table
- 0001:000102EC       multi_line_text
+ 0001:00010235       stringEntry
+ 0001:000102A9       stringTable
+ 0001:000102EC       multiLineText
  0001:0001032F       sprite2
  0001:00010372       number
- 0001:000103C3       sprite_copy
+ 0001:000103C3       spriteCopy
  0001:00010401       InitMenuEntry
  0001:00010467       menuTypesJumpTable
  0001:000104BF       Int2Ascii
  0001:00010620       DrawOuterFrame
  0001:00010829       CheckControls
  0001:00010CCA       InputText
- 0001:00010DC3       insert_char
+ 0001:00010DC3       insert_cursor
  0001:00010F3D       InsertCharacter
  0001:00010F92       delete
  0001:00010FA9       delete_char
  0001:00010FB3       DeleteCharacter
  0001:00010FEF       FilterKeys
- 0001:00011091       control_chars
+ 0001:00011091       controlChars
  0001:0001109C       fatal_error
  0001:0001109D       endless_loop
  0001:0001109F       InitUserTactics
@@ -343,7 +352,7 @@
  0001:000119B2       SaveOptions
  0001:000119F9       RestoreOptions
  0001:00011A40       CycleMenuMusic
- 0001:00011A55       _QuitToDos
+ 0001:00011A55       QuitToDosPromptLoop
  0001:00011BB1       DrawExitMenu
  0001:00011CE8       DrawMenuBackFrame_w150h20
  0001:00011FDF       DrawQuitToDosShiningFrame
@@ -576,6 +585,8 @@
  0001:000333A1       DesignDIYTournamentOnSelect28
  0001:000334D4       DesignDIYTournamentOnDraw
  0001:000344A2       DesignDIYTournamentOnSelect20
+ 0001:0003493B       aStar
+ 0001:0003495A       diyPitchTypeStringTable
  0001:00034C1A       ShowDesignDIYTournamentMenu
  0001:00034C46       ShowTournamentInfo
  0001:00034CE0       DesignDIYCupInit
@@ -956,7 +967,7 @@
  0001:0005D0AC       IncrementHilBufferPointer
  0001:0005D0C4       FindStartingDword
  0001:0005D15D       RestoreCameraPosition
- 0001:0005D2CC       PlayReplayFrame
+ 0001:0005D2CC       RenderReplayFrame
  0001:0005D9ED       ValidateHilPointerAdd
  0001:0005DA05       ValidateHilPointerSub
  0001:0005DA1D       InitHighlightsPointers
@@ -1035,7 +1046,9 @@
  0001:00066ACB       ApplyBallAfterTouch
  0001:000671B7       SetPlayerDownTimeAfterTackle
  0001:00067225       UpdatePlayerSpeed
+ 0001:000675CF       UpdateTeamOfs24Table
  0001:00067632       GetPlayerPointerFromShirtNumber
+ 0001:00067694       UpdateBallVariables
  0001:00068197       CalculateBallNextXYPositions
  0001:0006834F       GoalkeeperJumping
  0001:00068566       PlayerBeginTackling
@@ -1081,7 +1094,7 @@
  0001:00075B28       AIKick
  0001:00075C50       GetFilenameAndExtension
  0001:00075E5B       FindFiles
- 0001:00075E84       extension_present
+ 0001:00075E84       FindFilesExtensionPresent
  0001:00075F7B       FindFirstFile
  0001:00075F88       FindNextFile
  0001:00075F8D       SetDTA
@@ -1097,11 +1110,11 @@
  0001:00076CF8       HighlightsMenuInit
  0001:00076CFA       HighlightsMenuFinish
  0001:00076D00       HighlightsMenuCommon
- 0001:00076ECF       ShowHighlights
+ 0001:00076ECF       jmpShowHighlights
  0001:00076ED4       LoadHighlightsMenu
  0001:00076F4D       SaveHighlightsMenu
  0001:00076FAE       ExitHighlights
- 0001:00076FB3       _ShowHighlights
+ 0001:00076FB3       ShowHighlights
  0001:0007730B       ViewHighlightsWrapper
  0001:00077C66       CloseAnimationFile
  0001:00077C74       AnimationFileError
@@ -1127,20 +1140,20 @@
  0001:00085C65       nullsub_F10
  0001:00085C68       ScrollPitch
  0001:00085DDD       NoVerticalScroll
- 0001:00085DEE       FillPatternsUp
- 0001:00085E1D       FillPatternsDown
- 0001:00085E52       FillPatternsVertical
+ 0001:00085DEE       FillPatternsTopRow
+ 0001:00085E1D       FillPatternsBottomRow
+ 0001:00085E52       FillPatternsHorizontal
  0001:00085EA5       DrawPatternVertical
  0001:00085F3A       NoHorizontalScroll
- 0001:00085F4B       FillPatternsLeft
- 0001:00085F6E       FillPatternsRight
- 0001:00085F8F       FillPatternsHorizontal
+ 0001:00085F4B       FillPatternsLeftColumn
+ 0001:00085F6E       FillPatternsRightColumn
+ 0001:00085F8F       FillPatternsVertical
  0001:00085FCB       DrawPatternHorizontal
  0001:00086063       ScrollUp
  0001:000860C1       ScrollDown
  0001:0008611C       ScrollLeft
  0001:0008616F       ScrollRight
- 0001:000861CA       GetVisibleScreenPtr
+ 0001:000861CA       UpdateVisibleScreenPtr
  0001:00086233       DrawBackPattern
  0001:000862A4       CopyPatternToScreen
  0001:00086375       InitBackground
@@ -1160,28 +1173,30 @@
  0001:00088F43       benc_2
  0001:00088FE7       EGACopySprite
  0001:0008913E       EGAFillRectangle
+ 0001:0008AA19       a1_02
  0001:0008AA1E       InitAIL22khz
  0001:0008ABA2       InitAIL11khz
  0001:0008AD26       StopAIL
  0001:0008AF9B       AIL_init_sequences
- 0001:0008B025       AIL_play_MIDI
+ 0001:0008B025       PlayMidi
  0001:0008B0B6       AIL_set_XMIDI_master_volume_wrapper
- 0001:0008B0E2       StopMIDISequence
- 0001:0008B13E       GetSampleStatus
- 0001:0008B1B7       AIL_stop_play
- 0001:0008B219       AIL_PlaySample_22050kHz
- 0001:0008B381       AIL_PlaySample_11025kHz_2
- 0001:0008B4E9       AIL_PlaySample_11025kHz
- 0001:0008B651       PlaySample22050kHz
+ 0001:0008B0E2       StopMidiSequence
+ 0001:0008B13E       IsSamplePlaying
+ 0001:0008B1B7       StopAudio
+ 0001:0008B219       PlaySfxSample22Khz
+ 0001:0008B381       PlayRefereeWhistleSample
+ 0001:0008B4E9       PlayBasicSample11Khz
+ 0001:0008B651       PlayCommentarySample22Khz
  0001:0008B806       EndSample2
  0001:0008B83A       SetSampleVolume2
- 0001:0008B8A0       PlaySample22Khz
+ 0001:0008B8A0       PlayChantSample22Khz
  0001:0008B9F9       PlaySample11kHz
- 0001:0008BB52       EOS_Callback2
- 0001:0008BB6D       EOS_Callback
- 0001:0008BB88       EOS_Callback3
+ 0001:0008BB52       CommentarySampleDoneCallback
+ 0001:0008BB6D       SfxSampleDoneCallback
+ 0001:0008BB88       EndGameSampleCallback
+ 0001:0008BBA3       ChantSampleDoneCallback
  0001:0008BBBE       StopSample2
- 0001:0008BBF3       AIL_init
+ 0001:0008BBF3       PlayIntroSample
  0001:0008BF74       LockMemory
  0001:0008C0E8       LockMemoryWrapper
  0001:0008CA5C       start
@@ -1329,7 +1344,7 @@
  0001:00093364       nullsub_23
  0001:00093382       Int8Handler
  0001:00093570       InstallInt8Handler
- 0001:00093B1E       Return_AIL_word
+ 0001:00093B1E       AIL_InterruptLevel
  0001:00093B2A       AIL_register_timer_internal
  0001:00093D5F       fprintf_
  0001:00093D80       getenv_
@@ -1352,7 +1367,10 @@
  0001:000942CB       __shutdown_stream_
  0001:000942EC       __MkTmpFile_
  0001:00094351       __doclose_
+ 0001:00094530       AIL_set_sample_volume_internal
  0001:00094850       TimerProc3
+ 0001:000959A0       AIL_sample_status_internal
+ 0001:000959E0       AIL_set_sample_type_internal
  0001:000977F0       TimerProc4
  0001:00098A70       Safe_AIL_stop_sequence
  0001:0009A773       toupper_
@@ -1751,7 +1769,7 @@
  0002:00001E5C       aOfAAreDelighte
  0002:00001E7E       aAcceptedThePos
  0002:00001EB2       aFromTheStart_0
- 0002:00001ED0       null_string2
+ 0002:00001ED0       nullString2
  0002:00001ED1       aWeLookForwar_1
  0002:00001EF4       aOther
  0002:00001EFA       aInternationalJ
@@ -1810,10 +1828,10 @@
  0002:000022AF       aFriendly_0
  0002:000022B8       aFriendly_1
  0002:000022C1       aFriendlies
- 0002:000022CC       world_cup_qualification
+ 0002:000022CC       worldCupQualification
  0002:000022CD       aWorldCupQualification
  0002:000022E5       aWorld_1
- 0002:000022EB       european_championship
+ 0002:000022EB       europeanChampionship
  0002:000022EC       aEuropeanChampionship
  0002:00002302       aWorld_2
  0002:00002308       aEuropeanChampionships
@@ -2796,7 +2814,7 @@
  0002:00006B81       aAsian_0
  0002:00006B87       aOceanian_0
  0002:00006B90       aAfrican_0
- 0002:00006B98       short_country_names
+ 0002:00006B98       shortCountryNames
  0002:00006D64       a3dpvfspremierL
  0002:00006D79       aPremier
  0002:00006D81       aDivisionOne
@@ -2863,7 +2881,7 @@
  0002:000073AC       cup_winners_cup
  0002:00007408       uefa_cup
  0002:00007464       world_cup2
- 0002:000074D4       world_cup
+ 0002:000074D4       worldCup
  0002:00007534       world_cup_qualifying_group_1
  0002:0000755C       world_cup_qualifying_group_2
  0002:00007584       world_cup_qualifying_group_3
@@ -2960,7 +2978,7 @@
  0002:000083F6       american_league
  0002:0000840A       venezuelan_league
  0002:0000841E       ghana_league
- 0002:0000866E       customs_league
+ 0002:0000866E       customsLeague
  0002:000086A6       albanian_cup
  0002:000086B8       austrian_cup
  0002:000086CA       belarussian_cup
@@ -3012,7 +3030,7 @@
  0002:00008A9A       japanese_emperors_cup
  0002:00008AB4       south_african_cup
  0002:00008AC6       taiwanese_cup
- 0002:00008B1C       competitions_table
+ 0002:00008B1C       competitionsTable
  0002:00008F1C       world_cup_qualifying_groups
  0002:00008F42       e_c_qualifying_groups
  0002:00008F68       customs_table
@@ -3023,8 +3041,8 @@
  0002:00008FF0       north_america_table
  0002:00009000       asia_table
  0002:00009010       oceania_table
- 0002:00009020       albania_table
- 0002:00009030       austria_table
+ 0002:00009020       albaniaTable
+ 0002:00009030       austriaTable
  0002:00009040       belgium_table
  0002:00009050       belarus_table
  0002:00009060       bulgaria_table
@@ -3107,7 +3125,7 @@
  0002:00016B8C       competition_bonuses
  0002:00016B90       sensisoft_plc_sponsorship
  0002:00016C48       additional_investments
- 0002:00016C78       is_career
+ 0002:00016C78       isCareer
  0002:00016C7C       games_played
  0002:00016C7E       num_wins
  0002:00016C80       num_drawn
@@ -3117,17 +3135,17 @@
  0002:00016CA4       team_no_offer_accepted
  0002:00016CA6       team_funds_accepted
  0002:00016CAA       isNationalSelector
- 0002:00016CAC       some_team_flags
+ 0002:00016CAC       someTeamFlags
  0002:00016CAE       last_nationality_call
  0002:00016CBA       season_review
  0002:00016CD6       selTeamNumber
- 0002:00016CD8       coach_or_player
- 0002:00016CDA       career_team_league
- 0002:00016CE4       mr_or_ms
- 0002:00016CE6       manager_sex_buffer
- 0002:00016CEB       manager_name_buffer
- 0002:00016CF4       manager_surname_buffer
- 0002:00016D01       pl_nationality
+ 0002:00016CD8       coachOrPlayer
+ 0002:00016CDA       careerTeamLeague
+ 0002:00016CE4       mrOrMs
+ 0002:00016CE6       managerSexBuffer
+ 0002:00016CEB       managerNameBuffer
+ 0002:00016CF4       managerSurnameBuffer
+ 0002:00016D01       plNationality
  0002:00016D18       numOffers
  0002:00016E02       careerNumPoolPlayers
  0002:00016E10       num_new_job_offers
@@ -3151,11 +3169,11 @@
  0002:00018CA6       seasonFinished
  0002:00018CA8       careerFinished
  0002:00018CC4       season_number_of_squads
- 0002:0001ACB4       euro_cup_copy
- 0002:0001AD03       cup_winners_cup_copy
- 0002:0001AD5F       uefa_cup_copy
- 0002:0001ADBB       invitation_tournament_copy
- 0002:0001ADDF       tour_copy
+ 0002:0001ACB4       euroCupCopy
+ 0002:0001AD03       cupWinnersCupCopy
+ 0002:0001AD5F       uefaCupCopy
+ 0002:0001ADBB       invitationTournamentCopy
+ 0002:0001ADDF       tourCopy
  0002:0001AE03       friendly_copy
  0002:0001AE2B       european_championships2_copy
  0002:0001AE79       e_c_qualifying_group_1_copy
@@ -3166,11 +3184,11 @@
  0002:0001AF41       e_c_qualifying_group_6_copy
  0002:0001AF69       e_c_qualifying_group_7_copy
  0002:0001AF91       e_c_qualifying_group_8_copy
- 0002:0001AFB5       copa_america_copy
- 0002:0001AFFB       african_nations_cup_copy
- 0002:0001B02B       north_american_cup_copy
- 0002:0001B059       asian_cup_copy
- 0002:0001B089       oceania_cup_copy
+ 0002:0001AFB5       copaAmericaCopy
+ 0002:0001AFFB       africanNationsCupCopy
+ 0002:0001B02B       northAmericanCupCopy
+ 0002:0001B059       asianCupCopy
+ 0002:0001B089       oceaniaCupCopy
  0002:0001B0A5       world_cup2_copy
  0002:0001B115       world_cup_qualifying_group_1_copy
  0002:0001B13D       world_cup_qualifying_group_2_copy
@@ -3189,11 +3207,11 @@
  0002:0001F4F6       diyFileBuffer
  0002:0001F4F8       competitionOver
  0002:0001F4FA       diy_preset_name_of_competition
- 0002:00020049       season_playing
- 0002:0002004A       in_friendly_menu
- 0002:0002004C       is_national_team
+ 0002:00020049       seasonPlaying
+ 0002:0002004A       inFriendlyMenu
+ 0002:0002004C       isNationalTeam
  0002:0002004E       g_gameType
- 0002:00020050       contest_started
+ 0002:00020050       contestStarted
  0002:00020054       USER_A
  0002:000201C6       USER_B
  0002:00020338       USER_C
@@ -3209,13 +3227,13 @@
  0002:0002090C       commentary
  0002:0002090E       chairmanScenes
  0002:00020910       seed2
- 0002:00020911       rand_xor_index2
- 0002:00020912       rand_xor_byte2
+ 0002:00020911       randXorIndex2
+ 0002:00020912       randXorByte2
  0002:00020913       new_random_seed_copy
- 0002:00020914       random_seed
+ 0002:00020914       randomSeed
  0002:00020928       selTeamsPtr
  0002:00020937       inEditTactics
- 0002:00020939       training_game_copy
+ 0002:00020939       trainingGameCopy
  0002:0002093B       g_numSelectedTeams
  0002:0002093D       g_selectedTeams
  0002:0003146D       D0
@@ -3233,13 +3251,13 @@
  0002:0003149D       A4
  0002:000314A1       A5
  0002:000314A5       A6
- 0002:000314A9       dst_bytes_div_4
- 0002:000314AD       mem_all_ok
- 0002:000314B9       mem_408k_ofs_3d400h
- 0002:000314BD       menu_music_ptr
+ 0002:000314A9       dstBytesDiv4
+ 0002:000314AD       memAllOk
+ 0002:000314B9       dosMemOfs3d400h
+ 0002:000314BD       menuMusicPtr
  0002:000314C9       EGA_graphics
  0002:000314CB       setupDatBuffer
- 0002:000314CD       soundOff
+ 0002:000314CD       g_soundOff
  0002:000314CF       g_musicOff
  0002:000314D1       g_joyKbdWord
  0002:000314D7       videoSpeedIndex
@@ -3284,43 +3302,43 @@
  0002:00031531       g_joy1Fire2
  0002:00031532       g_joy2Fire1
  0002:00031533       g_joy2Fire2
- 0002:0003153A       mem_408k_ofs_60c00h
- 0002:0003154A       mem_408k_ofs_4fc00h
- 0002:00031552       mem_408k_ofs_30000h
+ 0002:0003153A       dosMemOfs60c00h
+ 0002:0003154A       dosMemOfs4fc00h
+ 0002:00031552       dosMemOfs30000h
  0002:0003156A       poolplyrDatBuffer
- 0002:0003E152       lin_adr_384k
- 0002:0003E156       handle_384k
- 0002:0003E15A       lin_adr_120k
- 0002:0003E15E       handle_120k
- 0002:0003E162       lin_adr_982k
- 0002:0003E166       handle_982k
- 0002:0003E16A       lin_adr_2_6_mb
- 0002:0003E16E       handle_2_6_mb
+ 0002:0003E152       linAdr384k
+ 0002:0003E156       handle384k
+ 0002:0003E15A       linAdr120k
+ 0002:0003E15E       handle120k
+ 0002:0003E162       linAdr982k
+ 0002:0003E166       handle982k
+ 0002:0003E16A       linAdr2_6Mb
+ 0002:0003E16E       handle2_6Mb
  0002:0003E192       g_workingPalette
- 0002:0003E492       g_fadeToPalette
+ 0002:0003E492       g_fadePalette
  0002:0003E792       nullPalette
- 0002:0003EA92       asave_256_handle
+ 0002:0003EA92       aSave256Handle
  0002:0003EA98       keyCount
- 0002:0003EA9A       key_buffer
+ 0002:0003EA9A       keyBuffer
  0002:0003EAA6       g_scanCode
- 0002:0003EAB4       int_9_ofs
- 0002:0003EABA       int_9_seg
+ 0002:0003EAB4       int9Ofs
+ 0002:0003EABA       int9Seg
  0002:0003EABE       controlWord
- 0002:0003EAC8       error_check_word
+ 0002:0003EAC8       errorCheckWord
  0002:0003EAD0       convertedKey
  0002:0003EAD2       prevVideoMode
- 0002:0003EB7B       chainfont_dest_buffer
+ 0002:0003EB7B       chainfontDestBuffer
  0002:0003ECCF       playGame
- 0002:0003ECD1       some_color_var
+ 0002:0003ECD1       someColorConversionFlag
  0002:0003ECD5       team1Filename
  0002:0003ECD9       team2Filename
  0002:0003ECE9       longFireCounter
  0002:0003ECEB       final_controls_status2
- 0002:0003ECED       final_controls_status
+ 0002:0003ECED       finalControlsStatus
  0002:0003ECEF       last_controls
  0002:0003ECF1       controlsHeldTimer
  0002:0003ECF3       fire
- 0002:0003ECF5       short_fire
+ 0002:0003ECF5       shortFire
  0002:0003ECF7       longFireTime
  0002:0003ECF9       longFireFlag
  0002:0003ECFB       up
@@ -3331,7 +3349,7 @@
  0002:0003ED02       currentMenuPtr
  0002:0003ED06       menuStatus
  0002:0003ED08       menuFade
- 0002:0003ED0A       controls_status
+ 0002:0003ED0A       controlsStatus
  0002:0003ED0C       menuBlinkCounter
  0002:0003ED10       charTables
  0002:0003ED20       numbersBuffer
@@ -3339,14 +3357,14 @@
  0002:0003ED32       aDataTeam_nnn
  0002:0003ED40       aCustoms_edt
  0002:0003ED4C       aCurrent_cmp
- 0002:0003ED58       s_game_length
- 0002:0003ED5A       s_auto_replays
- 0002:0003ED5C       s_menu_music
- 0002:0003ED5E       s_auto_save_highlights
- 0002:0003ED60       s_all_player_teams_equal
- 0002:0003ED62       s_pitch_type
+ 0002:0003ED58       s_gameLength
+ 0002:0003ED5A       s_autoReplays
+ 0002:0003ED5C       s_menuMusic
+ 0002:0003ED5E       s_autoSaveHighlights
+ 0002:0003ED60       s_allPlayerTeamsEqual
+ 0002:0003ED62       s_pitchType
  0002:0003ED64       s_commentary
- 0002:0003ED66       s_chairman_scenes
+ 0002:0003ED66       s_chairmanScenes
  0002:0003ED68       teamFileBuffer
  0002:0004E776       surnameBuf
  0002:0004E78E       menuProcNumTimesCalled
@@ -3356,35 +3374,36 @@
  0002:0004E79A       sizeOfTeamFile
  0002:0004E79E       teamFilenameBuffer
  0002:0004E7D0       numberOfTeams
- 0002:0004E7D2       last_loaded_ext_number
+ 0002:0004E7D2       lastLoadedExtNumber
  0002:0004E7D4       fundsBuffer
- 0002:0004E7D5       result_string
+ 0002:0004E7D5       resultString
  0002:0004E81C       saveFileName
  0002:0004E82A       impTactFilename
- 0002:0004E838       hil_filename
- 0002:0004E988       highest_scorers_table
- 0002:0004E9E4       inmenu_keyboard_buffer
- 0002:0004EA48       menu_size
- 0002:0004EA4C       end_of_menu
+ 0002:0004E838       hilFilename
+ 0002:0004E988       highestScorersTable
+ 0002:0004E9E4       inMenuKeyboardBuffer
+ 0002:0004EA48       menuSize
+ 0002:0004EA4C       endOfMenu
  0002:0004EA50       templateMenuEntry
  0002:0004EA88       g_exitMenu
- 0002:0004EA8A       diy_file_buffer_copy
- 0002:0004EABF       diy_pitch_type
+ 0002:0004EA8A       diyFileBufferCopy
+ 0002:0004EABD       diyPitchTypeOrSeason
+ 0002:0004EABF       diyPitchType
  0002:0004EEA9       DIY_competition_start
  0002:0004EEAD       diy_league_name
  0002:0004EEDA       diy_league_num_teams
  0002:0004EEDC       diy_pitch_type_or_season
- 0002:0004EEDE       diy_league_pitch_type
+ 0002:0004EEDE       diyLeaguePitchType
  0002:0004EEE0       diy_league_start_month
  0002:0004EEE1       diy_league_end_month
- 0002:0004EEE6       diy_selected_button_ord
+ 0002:0004EEE6       diySelectedButtonOrd
  0002:0004EF06       diy_league_play_each_team
  0002:0004EF08       diy_min_substitutes
  0002:0004EF0A       diy_points_for_a_win
  0002:0004EF0C       diy_league_min_substitutes
  0002:0004EF0E       diy_league_max_substitutes
- 0002:0004F5DC       left_team_saved
- 0002:0004FC84       right_team_saved
+ 0002:0004F5DC       leftTeamSaved
+ 0002:0004FC84       rightTeamSaved
  0002:0005032C       numSpritesToRender
  0002:0005032E       teamsLoaded
  0002:00050330       poolplyrLoaded
@@ -3395,71 +3414,71 @@
  0002:0005033A       stoppageTimer
  0002:0005033C       currentTick
  0002:00050348       dontDrawMenuItems
- 0002:0005034A       menu_x
- 0002:0005034C       menu_y
+ 0002:0005034A       menuX
+ 0002:0005034C       menuY
  0002:0005034E       offsetSpriteDat
  0002:00050352       smallCharsTable
  0002:00050360       conversionTableSmall
  0002:00050440       bigCharsTable
- 0002:0005044E       conversion_table_big
- 0002:0005052E       camera_x_mod320
- 0002:00050530       camera_y_mod320
- 0002:00050532       old_camera_x
- 0002:00050534       old_camera_y
+ 0002:0005044E       conversionTableBig
+ 0002:0005052E       cameraXMod320
+ 0002:00050530       cameraYMod320
+ 0002:00050532       oldCameraX
+ 0002:00050534       oldCameraY
  0002:00050536       cameraXFraction
  0002:00050538       cameraX
  0002:0005053A       cameraYFraction
  0002:0005053C       cameraY
  0002:0005055A       pl1LastFired
- 0002:0005055B       pl1_left
- 0002:0005055C       pl1_right
- 0002:0005055D       pl1_up
- 0002:0005055E       pl1_down
- 0002:0005055F       pl1_fire
- 0002:00050560       pl1_secondary_fire
- 0002:00050561       pl1_up_right
- 0002:00050562       pl1_up_left
- 0002:00050563       pl1_down_right
- 0002:00050564       pl1_down_left
- 0002:00050569       pl1_short_fire
+ 0002:0005055B       pl1Left
+ 0002:0005055C       pl1Right
+ 0002:0005055D       pl1Up
+ 0002:0005055E       pl1Down
+ 0002:0005055F       pl1Fire
+ 0002:00050560       pl1SecondaryFire
+ 0002:00050561       pl1UpRight
+ 0002:00050562       pl1UpLeft
+ 0002:00050563       pl1DownRight
+ 0002:00050564       pl1DownLeft
+ 0002:00050569       pl1ShortFire
  0002:0005056A       pl1ShortFireCounter
- 0002:0005056C       pl1_final_status
+ 0002:0005056C       pl1FinalStatus
  0002:00050572       pl2LastFired
- 0002:00050573       pl2_left
- 0002:00050574       pl2_right
- 0002:00050575       pl2_up
- 0002:00050576       pl2_down
- 0002:00050577       pl2_fire
- 0002:00050578       pl2_secondary_fire
- 0002:00050579       pl2_up_right
- 0002:0005057A       pl2_up_left
- 0002:0005057B       pl2_down_right
- 0002:0005057C       pl2_down_left
- 0002:00050581       pl2_short_fire
- 0002:00050582       pl2_final_status
+ 0002:00050573       pl2Left
+ 0002:00050574       pl2Right
+ 0002:00050575       pl2Up
+ 0002:00050576       pl2Down
+ 0002:00050577       pl2Fire
+ 0002:00050578       pl2SecondaryFire
+ 0002:00050579       pl2UpRight
+ 0002:0005057A       pl2UpLeft
+ 0002:0005057B       pl2DownRight
+ 0002:0005057C       pl2DownLeft
+ 0002:00050581       pl2ShortFire
+ 0002:00050582       pl2FinalStatus
  0002:00050584       pl2ShortFireCounter
- 0002:00050586       hil_playing
+ 0002:00050586       hilPlaying
  0002:00050588       deltaColor
- 0002:0005058B       team_colors_table
- 0002:000505E5       leave_fire_flag
- 0002:000505E7       contro_001
- 0002:000505E9       put_into_joy1_fire
- 0002:000505EB       near_joy2_fire
- 0002:000505F3       goalie_catch_speed_const
- 0002:00050C27       substituted_pl_speed
- 0002:00050C2B       goalkeeper_speed_when_game_stopped
- 0002:00050C2F       ball_ground_constant
- 0002:00050C31       ball_air_constant
- 0002:00050C33       player_ground_constant
+ 0002:0005058B       teamColorsTable
+ 0002:000505E5       leaveFireFlag
+ 0002:000505E7       ctrl001
+ 0002:000505E9       putIntoJoy1Fire
+ 0002:000505EB       nearJoy2Fire
+ 0002:000505F3       goalieCatchSpeedConst
+ 0002:00050C27       substitutedPlSpeed
+ 0002:00050C2B       goalkeeperSpeedWhenGameStopped
+ 0002:00050C2F       ballGroundConstant
+ 0002:00050C31       ballAirConstant
+ 0002:00050C33       playerGroundConstant
  0002:00050C37       ball_kicking_delta_z_2
- 0002:00050C3B       ball_speed_bounce_factor
- 0002:00050C3D       ball_bounce_factor
- 0002:00050C3F       pitch_ball_speed_factor
- 0002:00050C41       ball_speed_bounce_factor_table
- 0002:00050C4F       ball_bounce_factor_table
- 0002:00050C5D       pitch_ball_speed_influence
+ 0002:00050C3B       ballSpeedBounceFactor
+ 0002:00050C3D       ballBounceFactor
+ 0002:00050C3F       pitchBallSpeedFactor
+ 0002:00050C41       ballSpeedBounceFactorTable
+ 0002:00050C4F       ballBounceFactorTable
+ 0002:00050C5D       pitchBallSpeedInfluence
  0002:00050C6B       gravity_constant
- 0002:00050CC7       goalkeeper_game_speed
+ 0002:00050CC7       goalkeeperGameSpeed
  0002:00050CC9       player_tackling_speed
  0002:00050CCB       jump_header_speed_const
  0002:00050CE3       ball_kicking_delta_z
@@ -3475,23 +3494,23 @@
  0002:00050DA4       savedRandStatePtr
  0002:00050DA8       savedRandState
  0002:00050DAA       big_S_Sprite
- 0002:00050E18       corner_flag_sprite
+ 0002:00050E18       cornerFlagSprite
  0002:00050E86       advertIngameSprites
- 0002:000511F6       referee_sprite
+ 0002:000511F6       refereeSprite
  0002:000512D2       currentTimeSprite
- 0002:00051340       result_on_halftime
- 0002:000513AE       result_after_the_game
- 0002:0005141C       team1_name_sprite
- 0002:0005148A       team2_name_sprite
- 0002:000514F8       team1_goals_digit_2_sprite
- 0002:00051566       team1_goals_digit_1_sprite
- 0002:000515D4       team2_goals_digit_2_sprite
- 0002:00051642       team2_goals_digit_1_sprite
- 0002:000516B0       team1_total_goals_digit_2_sprite
- 0002:0005171E       team1_total_goals_digit_1_sprite
- 0002:0005178C       team2_total_goals_digit_2_sprite
- 0002:000517FA       team2_total_goals_digit_1_sprite
- 0002:00051868       dash_sprite
+ 0002:00051340       resultOnHalftime
+ 0002:000513AE       resultAfterTheGame
+ 0002:0005141C       team1NameSprite
+ 0002:0005148A       team2NameSprite
+ 0002:000514F8       team1GoalsDigit2Sprite
+ 0002:00051566       team1GoalsDigit1Sprite
+ 0002:000515D4       team2GoalsDigit2Sprite
+ 0002:00051642       team2GoalsDigit1Sprite
+ 0002:000516B0       team1TotalGoalsDigit2Sprite
+ 0002:0005171E       team1TotalGoalsDigit1Sprite
+ 0002:0005178C       team2TotalGoalsDigit2Sprite
+ 0002:000517FA       team2TotalGoalsDigit1Sprite
+ 0002:00051868       dashSprite
  0002:000518D6       team1Scorer1Sprite
  0002:00051944       team1Scorer2Sprite
  0002:000519B2       team1Scorer3Sprite
@@ -3508,98 +3527,98 @@
  0002:00051E6C       team2Scorer6Sprite
  0002:00051EDA       team2Scorer7Sprite
  0002:00051F48       team2Scorer8Sprite
- 0002:00051FB6       player_mark_sprite
- 0002:00052024       current_player_name_sprite
- 0002:00052092       team1_cur_player_num_sprite
- 0002:00052100       team2_cur_player_num_sprite
- 0002:0005216E       booked_player_sprite
- 0002:000521DC       goalie1_sprite
- 0002:0005224A       team1_player2_sprite
- 0002:000522B8       team1_player3_sprite
- 0002:00052326       team1_player4_sprite
- 0002:00052394       team1_player5_sprite
- 0002:00052402       team1_player6_sprite
- 0002:00052470       team1_player7_sprite
- 0002:000524DE       team1_player8_sprite
- 0002:0005254C       team1_player9_sprite
- 0002:000525BA       team1_player10_sprite
- 0002:00052628       team1_player11_sprite
- 0002:00052696       goalie2_sprite
- 0002:00052704       team2_player2_sprite
- 0002:00052772       team2_player3_sprite
- 0002:000527E0       team2_player4_sprite
- 0002:0005284E       team2_player5_sprite
- 0002:000528BC       team2_player6_sprite
- 0002:0005292A       team2_player7_sprite
- 0002:00052998       team2_player8_sprite
- 0002:00052A06       team2_player9_sprite
- 0002:00052A74       team2_player10_sprite
- 0002:00052AE2       team2_player11_sprite
+ 0002:00051FB6       playerMarkSprite
+ 0002:00052024       currentPlayerNameSprite
+ 0002:00052092       team1CurPlayerNumSprite
+ 0002:00052100       team2CurPlayerNumSprite
+ 0002:0005216E       bookedPlayerSprite
+ 0002:000521DC       goalie1Sprite
+ 0002:0005224A       team1Player2Sprite
+ 0002:000522B8       team1Player3Sprite
+ 0002:00052326       team1Player4Sprite
+ 0002:00052394       team1Player5Sprite
+ 0002:00052402       team1Player6Sprite
+ 0002:00052470       team1Player7Sprite
+ 0002:000524DE       team1Player8Sprite
+ 0002:0005254C       team1Player9Sprite
+ 0002:000525BA       team1Player10Sprite
+ 0002:00052628       team1Player11Sprite
+ 0002:00052696       goalie2Sprite
+ 0002:00052704       team2Player2Sprite
+ 0002:00052772       team2Player3Sprite
+ 0002:000527E0       team2Player4Sprite
+ 0002:0005284E       team2Player5Sprite
+ 0002:000528BC       team2Player6Sprite
+ 0002:0005292A       team2Player7Sprite
+ 0002:00052998       team2Player8Sprite
+ 0002:00052A06       team2Player9Sprite
+ 0002:00052A74       team2Player10Sprite
+ 0002:00052AE2       team2Player11Sprite
  0002:00052B50       ballSprite
- 0002:00052BBE       ball_shadow_sprite
- 0002:00052C2C       grid_upper_row_left_sprite
- 0002:00052C9A       grid_upper_row_right_sprite
- 0002:00052D08       grid_middle_row_left_sprite
- 0002:00052D76       grid_middle_row_right_sprite
- 0002:00052DE4       grid_bottom_row_left_sprite
- 0002:00052E52       grid_bottom_row_right_sprite
- 0002:00052EC0       goal1_top_sprite
- 0002:00052F2E       goal2_bottom_sprite
+ 0002:00052BBE       ballShadowSprite
+ 0002:00052C2C       gridUpperRowLeftSprite
+ 0002:00052C9A       gridUpperRowRightSprite
+ 0002:00052D08       gridMiddleRowLeftSprite
+ 0002:00052D76       gridMiddleRowRightSprite
+ 0002:00052DE4       gridBottomRowLeftSprite
+ 0002:00052E52       gridBottomRowRightSprite
+ 0002:00052EC0       goal1TopSprite
+ 0002:00052F2E       goal2BottomSprite
  0002:00052F9C       team1SpritesTable
  0002:00052FC8       team2SpritesTable
  0002:00052FF4       allSpritesArray
  0002:00053130       sortedSprites
  0002:0005326C       aSensibleWorldOfSoccer_0
  0002:00053285       aPreReleaseVers
- 0002:000532AB       last_selected
- 0002:000532AD       selected_team_index
- 0002:000532AF       selected_league_index
- 0002:000532B1       selected_team_text
- 0002:000532B5       selected_contest
- 0002:000532BB       prev_selected_team_entry
- 0002:000532BD       game_type_str
- 0002:000532C1       cur_country_str
- 0002:000532C5       team_names
- 0002:000532ED       country_names
- 0002:000533ED       num_leagues_in_country
- 0002:000533EF       choose_teams_num_teams
- 0002:000533F1       starting_team_index
- 0002:000533F3       teams_lower_bound
- 0002:000533F5       num_teams_column1
- 0002:000533F7       num_teams_column2
- 0002:000533F9       num_teams_column3
- 0002:000533FB       header_y_plus_height
- 0002:000533FD       exit_y
- 0002:000533FF       selected_teams_stack_ptr
- 0002:00053401       top_of_stack_mark
- 0002:00053411       selected_teams_stack
- 0002:00053425       leagues_ptr_table
- 0002:0005344D       league_numbers_table
- 0002:00053461       is_contest_continental_cup
- 0002:00053463       is_country_number
+ 0002:000532AB       lastSelectedTeam
+ 0002:000532AD       selectedTeamIndex
+ 0002:000532AF       selectedLeagueIndex
+ 0002:000532B1       selectedTeamText
+ 0002:000532B5       selectedContest
+ 0002:000532BB       prevSelectedTeamEntry
+ 0002:000532BD       gameTypeStr
+ 0002:000532C1       curCountryStr
+ 0002:000532C5       teamNames
+ 0002:000532ED       countryNames
+ 0002:000533ED       numLeaguesInCountry
+ 0002:000533EF       chooseTeamsNumTeams
+ 0002:000533F1       startingTeamIndex
+ 0002:000533F3       teamsLowerBound
+ 0002:000533F5       numTeamsColumn1
+ 0002:000533F7       numTeamsColumn2
+ 0002:000533F9       numTeamsColumn3
+ 0002:000533FB       headerYPlusHeight
+ 0002:000533FD       exitY
+ 0002:000533FF       selectedTeamsStackPtr
+ 0002:00053401       topOfStackMark
+ 0002:00053411       selectedTeamsStack
+ 0002:00053425       leaguesPtrTable
+ 0002:0005344D       leagueNumbersTable
+ 0002:00053461       isContestContinentalCup
+ 0002:00053463       isCountryNumber
  0002:00053467       got_country_name
  0002:00053469       load_team
  0002:0005346B       show_cups_and_other
  0002:0005346D       play_season
  0002:00053471       teamsType
- 0002:00053473       show_club_teams
- 0002:00053475       show_national_teams
- 0002:00053477       show_org_cust_teams
- 0002:00053479       number_of_leagues
+ 0002:00053473       showClubTeams
+ 0002:00053475       showNationalTeams
+ 0002:00053477       showOrigCustomTeams
+ 0002:00053479       numberOfLeagues
  0002:0005347B       stay_in_select_teams
- 0002:0005347D       exit_flag
- 0002:0005347F       league_number
- 0002:00053481       play_what_str
+ 0002:0005347D       exitFlag
+ 0002:0005347F       leagueNumber
+ 0002:00053481       playWhatStr
  0002:00053485       first_part
  0002:00053489       entry_text2
- 0002:0005348D       choose_teams_func
+ 0002:0005348D       chooseTeamsFunc
  0002:00053493       select_teams_no_limit
- 0002:00053495       num_needed_teams
+ 0002:00053495       numNeededTeams
  0002:000534A3       sel_team_ptr
  0002:000534A7       sel_team_country_num
  0002:000534A9       chooseTeamsResult
- 0002:000534AB       change_teams
- 0002:000534AD       view_selected_teams
+ 0002:000534AB       changeTeams
+ 0002:000534AD       viewSelectedTeams
  0002:000534AF       abortSelectTeams
  0002:000534B1       exit_select_teams
  0002:000534B3       teams_table
@@ -3625,12 +3644,12 @@
  0002:00053A12       playerPositionsStringTable
  0002:00053A62       tacticsStringTable
  0002:00053ABA       avg_team_value_bases
- 0002:00053B84       avg_team_values
+ 0002:00053B84       avgTeamValues
  0002:00053C18       teamFilenamesTable
  0002:00053C38       ingameTeamPlayerOffsets
- 0002:00053C58       color_table_shine
- 0002:00053C68       view_teams_column1
- 0002:00053C6A       view_teams_column2
+ 0002:00053C58       colorTableShine
+ 0002:00053C68       viewTeamsColumn1
+ 0002:00053C6A       viewTeamsColumn2
  0002:00053C6C       view_teams_column3
  0002:00053C6E       sel_teams_upper_bound
  0002:00053C70       view_teams_start_y
@@ -3659,31 +3678,31 @@
  0002:00054B78       D2_param
  0002:00054B7E       diy_selected
  0002:00054BC8       errorText
- 0002:00054BCC       prompt_header
- 0002:00054BD0       what_is_changing
- 0002:00054BD4       continue_text
- 0002:00054BD8       abort_text
+ 0002:00054BCC       promptHeader
+ 0002:00054BD0       whatIsChanging
+ 0002:00054BD4       continueText
+ 0002:00054BD8       abortText
  0002:00054BDC       contAbortDefault
  0002:00054BDE       contAbortResult
  0002:00054C20       diy_tournament_look_only
  0002:00054C22       diy_tournament_select_teams
- 0002:00054C6E       hil_left_team_goals
- 0002:00054C70       hil_right_team_goals
- 0002:00054C72       winning_team_ptr
+ 0002:00054C6E       hilLeftTeamGoals
+ 0002:00054C70       hilRightTeamGoals
+ 0002:00054C72       winningTeamPtr
  0002:00054C76       stats_team1_goals_copy2
  0002:00054C78       stats_team2_goals_copy2
  0002:00054C7A       saved_team1_goals
  0002:00054C7C       saved_team2_goals
  0002:00054C7E       stats_team1_goals_copy
  0002:00054C80       stats_team2_goals_copy
- 0002:00054C82       stats_team1_goals
- 0002:00054C84       stats_team2_goals
+ 0002:00054C82       statsTeam1Goals
+ 0002:00054C84       statsTeam2Goals
  0002:00054C86       team1Goals
  0002:00054C88       team2Goals
- 0002:00054C8A       team1_goals_digit_2
- 0002:00054C8C       team2_goals_digit_2
- 0002:00054C8E       team1_goals_digit_1
- 0002:00054C90       team2_goals_digit_1
+ 0002:00054C8A       team1GoalsDigit2
+ 0002:00054C8C       team2GoalsDigit2
+ 0002:00054C8E       team1GoalsDigit1
+ 0002:00054C90       team2GoalsDigit1
  0002:00054C92       team1_name_length
  0002:00054C94       team2_name_length
  0002:00054D38       diy_competition_type
@@ -3703,7 +3722,7 @@
  0002:00054EE2       current_message
  0002:00054EEC       aChris_0
  0002:00054EF2       aChapman_0
- 0002:00054EFA       unchain_buffer
+ 0002:00054EFA       unchainBuffer
  0002:00054F02       aGrafsSoccer_s_lbm
  0002:00054F15       aDataPoolplyr_d
  0002:00054F27       aGrafsLoader00_
@@ -3733,18 +3752,18 @@
  0002:000550B0       aGrafsCjcgrafs_
  0002:000550C3       aGrafsCjcbench_
  0002:000550D6       aGrafsWinscrn_l
- 0002:000550E8       ofs_swpich1_dat
- 0002:000550EC       ofs_swpich2_dat
- 0002:000550F0       ofs_swpich3_dat
- 0002:000550F4       ofs_swpich4_dat
- 0002:000550F8       ofs_swpich5_dat
- 0002:000550FC       ofs_swpich6_dat
- 0002:00055100       ofs_pitch1_dat
- 0002:00055104       ofs_pitch2_dat
- 0002:00055108       ofs_pitch3_dat
- 0002:0005510C       ofs_pitch4_dat
- 0002:00055110       ofs_pitch5_dat
- 0002:00055114       ofs_pitch6_dat
+ 0002:000550E8       ofsSwpich1Dat
+ 0002:000550EC       ofsSwpich2Dat
+ 0002:000550F0       ofsSwpich3Dat
+ 0002:000550F4       ofsSwpich4Dat
+ 0002:000550F8       ofsSwpich5Dat
+ 0002:000550FC       ofsSwpich6Dat
+ 0002:00055100       ofsPitch1Dat
+ 0002:00055104       ofsPitch2Dat
+ 0002:00055108       ofsPitch3Dat
+ 0002:0005510C       ofsPitch4Dat
+ 0002:00055110       ofsPitch5Dat
+ 0002:00055114       ofsPitch6Dat
  0002:00055118       aPitch1_dat
  0002:00055123       aPitch2_dat
  0002:0005512E       aPitch3_dat
@@ -3767,10 +3786,10 @@
  0002:000552A6       aErrorErrorInitializingXms_
  0002:000552C8       convertKeysTable
  0002:00055336       frameColorsTable
- 0002:00055356       next_entry_direction_offsets
+ 0002:00055356       nextEntryDirectionOffsets
  0002:0005535E       g_pitchDatBuffer
  0002:00057A8E       g_currentMenu
- 0002:000593F2       leagues_table_copy
+ 0002:000593F2       leaguesTableCopy
  0002:0005C682       skillsPerQuadrant
  0002:0005C79E       quadrantDistanceFactor
  0002:0005CC68       tact_4_4_2
@@ -3781,10 +3800,10 @@
  0002:0005D3C0       tact_4_3_3
  0002:0005D538       tact_4_2_4
  0002:0005D6B0       tact_3_4_3
- 0002:0005D828       tact_sweep
+ 0002:0005D828       tacticsSweep
  0002:0005D9A0       tact_5_2_3
- 0002:0005DB18       tact_attack
- 0002:0005DC90       tact_defend
+ 0002:0005DB18       tacticsAttack
+ 0002:0005DC90       tacticsDefend
  0002:0005DE08       g_tacticsTable
  0002:0005DE54       priceSkillPonders
  0002:0005DEE0       quadrantCoordinatesToBallQuadrant
@@ -3852,34 +3871,34 @@
  0002:0005FDAE       edit_teams_team
  0002:00060306       editTeamsBuffer
  0002:0006AE08       editTeamsSaveVarsArea
- 0002:000708DE       pl1_coach
- 0002:000708E0       pl2_coach
- 0002:000708E2       left_team_coach_no
- 0002:000708E4       right_team_coach_no
- 0002:000708E6       left_team_player_no
- 0002:000708E8       right_team_player_no
+ 0002:000708DE       pl1Coach
+ 0002:000708E0       pl2Coach
+ 0002:000708E2       leftTeamCoachNo
+ 0002:000708E4       rightTeamCoachNo
+ 0002:000708E6       leftTeamPlayerNo
+ 0002:000708E8       rightTeamPlayerNo
  0002:000708EA       plg_D0_param
  0002:000708EC       isGameFriendly
- 0002:000708F0       second_leg
+ 0002:000708F0       secondLeg
  0002:000708F2       savePitchTypeOrSeason
  0002:000708F4       saveFriendlyPitchType
  0002:000708F6       saveFriendlySeason
  0002:000708F8       gameCanceled
  0002:000708FA       pl1Tactics
  0002:000708FC       pl2Tactics
- 0002:000708FE       team1_computer
- 0002:00070900       team2_computer
+ 0002:000708FE       team1Computer
+ 0002:00070900       team2Computer
  0002:00070902       ingameGameLength
- 0002:00070904       extra_time_state
- 0002:00070906       penalties_state
- 0002:0007090A       team1_goals_first_leg
- 0002:0007090C       team2_goals_first_leg
- 0002:0007090E       team1_penalty_goals
- 0002:00070910       team2_penalty_goals
+ 0002:00070904       extraTimeState
+ 0002:00070906       penaltiesState
+ 0002:0007090A       team1GoalsFirstLeg
+ 0002:0007090C       team2GoalsFirstLeg
+ 0002:0007090E       team1PenaltyGoals
+ 0002:00070910       team2PenaltyGoals
  0002:00070912       plg_D3_param
- 0002:00070914       hil_started
- 0002:00070916       team1_allow_red_cards
- 0002:00070918       team2_allow_red_cards
+ 0002:00070914       hilStarted
+ 0002:00070916       team1AllowRedCards
+ 0002:00070918       team2AllowRedCards
  0002:00070AA5       whiteGuyConvertTable
  0002:00070ABF       gingerGuyConvertTable
  0002:00070AD9       blackGuyConvertTable
@@ -3887,10 +3906,10 @@
  0002:00070AFF       pitchNumber
  0002:00070B01       leftTeamPtr
  0002:00070B05       rightTeamPtr
- 0002:00070B09       team1_num_subs
- 0002:00070B0B       team2_num_subs
- 0002:00070B0D       team1_goalkeeper_replaced
- 0002:00070B0F       team2_goalkeeper_replaced
+ 0002:00070B09       team1NumSubs
+ 0002:00070B0B       team2NumSubs
+ 0002:00070B0D       team1GoalkeeperReplaced
+ 0002:00070B0F       team2GoalkeeperReplaced
  0002:00070B11       team1MostFrequentFace
  0002:00070B13       team2MostFrequentFace
  0002:00070B35       showingStats
@@ -3902,22 +3921,22 @@
  0002:00070F5D       team1ScorerSpritesWidths
  0002:00070F6D       team2ScorerSpritesWidths
  0002:00070F7D       resultTimer
- 0002:00070F7F       time_var
+ 0002:00070F7F       timeVar
  0002:00070F81       deadTimer01
  0002:00070FA3       playerNumberZOffset
  0002:00070FB3       next_camera_positions
- 0002:00070FF3       camera_x_velocity
- 0002:00070FF5       camera_y_velocity
+ 0002:00070FF3       cameraXVelocity
+ 0002:00070FF5       cameraYVelocity
  0002:00070FF7       hideBallShadow
- 0002:00070FFB       player_turn_flags_copy
- 0002:0007105E       playerRunningTop
- 0002:00071068       playerRunningBottom
- 0002:00071072       playerRunningRight
- 0002:0007107C       playerRunningLeft
- 0002:00071086       playerRunningTopRight
- 0002:00071090       playerRunningTopLeft
- 0002:0007109A       playerRunningBottomRight
- 0002:000710A4       playerRunningBottomLeft
+ 0002:00070FFB       lastPlayerTurnFlags
+ 0002:0007105E       playerRunningUpTeam1
+ 0002:00071068       playerRunningDownTeam1
+ 0002:00071072       playerRunningRightTeam1
+ 0002:0007107C       playerRunningLeftTeam1
+ 0002:00071086       playerRunningUpRightTeam1
+ 0002:00071090       playerRunningUpLeftTeam1
+ 0002:0007109A       playerRunningDownRightTeam1
+ 0002:000710A4       playerRunningDownLeftTeam1
  0002:000710AE       spriteStandingFacingUp
  0002:000710B2       spriteStandingFacingBottom
  0002:000710B6       spriteStandingFacingRight
@@ -3928,106 +3947,131 @@
  0002:000710CA       spriteStandingFacingBottomLeft
  0002:0007124E       team1_injured_player_top_right_table
  0002:00071258       team1_injured_player_top_left_table
+ 0002:00071262       playerRunningUpTeam2
+ 0002:0007126C       playerRunningDownTeam2
+ 0002:00071276       playerRunningRightTeam2
+ 0002:00071280       playerRunningLeftTeam2
+ 0002:0007128A       playerRunningUpRightTeam2
+ 0002:00071294       playerRunningUpLeftTeam2
+ 0002:0007129E       playerRunningDownRightTeam2
+ 0002:000712A8       playerRunningDownLeftTeam2
  0002:0007147E       team2_injured_player_top_right_table
  0002:00071488       team2_injured_player_top_left_table
+ 0002:00071492       goalkeeperRunningUpTeam1
+ 0002:0007149C       goalkeeperRunningDownTeam1
+ 0002:000714A6       goalkeeperRunningRightTeam1
+ 0002:000714B0       goalkeeperRunningLeftTeam1
+ 0002:000714BA       goalkeeperRunningUpRightTeam1
+ 0002:000714C4       goalkeeperRunningUpLeftTeam1
+ 0002:000714CE       goalkeeperRunningDownRightTeam1
+ 0002:000714D8       goalkeeperRunningDownLeftTeam1
+ 0002:00071692       goalkeeperRunningUpTeam2
+ 0002:0007169C       goalkeeperRunningDownTeam2
+ 0002:000716A6       goalkeeperRunningRightTeam2
+ 0002:000716B0       goalkeeperRunningLeftTeam2
+ 0002:000716BA       goalkeeperRunningUpRightTeam2
+ 0002:000716C4       goalkeeperRunningUpLeftTeam2
+ 0002:000716CE       goalkeeperRunningDownRightTeam2
+ 0002:000716D8       goalkeeperRunningDownLeftTeam2
  0002:00071950       static_header_anim_table
  0002:00071A54       static_strong_header_anim_table
  0002:00071AD6       jump_header_anim_table
  0002:00071B58       static_heading_anim_table
- 0002:00071BDA       player_lost_anim_table
- 0002:00071C5C       player_won_anim_table
+ 0002:00071BDA       playerLostAnimTable
+ 0002:00071C5C       playerWonAnimTable
  0002:00071CDE       playerRunningAnimTable
  0002:00071D60       playerNormalStandingAnimTable
- 0002:00071DE2       pl_tackling_anim_table
+ 0002:00071DE2       plTacklingAnimTable
  0002:00071EB6       player_tackled_anim_table
  0002:00071F08       goalie_catching_ball_anim_table
- 0002:00071F8A       throw_in_pl_anim_table
+ 0002:00071F8A       throwInPlAnimTable
  0002:0007200C       throw_in_anim_table
  0002:0007208E       doing_throw_in_anim_table
  0002:00072192       left_goalie_jumping_high_anim_table
  0002:00072296       right_goalie_jumping_high_anim_table
  0002:00072318       left_goalie_jumping_low_anim_table
  0002:0007239A       right_goalie_jumping_low_anim_table
- 0002:00072520       pl_getting_yellow_card_anim_table
- 0002:000725A2       pl_getting_red_card_anim_table
+ 0002:00072520       plGettingYellowCardAnimTable
+ 0002:000725A2       plGettingRedCardAnimTable
  0002:00072624       playerGettingBookedAnimTable
  0002:000726A6       pl_injured_anim_table
  0002:00072728       ref_coming_anim_table
  0002:0007274A       ref_waiting_anim_table
  0002:0007277C       ref_yellow_card_anim_table
- 0002:0007279E       ref_red_card_anim_table
- 0002:000727C0       ref_second_yellow_anim_table
- 0002:000727E2       goal_base_ptr
+ 0002:0007279E       refRedCardAnimTable
+ 0002:000727C0       refSecondYellowAnimTable
+ 0002:000727E2       goalBasePtr
  0002:000727E6       nextGoalPtr
  0002:000727EA       replayState
- 0002:000727EC       user_requested_replay
- 0002:000727F0       current_goal_ptr
- 0002:000727F4       current_hil_ptr
- 0002:000727F8       camera_coordinates_invalid
+ 0002:000727EC       userRequestedReplay
+ 0002:000727F0       currentGoalPtr
+ 0002:000727F4       currentHilPtr
+ 0002:000727F8       cameraCoordinatesInvalid
  0002:000727FA       write_only_var_02
  0002:00072818       dead_var_02
  0002:00072824       forceLeftTeam
- 0002:00072826       ball_moving_frame_indices
- 0002:00072830       ball_static_frame_indices
+ 0002:00072826       ballMovingFrameIndices
+ 0002:00072830       ballStaticFrameIndices
  0002:00072836       goalCounter
- 0002:00072838       AI_max_stoppage_time
- 0002:0007283A       goal_camera_mode
- 0002:0007283C       current_hil_buffer
- 0002:00077274       hil_file_buffer
- 0002:00077FCC       hil_file_header
- 0002:00078030       hil_file_text_buffer
- 0002:00078094       hil_num_goals
- 0002:00078096       hil_team1_goals
- 0002:00078098       hil_team2_goals
- 0002:0007809A       hil_pitch_number
+ 0002:00072838       AI_maxStoppageTime
+ 0002:0007283A       goalCameraMode
+ 0002:0007283C       currentHilBuffer
+ 0002:00077274       hilFileBuffer
+ 0002:00077FCC       hilFileHeader
+ 0002:00078030       hilFileTextBuffer
+ 0002:00078094       hilNumGoals
+ 0002:00078096       hilTeam1Goals
+ 0002:00078098       hilTeam2Goals
+ 0002:0007809A       hilPitchNumber
  0002:0007809C       hilMaxSubstitutes
- 0002:0007809E       hil_start_of_goals_buffer
+ 0002:0007809E       hilStartOfGoalsBuffer
  0002:0007CAD6       ingameHilBuffer
  0002:000A66CE       numReplaysInHilFile
- 0002:000A66D0       scene_number
- 0002:000A66D2       some_flip_flag
+ 0002:000A66D0       hilSceneNumber
+ 0002:000A66D2       goIntoHighlightsLoop
  0002:000A66DC       menuCycleTimer
- 0002:000A66E2       tileOriginalX
- 0002:000A66E4       screenOriginalX
- 0002:000A66E6       tileOriginalY
- 0002:000A66E8       screenOriginalY
- 0002:000A66EA       vscreen_delta_x
- 0002:000A66EC       vscreen_delta_y
- 0002:000A66F0       screen_orgx_copy
- 0002:000A66F2       screen_orgy_copy
- 0002:000A670C       x_pitch_dat_offset
- 0002:000A670E       y_pitch_dat_offset
- 0002:000A6718       pattern_table_ver
- 0002:000A6738       pattern_table_hor
+ 0002:000A66E2       scrollTileX
+ 0002:000A66E4       scrollTileOffsetX
+ 0002:000A66E6       scrollTileY
+ 0002:000A66E8       scrollTileOffsetY
+ 0002:000A66EA       vscreenDeltaX
+ 0002:000A66EC       vscreenDeltaY
+ 0002:000A66F0       copyFirstXTile
+ 0002:000A66F2       copyFirstYTile
+ 0002:000A66F4       zero01
+ 0002:000A670C       xPitchDatOffset
+ 0002:000A670E       yPitchDatOffset
+ 0002:000A6718       patternTableHorz
+ 0002:000A6738       patternTableVert
  0002:000A6758       vsPtr
  0002:000A675C       screenWidth
- 0002:000A6764       num_sprites_saved
+ 0002:000A6764       numSpritesSaved
  0002:000A6766       savedSprites
- 0002:000A7768       array_03
+ 0002:000A7768       array03
  0002:000A8768       clipped
  0002:000A876A       menuitem_colortable
  0002:000A877A       let_some_chars_flag
- 0002:000A877C       average_player_price
+ 0002:000A877C       averagePlayerPrice
  0002:000A877E       gameTeam1
  0002:000A8782       gameTeam2
  0002:000A8786       gameRandValue
- 0002:000A8788       team1_APP_Percent
- 0002:000A878A       team2_APP_Percent
+ 0002:000A8788       team1AppPercent
+ 0002:000A878A       team2AppPercent
  0002:000A8868       skill_div
  0002:000A8870       show_stadium_var
  0002:000A887A       previousMenuItem
- 0002:000A8880       in_transfer_market_menu
+ 0002:000A8880       inTransferMarketMenu
  0002:000A8882       goalTypeScored
- 0002:000A888A       load_ending_sample_flag
- 0002:000A888C       some_flag2
- 0002:000A8890       copy_sprite_allow_AND
- 0002:000A8892       pal_48_entries
+ 0002:000A888A       loadEndingSampleFlag
+ 0002:000A888C       someFlag2
+ 0002:000A8890       copySpriteAllowAND
+ 0002:000A8892       pal48Entries
  0002:000A88C2       stateGoal
- 0002:000A88C4       isPaused
- 0002:000A88C6       team1_ptr
- 0002:000A88CA       team2_ptr
- 0002:000A88CE       goal1_ptr
- 0002:000A88D2       goal2_ptr
+ 0002:000A88C4       bumpBigSFrame
+ 0002:000A88C6       team1Ptr
+ 0002:000A88CA       team2Ptr
+ 0002:000A88CE       goal1Ptr
+ 0002:000A88D2       goal2Ptr
  0002:000A88DE       aCharset_dat
  0002:000A88EA       aSprite_dat
  0002:000A88F5       aTeam1_dat_0
@@ -4039,8 +4083,8 @@
  0002:000A8931       aBenc2_dat
  0002:000A893B       moreExpensiveTeamsCount
  0002:000A893D       spriteFixupFlag
- 0002:000A893F       search_also_tac_and_hil
- 0002:000A8943       pl1_isnt_player
+ 0002:000A893F       searchAlsoTacAndHil
+ 0002:000A8943       pl1IsntPlayer
  0002:000A8945       team_A_name
  0002:000A8956       team_B_name
  0002:000A8A6D       g_exitGameFlag
@@ -4053,83 +4097,92 @@
  0002:000A8A83       num_national_teams
  0002:000A8A87       national_teams
  0002:000A8DE1       goalScored
- 0002:000A8DE3       run_slower
+ 0002:000A8DE3       runSlower
  0002:000A8DE5       playerScoredPtr
  0002:000A8DE9       lastTeamScoredNumber
- 0002:000A8DEB       nobodys_ball_timer
- 0002:000A8DED       write_only_var_04
+ 0002:000A8DEB       nobodysBallTimer
+ 0002:000A8DED       writeOnlyAtEndOfHalf
  0002:000A8DEF       spritesIndex
  0002:000AAECF       trainingGame
  0002:000AAED1       useColorTable
- 0002:000AB3A2       choosing_preset
- 0002:000AB3A4       number_of_files
- 0002:000AB3A8       found_filenames_buffer
+ 0002:000AB3A2       choosingPreset
+ 0002:000AB3A4       numberOfFiles
+ 0002:000AB3A8       foundFilenamesBuffer
  0002:000AF48A       teamSkillDiffAfterChange
  0002:000AF494       is_national_squad
  0002:000AF5D6       squadMenu
+ 0002:000AFAAC       playedIntroSample
  0002:000AFAAE       aArcSoccer_bin
- 0002:000AFABF       semaphor
- 0002:000AFAC6       introAnimationCounter
- 0002:000AFAC7       ubaci_95256
- 0002:000AFADA       fill_256_addr
- 0002:000AFAE2       soccer_bin_ptr
- 0002:000AFAEA       soccer_bin_sec2
- 0002:000AFAEE       soccer_bin_sec3
- 0002:000AFAF2       mouse_status
- 0002:000AFAFD       neka_duzina
- 0002:000AFB01       soccer_bin_ofs12
- 0002:000AFB0D       soccer_bin_sec4
- 0002:000AFB11       soccer_bin_handle
- 0002:000AFB15       soccer_opened
- 0002:000AFB16       soccer_bin_final_offset
- 0002:000AFB20       soccer_bin_file_name
- 0002:000AFB2A       soccer_bin_sec3_copy
- 0002:000AFB34       palette1_copy
+ 0002:000AFABF       introTimerSemaphor
+ 0002:000AFAC1       introCountDownTimer
+ 0002:000AFAC3       introAborted
+ 0002:000AFAC5       introWaitInterval
+ 0002:000AFAC6       introAnimationTimer
+ 0002:000AFAC7       introSampleSize
+ 0002:000AFADA       fill256Addr
+ 0002:000AFAE2       soccerBinPtr
+ 0002:000AFAEA       soccerBinSec2
+ 0002:000AFAEE       soccerBinSec3
+ 0002:000AFAF2       mouseStatus
+ 0002:000AFAF4       introFrameDataOffset
+ 0002:000AFAF8       introFrameDataChunkBoundary
+ 0002:000AFAFC       introFirstChunkLoaded
+ 0002:000AFAFD       introFrameDataSize
+ 0002:000AFB01       introNumFrames
+ 0002:000AFB0D       soccerBinSec4
+ 0002:000AFB11       soccerBinHandle
+ 0002:000AFB15       soccerBinOpened
+ 0002:000AFB16       introCurrentFrameDataPtr
+ 0002:000AFB1C       introTickCounter
+ 0002:000AFB20       soccerBinFileName
+ 0002:000AFB2A       soccerBinSec3Copy
+ 0002:000AFB34       savedPalette
  0002:000AFE34       aSwtitle_256
  0002:000AFE40       aFill_256
- 0002:000AFE4E       menu_cursor_frame
- 0002:000AFE50       inputing_text_ok
+ 0002:000AFE4E       menuCursorFrame
+ 0002:000AFE50       inputingTextOk
  0002:000AFE56       gameCommentaries
  0002:000AFE58       skipIntro
  0002:000AFE5A       aSfxEnglishEc
  0002:000AFE6B       a_raw
- 0002:000AFE7C       good_pass_timer
- 0002:000AFE7E       some_memory_flag
- 0002:000AFE84       sample_index
- 0002:000AFE88       sample_index2
- 0002:000AFE8C       sampleHandle
- 0002:000AFE90       last_good_tackle_sample
- 0002:000AFE92       last_jump_header_sample
- 0002:000AFE94       last_penalty_goal_sample
- 0002:000AFE96       last_penalty_miss_sample
- 0002:000AFE98       last_save_penalty_sample
- 0002:000AFE9A       last_its_penalty_sample
- 0002:000AFE9C       last_foul_sample
+ 0002:000AFE7C       goodPassTimer
+ 0002:000AFE7E       gotExtraMemoryForSamples
+ 0002:000AFE84       sfxSampleHandle
+ 0002:000AFE88       chantSampleHandle
+ 0002:000AFE8C       commentarySampleHandle
+ 0002:000AFE90       lastGoodTackleSample
+ 0002:000AFE92       lastJumpHeaderSample
+ 0002:000AFE94       lastPenaltyGoalSample
+ 0002:000AFE96       lastPenaltyMissSample
+ 0002:000AFE98       lastSavePenaltySample
+ 0002:000AFE9A       lastItsPenaltySample
+ 0002:000AFE9C       lastFoulSample
  0002:000AFE9E       last_harder_foul_sample
- 0002:000AFEA0       last_good_pass_sample
+ 0002:000AFEA0       lastGoodPassSample
  0002:000AFEA2       last_goal_frame_hit_sample
  0002:000AFEA4       last_bar_hit_sample
  0002:000AFEA6       last_hit_woodwork_sample
  0002:000AFEA8       last_keeper_claimed_sample
  0002:000AFEAA       last_near_miss_sample
  0002:000AFEAC       last_goalkeeper_saved_sample
- 0002:000AFEAE       last_own_goal_sample
- 0002:000AFEB0       last_goal_sample
- 0002:000AFEB2       playing_red_card_sample
- 0002:000AFEB4       playing_yellow_card_sample
- 0002:000AFEB6       playing_corner_sample
- 0002:000AFEB8       playing_substitute_sample
- 0002:000AFEBA       playing_tactics_changed_sample
- 0002:000AFEBC       playing_throw_in_sample
- 0002:000AFEBE       playing_good_pass_sample
- 0002:000AFEC0       deleted_sample
- 0002:000AFEC4       performing_penalty
- 0002:000AFEC6       lowOnMemory
- 0002:000AFEC8       sound_effects_table
- 0002:000AFEF8       sfx_lower_quality_table
- 0002:000AFF28       intro_team_cheers_table
- 0002:000AFF40       results_samples_table
- 0002:000AFF70       end_game_samples
+ 0002:000AFEAE       lastOwnGoalSample
+ 0002:000AFEB0       lastGoalSample
+ 0002:000AFEB2       playingRedCardSample
+ 0002:000AFEB4       playingYellowCardSample
+ 0002:000AFEB6       playingCornerSample
+ 0002:000AFEB8       playingSubstituteSample
+ 0002:000AFEBA       playingTacticsChangedSample
+ 0002:000AFEBC       playingThrowInSample
+ 0002:000AFEBE       playingGoodPassSample
+ 0002:000AFEC0       deletedSample
+ 0002:000AFEC4       performingPenalty
+ 0002:000AFEC6       commentaryOff
+ 0002:000AFEC8       soundEffectsTable
+ 0002:000AFEF8       sfxLowerQualityTable
+ 0002:000AFF28       introTeamCheersTable
+ 0002:000AFF40       resultsSamplesTable
+ 0002:000AFF60       startGameSamples
+ 0002:000AFF70       endGameSamples
  0002:000AFF7C       aSfxFxBgcrd3l_r
  0002:000AFF8F       aSfxFxBouncex_r
  0002:000AFFA2       aSfxFxHomegoal_
@@ -4174,34 +4227,34 @@
  0002:000B028E       aHardHomewinl_r
  0002:000B02A0       aHardBoowhisl_r
  0002:000B02B2       aHardCheer_ra_0
- 0002:000B02C1       intro_team_cheers_indices
- 0002:000B02D1       intro_cheer_size
- 0002:000B02D5       results_sample_size
- 0002:000B02ED       goal_samples
- 0002:000B032D       goalkeeper_saved_samples
- 0002:000B036D       own_goal_samples
- 0002:000B03AD       near_misses_samples
- 0002:000B03CD       goal_frame_hit_samples
- 0002:000B040D       hit_woodwork_samples
- 0002:000B044D       bar_hit_samples
- 0002:000B045D       keeper_claimed_samples
- 0002:000B049D       good_tackle_samples
- 0002:000B04BD       good_pass_samples
- 0002:000B04DD       harder_foul_samples
- 0002:000B051D       foul_samples
- 0002:000B053D       its_penalty_samples
- 0002:000B055D       saved_penalty_samples
- 0002:000B059D       missed_penalty_samples
- 0002:000B05BD       penalty_goal_samples
+ 0002:000B02C1       introTeamCheersIndices
+ 0002:000B02D1       introCheerSize
+ 0002:000B02D5       resultsSampleSize
+ 0002:000B02ED       goalSamples
+ 0002:000B032D       goalkeeperSavedSamples
+ 0002:000B036D       ownGoalSamples
+ 0002:000B03AD       nearMissesSamples
+ 0002:000B03CD       goalFrameHitSamples
+ 0002:000B040D       hitWoodworkSamples
+ 0002:000B044D       barHitSamples
+ 0002:000B045D       keeperClaimedSamples
+ 0002:000B049D       goodTackleSamples
+ 0002:000B04BD       goodPassSamples
+ 0002:000B04DD       harderFoulSamples
+ 0002:000B051D       foulSamples
+ 0002:000B053D       itsPenaltySamples
+ 0002:000B055D       savedPenaltySamples
+ 0002:000B059D       missedPenaltySamples
+ 0002:000B05BD       penaltyGoalSamples
  0002:000B05F5       corner_samples_table
- 0002:000B0615       tactics_change_samples_table
- 0002:000B0635       player_substituted_samples_table
- 0002:000B0655       red_card_samples_table
- 0002:000B0695       draw_samples
- 0002:000B06B5       complete_rout_samples
- 0002:000B06D5       sensational_game_samples
- 0002:000B06F5       yellow_card_samples_table
- 0002:000B0735       throw_in_samples_table
+ 0002:000B0615       tacticsChangeSamplesTable
+ 0002:000B0635       playerSubstitutedSamplesTable
+ 0002:000B0655       redCardSamplesTable
+ 0002:000B0695       drawSamples
+ 0002:000B06B5       completeRoutSamples
+ 0002:000B06D5       sensationalGameSamples
+ 0002:000B06F5       yellowCardSamplesTable
+ 0002:000B0735       throwInSamplesTable
  0002:000B0755       aSfxPierceM158_
  0002:000B076C       aSfxPierceM15_0
  0002:000B0783       aSfxPierceM15_1
@@ -4332,64 +4385,65 @@
  0002:000B1168       aHardM443_h__ra
  0002:000B1179       aHardM443_i__ra
  0002:000B118A       aHardM443_j__ra
- 0002:000B119B       commentary_table
- 0002:000B12CF       jump_headers_samples
- 0002:000B1349       first_cd_letter
+ 0002:000B119B       commentaryTable
+ 0002:000B12CF       jumpHeadersSamples
+ 0002:000B1349       firstCdLetter
  0002:000B134A       aSwos_inf
  0002:000B1355       aVesaDriverNotF
- 0002:000B144F       retrace_takes_longer
+ 0002:000B140B       vesaFunctionsTable
+ 0002:000B144F       retraceTakesLonger
  0002:000B1450       PIT_countdown
  0002:000B1452       aSwos_xmi
  0002:000B145B       root_dir
- 0002:000B145D       def_disk_number
- 0002:000B1490       rm_regs
- 0002:000B14C2       mem_1k_seg
- 0002:000B14C4       mem_1k_selector
- 0002:000B14C6       lin_adr_1k
- 0002:000B14CA       buffer_for_cdrom_letters
- 0002:000B15CA       num_of_cdrom
- 0002:000B15CC       cd_drive_letter
+ 0002:000B145D       defaultDiskNumber
+ 0002:000B1490       rmRegs
+ 0002:000B14C2       mem1kSeg
+ 0002:000B14C4       mem1kSelector
+ 0002:000B14C6       linAdr1k
+ 0002:000B14CA       cdromLettersBuffer
+ 0002:000B15CA       numOfCdrom
+ 0002:000B15CC       cdDriveLetter
  0002:000B15D3       request_headers
  0002:000B162E       CDROM_audio_level
  0002:000B1635       song_position
- 0002:000B163D       cd_audio_playing
- 0002:000B163F       prev_scan_code
- 0002:000B1641       timer_boolean
+ 0002:000B163D       cdAudioPlaying
+ 0002:000B163F       g_prevScanCode
+ 0002:000B1641       timerBoolean
  0002:000B1645       aAsave_256
- 0002:000B1665       timer_proc_semaphore
- 0002:000B166B       free_mem_buffer
+ 0002:000B1665       timerProcSemaphore
+ 0002:000B166B       freeMemBuffer
  0002:000B16EB       SWOS_StackTop
- 0002:000B16F4       _seg_408k
- 0002:000B16F6       selector_408k
- 0002:000B16F8       lin_adr_mem_408k
+ 0002:000B16F4       dosMemSegment
+ 0002:000B16F6       dosMemSelector
+ 0002:000B16F8       dosMemLinAdr
  0002:000B16FC       aErrorCdromDriverError_
  0002:000B171B       aError8MegVersion000000kMore
  0002:000B17B5       aErrorInsufficentBaseMemo
  0002:000B17E8       a386ProcessorFoundIntroUnavailbleSk
  0002:000B1820       aSensibleWorldOfSoccerV2_0
- 0002:000B1841       midi_playing
- 0002:000B1843       max_kb_in_max_block
- 0002:000B1847       joy_limit
- 0002:000B1848       needFade
- 0002:000B1850       no_replay
- 0002:000B1852       reset_hil_ptr_flag
- 0002:000B1854       save_highlights
- 0002:000B1856       fade_and_save_replay
- 0002:000B1858       space_replay_timer
+ 0002:000B1841       midiPlaying
+ 0002:000B1843       maxKbInMaxBlock
+ 0002:000B1847       joyLimit
+ 0002:000B1848       skipFade
+ 0002:000B1850       noReplay
+ 0002:000B1852       resetHilPtrFlag
+ 0002:000B1854       saveHighlights
+ 0002:000B1856       fadeAndSaveReplay
+ 0002:000B1858       spaceReplayTimer
  0002:000B185A       subs_write_only
- 0002:000B185C       play_highlight_flag
- 0002:000B185E       controls_swapped
- 0002:000B1860       subs_team_sides_swapped
- 0002:000B1864       subs_state_copy
+ 0002:000B185C       playHighlightFlag
+ 0002:000B185E       controlsSwapped
+ 0002:000B1860       subsTeamSidesSwapped
+ 0002:000B1864       subsStateCopy
  0002:000B1866       inSubstitutesMenu
- 0002:000B1868       camera_leaving_subs_timer
+ 0002:000B1868       cameraLeavingSubsTimer
  0002:000B186A       benchOff
  0002:000B186C       leavingSubsMenu
- 0002:000B186E       wait_player_to_leave_timer
+ 0002:000B186E       waitForPlayerToLeaveTimer
  0002:000B1870       goToSubsTimer
  0002:000B1872       bench1Called
  0002:000B1874       bench2Called
- 0002:000B1876       camera_leaving_subs_limit
+ 0002:000B1876       cameraLeavingSubsLimit
  0002:000B187C       subsMenuX
  0002:000B187E       formationMenuX
  0002:000B1880       pl_leaving_x
@@ -4398,7 +4452,7 @@
  0002:000B1888       pl_substituted_x
  0002:000B188A       pl_substituted_y
  0002:000B1890       substituteInProgress
- 0002:000B1892       substituted_pl_sprite
+ 0002:000B1892       substitutedPlSprite
  0002:000B1896       teamThatSubstitutes
  0002:000B189A       benchPlayerIndex
  0002:000B189C       subsState
@@ -4420,27 +4474,34 @@
  0002:000B18CC       subsFireTimer
  0002:000B18CE       selectedPlayerInSubs
  0002:000B18D0       seed
- 0002:000B18D1       rand_xor_index
- 0002:000B18D2       rand_xor_byte
+ 0002:000B18D1       randXorIndex
+ 0002:000B18D2       randXorByte
  0002:000B18D4       paused
- 0002:000B18D6       crowd_chants_on
+ 0002:000B18D6       crowdChantsOn
  0002:000B18D8       gameAborted
  0002:000B18DA       playerPositionsScoringChances
  0002:000B1928       replaySelected
- 0002:000B195A       src_color1
- 0002:000B195E       src_color2
- 0002:000B1962       src_color3
+ 0002:000B193E       colorfulness
+ 0002:000B1946       colorMix
+ 0002:000B194A       strongestComponentResult
+ 0002:000B194E       strongestComponent
+ 0002:000B1952       weakestComponent
+ 0002:000B1956       colorIntensity
+ 0002:000B195A       srcColorRed
+ 0002:000B195E       srcColorGreen
+ 0002:000B1962       srcColorBlue
+ 0002:000B1972       colorfulnessTable
  0002:000B1F74       show_prerelease_counter
- 0002:000B1F76       prg_active
+ 0002:000B1F76       quitSelected
  0002:000B1F78       optionsMenu
- 0002:000B21C6       pitch_type_str_table
+ 0002:000B21C6       pitchTypeStrTable
  0002:000B21F0       gameLengthStrTable
  0002:000B2206       auto_replays_str_table
  0002:000B2214       all_pl_teams_equal_str_table
- 0002:000B2222       auto_save_hl_str_table
- 0002:000B2230       menu_music_str_table
- 0002:000B223E       commentary_str_table
- 0002:000B224C       chairman_scenes_str_table
+ 0002:000B2222       autoSaveHlStrTable
+ 0002:000B2230       menuMusicStrTable
+ 0002:000B223E       commentaryStrTable
+ 0002:000B224C       chairmanScenesStrTable
  0002:000B225C       aDemo1_car
  0002:000B2266       aSensibleWorl_0
  0002:000B2284       aTheMostSuccess
@@ -4473,14 +4534,14 @@
  0002:000B2894       pitch_type_or_season
  0002:000B2896       friendly_pitch_type
  0002:000B2898       friendly_season
- 0002:000B289A       min_substitutes
- 0002:000B289C       max_substitutes
+ 0002:000B289A       minSubstitutes
+ 0002:000B289C       maxSubstitutes
  0002:000B28F6       aDemo_dat
- 0002:000B2A38       teams_country_numbers
+ 0002:000B2A38       teamsCountryNumbers
  0002:000B2C58       skipLeagueNumbers
  0002:000B2C9C       competition_stats_menu
  0002:000B2D4C       null_menu
- 0002:000B2D70       competition_top_goal_scorers_menu
+ 0002:000B2D70       competitionTopGoalScorersMenu
  0002:000B31CC       top_goal_scorers_menu
  0002:000B3530       InitHighestScorersTable
  0002:000B394E       SortHighestScorerTable
@@ -4490,7 +4551,7 @@
  0002:000B3D8F       TopGoalScorersInit
  0002:000B40E6       TopGoalScorersBeforeDrawCommon
  0002:000B4569       TopGoalScorersExit
- 0002:000B4572       current_game
+ 0002:000B4572       currentGame
  0002:000B4582       left_team_name
  0002:000B4586       right_team_name
  0002:000B458A       cglm_team_control
@@ -4499,13 +4560,13 @@
  0002:000B4590       game_list_y
  0002:000B4592       menu_entry_height
  0002:000B4594       game_list_array
- 0002:000B4604       nationality_ordinal
+ 0002:000B4604       nationalityOrdinal
  0002:000B4606       contestMenu
  0002:000B4A66       career_menu
  0002:000B4BE4       ofs_coach_or_player
  0002:000B4BF2       nationalities_ordinals_array
  0002:000B4C32       career_over_menu
- 0002:000B4D44       view_competitions_menu
+ 0002:000B4D44       viewCompetitionsMenu
  0002:000B4E5A       management_record_menu
  0002:000B5008       trophy_sprites
  0002:000B501C       current_season_number
@@ -4529,8 +4590,8 @@
  0002:000B6041       sidePitchSurnamePositionsTable
  0002:000B6089       is_A_team
  0002:000B608C       continueAbortMenu
- 0002:000B6110       design_diy_tournament_menu
- 0002:000B6BA0       design_diy_cup_menu
+ 0002:000B6110       designDiyTournamentMenu
+ 0002:000B6BA0       designDiyCupMenu
  0002:000B73CC       diy_cup_look_only
  0002:000B73CE       diy_cup_select_teams
  0002:000B73D0       DIY_cup_menu
@@ -4543,23 +4604,23 @@
  0002:000B7CE2       DIY_league_tournament_menu
  0002:000B8154       chooseTeamsMenu
  0002:000B8226       selectTeamsMenu
- 0002:000B8944       choose_teams_friendly_menu
+ 0002:000B8944       chooseTeamsFriendlyMenu
  0002:000B8E04       diy_competition_menu
  0002:000B8EB4       tactic_cursor_frames
- 0002:000B8EBC       angleCoeficients
+ 0002:000B8EBC       kAngleCoeficients
  0002:000B96BC       kSineCosineTable
- 0002:000B98BC       sel_tactics
+ 0002:000B98BC       importMenuSelectedTactics
  0002:000B98BE       editTacticsCountryBuffer
- 0002:000B9948       edit_tactics_num_players
+ 0002:000B9948       editTacticsNumPlayers
  0002:000B9954       some_menu_entry_ptr
- 0002:000B9958       ball_x_quadrant_coordinates
- 0002:000B9962       ball_y_quadrant_coordinates
- 0002:000B9970       x_quadrant_to_coordinates
- 0002:000B998E       y_quadrant_to_coordinates
+ 0002:000B9958       ballXQuadrantCoordinates
+ 0002:000B9962       ballYQuadrantCoordinates
+ 0002:000B9970       xQuadrantToCoordinates
+ 0002:000B998E       yQuadrantToCoordinates
  0002:000B99AE       arrowSpritesOffsets
- 0002:000B99BE       little_players_cvt_table
+ 0002:000B99BE       littlePlayersConvertTable
  0002:000B99DE       editTacticsPlayerPositions
- 0002:000B99F6       prev_game_time
+ 0002:000B99F6       prevGameTime
  0002:000B99F8       markedPlayerNumber
  0002:000B99FA       editTacticsPitchStatus
  0002:000B99FC       chosenTactics
@@ -4573,13 +4634,13 @@
  0002:000B9B26       import_tactics_menu
  0002:000B9D66       editTacticsMenu
  0002:000BA142       flip_str_table
- 0002:000BA16C       pitch_width
+ 0002:000BA16C       pitchWidth
  0002:000BA45A       squad_team_ptr
  0002:000BA45E       view_squad_title
- 0002:000BA478       transfer_market_menu
+ 0002:000BA478       transferMarketMenu
  0002:000BA6CC       team_offering
  0002:000BA6D0       num_extra_players_wanted
- 0002:000BA6D6       offer_amount
+ 0002:000BA6D6       offerAmount
  0002:000BA6E0       player_selected
  0002:000BA6EA       buy_other_players_menu
  0002:000BA936       buy_player_menu
@@ -4623,12 +4684,12 @@
  0002:000BCAE6       versusMenu
  0002:000BCB6A       stadiumMenu
  0002:000BCFD2       stadiumMenuLittlePlayer
- 0002:000BCFD4       little_player_sprite_generic
+ 0002:000BCFD4       littlePlayerSpriteGeneric
  0002:000BCFD6       littlePlayersColorTable
- 0002:000BCFF6       little_players_spr_table
+ 0002:000BCFF6       littlePlayersSpriteTable
  0002:000BCFFE       aStad_256
  0002:000BD007       aFlag_256
- 0002:000BD010       anim_patts_rnd_table
+ 0002:000BD010       animPattermsRandomTable
  0002:000BD050       animatedPatterns
  0002:000BD060       patternsGoalCounter
  0002:000BD062       showFansCounter
@@ -4638,8 +4699,8 @@
  0002:000BD06A       animPatternsState
  0002:000BD418       tours_table
  0002:000BD728       gameStoppedTimer
- 0002:000BD72E       player_number_string
- 0002:000BD732       player_faces_table
+ 0002:000BD72E       playerNumberString
+ 0002:000BD732       playerFacesTable
  0002:000BD738       benchColors
  0002:000BD74A       substitutesEntryColor
  0002:000BD74C       substitutesBorderColor
@@ -4660,11 +4721,12 @@
  0002:000BD7F2       goal_ptr_copy
  0002:000BD7F6       next_goal_ptr_copy
  0002:000BD7FA       statsNumber
- 0002:000BD7FF       saved_camera_x
- 0002:000BD801       saved_camera_y
- 0002:000BD808       player_scored_ptr_copy
+ 0002:000BD7FF       savedCameraX
+ 0002:000BD801       savedCameraY
+ 0002:000BD806       nobodysBallLastFrame
+ 0002:000BD808       playerScoredPtrCopy
  0002:000BD80C       lastTeamScored
- 0002:000BD810       last_player_played_copy
+ 0002:000BD810       lastPlayerPlayedCopy
  0002:000BD814       advertIndex
  0002:000BD816       advertSlideTimer
  0002:000BD818       currentAnimatedAdLine
@@ -4673,9 +4735,9 @@
  0002:000BD85A       advert3Pointers
  0002:000BD87A       blockAdvertisements
  0002:000BD88C       aPal_256
- 0002:000BD894       yellow_card_table
- 0002:000BD8B2       red_card_table
- 0002:000BD8D0       second_yellow_table
+ 0002:000BD894       yellowCardTable
+ 0002:000BD8B2       redCardTable
+ 0002:000BD8D0       secondYellowTable
  0002:000BD92B       facesFrequency
  0002:000BD92E       team1PlayersColorTable
  0002:000BD94E       team2PlayersColorTable
@@ -4683,7 +4745,7 @@
  0002:000BD9AE       bigNumbersColorConversionTable
  0002:000BDA5C       faces_array_1
  0002:000BDA5F       faces_array_2
- 0002:000BDA62       goalie_table
+ 0002:000BDA62       goalieTable
  0002:000BDA76       copy_time_sprite
  0002:000BDA78       secondsSwitchAccumulator
  0002:000BDA7A       gameSeconds
@@ -4708,29 +4770,29 @@
  0002:000BDBF0       team2StatsData
  0002:000BDBFE       leftTeamData
  0002:000BDC8F       rightTeamData
- 0002:000BDD20       player_had_ball
- 0002:000BDD22       last_keeper_played
+ 0002:000BDD20       playerHadBall
+ 0002:000BDD22       lastKeeperPlayed
  0002:000BDD26       lastTeamPlayed
- 0002:000BDD2A       last_player_played
+ 0002:000BDD2A       lastPlayerPlayed
  0002:000BDD2E       penalty
- 0002:000BDD30       goal_out
- 0002:000BDD32       stoppage_timer_write_only
- 0002:000BDD34       stats_fire_exit
+ 0002:000BDD30       goalOut
+ 0002:000BDD32       stoppageTimerWriteOnly
+ 0002:000BDD34       statsFireExit
  0002:000BDD36       lastPlayedTeam
- 0002:000BDD3A       stoppage_timer_total
- 0002:000BDD3C       stoppage_timer
+ 0002:000BDD3A       stoppageTimerTotal
+ 0002:000BDD3C       stoppageTickTimer
  0002:000BDD3E       gameStatePl
  0002:000BDD40       gameState
  0002:000BDD42       breakCameraMode
  0002:000BDD44       eventTimer
- 0002:000BDD46       foul_x_coordinate
- 0002:000BDD48       foul_y_coordinate
+ 0002:000BDD46       foulXCoordinate
+ 0002:000BDD48       foulYCoordinate
  0002:000BDD4A       cameraDirection
  0002:000BDD4C       playerTurnFlags
- 0002:000BDD4E       in_game_counter
+ 0002:000BDD4E       inGameCounter
  0002:000BDD50       breakState
- 0002:000BDD52       substituted_pl_dest_x
- 0002:000BDD54       substituted_pl_dest_y
+ 0002:000BDD52       substitutedPlDestX
+ 0002:000BDD54       substitutedPlDestY
  0002:000BDD56       substituted_pl_x
  0002:000BDD58       substituted_pl_y
  0002:000BDD5A       passOrKick
@@ -4738,30 +4800,30 @@
  0002:000BDD5E       teamStarting
  0002:000BDD60       teamPlayingUp
  0002:000BDD62       playingPenalties
- 0002:000BDD64       dont_show_scorers
+ 0002:000BDD64       dontShowScorers
  0002:000BDD66       team1_penalty_attempts
  0002:000BDD68       team2_penalty_attempts
- 0002:000BDD6A       penalties_timer
+ 0002:000BDD6A       penaltiesTimer
  0002:000BDD6C       team1_penalty_shooter_index
  0002:000BDD6E       team2_penalty_shooter_index
  0002:000BDD70       penalty_shooter_sprite
  0002:000BDD74       ball_friction
  0002:000BDDF4       defaultPlayerDestinations
- 0002:000BDE14       left_throw_in_ball_factor
- 0002:000BDE34       right_throw_in_ball_factor
+ 0002:000BDE14       leftThrowInBallFactor
+ 0002:000BDE34       rightThrowInBallFactor
  0002:000BDE54       penalty_ball_factor
  0002:000BDE74       upper_left_corner_ball_factor
  0002:000BDE94       upper_right_corner_ball_factor
  0002:000BDEB4       lower_left_corner_ball_factor
  0002:000BDED4       lower_right_corner_ball_factor
  0002:000BDF2C       goalKeeperClaimingBallHeight
- 0002:000BDF3A       ref_var
- 0002:000BDF3C       injuries_forever
- 0002:000BDF4C       which_card
- 0002:000BDF4E       booked_player
- 0002:000BDF52       last_team_booked
- 0002:000BDF56       ref_timer
- 0002:000BDF58       rand_value_from_len_tables
+ 0002:000BDF3A       refVar
+ 0002:000BDF3C       injuriesForever
+ 0002:000BDF4C       whichCard
+ 0002:000BDF4E       bookedPlayer
+ 0002:000BDF52       lastTeamBooked
+ 0002:000BDF56       refTimer
+ 0002:000BDF58       randValueFromLenTables
  0002:000BDF5A       gameLength3mins
  0002:000BDF7A       gameLength5mins
  0002:000BDF9A       gameLength7mins
@@ -4774,11 +4836,11 @@
  0002:000BE016       aSfxFlcPromote_
  0002:000BE02A       aSfxFlcLosemat_
  0002:000BE03E       aSfxFlcWinmtch_
- 0002:000BE052       current_line
- 0002:000BE056       one_256_ofs
+ 0002:000BE052       currentLine
+ 0002:000BE056       partOneImages
  0002:000BE05E       terminator
- 0002:000BE062       two_256_ofs
- 0002:000BE072       terminator_2
+ 0002:000BE062       partTwoImages
+ 0002:000BE072       terminator2
  0002:000BE076       aLoader1_256
  0002:000BE082       aOne_256
  0002:000BE08A       aTwo_256
@@ -4794,24 +4856,24 @@
  0002:000BE0F8       aPitch4_blk
  0002:000BE108       aPitch5_blk
  0002:000BE118       aPitch6_blk
- 0002:000BE128       big_S_picture_index_array
- 0002:000BE168       spin_big_S
+ 0002:000BE128       big_S_pictureIndexArray
+ 0002:000BE168       spinBigS
  0002:000BE16A       big_S_index
- 0002:000BE16C       corner_flag_picture_indices
- 0002:000BE18C       pitch_fans_cvt_table
+ 0002:000BE16C       cornerFlagPictureIndices
+ 0002:000BE18C       pitchFansConvertTable
  0002:000BE1B0       passingState
- 0002:000BE1B2       ball_next_x
- 0002:000BE1B4       ball_next_y
- 0002:000BE1BA       play_referee_whistle_sample
- 0002:000BE1BC       ball_x_quadrant_limits
- 0002:000BE1C6       ball_y_quadrant_limits
- 0002:000BE1D4       player_x_quadrants_coordinates
- 0002:000BE1F2       player_y_quadrant_coordinates
- 0002:000BE212       ball_quadrant_index
- 0002:000BE214       ball_x_quadrant_dead
- 0002:000BE216       ball_y_quadrant_dead
- 0002:000BE218       player_x_quadrant_offset
- 0002:000BE21A       player_y_quadrant_offset
+ 0002:000BE1B2       ballNextX
+ 0002:000BE1B4       ballNextY
+ 0002:000BE1BA       playRefereeWhistle
+ 0002:000BE1BC       ballXQuadrantLimits
+ 0002:000BE1C6       ballYQuadrantLimits
+ 0002:000BE1D4       playerXQuadrantsCoordinates
+ 0002:000BE1F2       playerYQuadrantCoordinates
+ 0002:000BE212       ballQuadrantIndex
+ 0002:000BE214       ballXQuadrantDead
+ 0002:000BE216       ballYQuadrantDead
+ 0002:000BE218       playerXQuadrantOffset
+ 0002:000BE21A       playerYQuadrantOffset
  0002:000BE244       ball_speed_passing
  0002:000BE254       passing_speed_closer_than_2500
  0002:000BE256       passing_speed_closer_than_10000
@@ -4832,56 +4894,61 @@
  0002:000BE306       player_tackling_down_time
  0002:000BE316       computer_tackling_down_time
  0002:000BE326       playerSpeedsGameInProgress
- 0002:000BE336       player_speeds_game_stopped
+ 0002:000BE336       playerSpeedsGameStopped
  0002:000BE346       teamsStartingCoordinates
  0002:000BE39E       goalie_something_table
- 0002:000BE3BE       injuries_speed_penalty
+ 0002:000BE3BE       injuriesSpeedPenalty
  0002:000BE3CE       playerWithBallOffsets
  0002:000BE5DA       staticHeaderPlayerSpeed
  0002:000BE5DC       numberBuffer
- 0002:000BE5EB       pl_names_len_tbl_copy_16
+ 0002:000BE5EB       plNamesLengthTable16
  0002:000BE60B       plNamesLengthTable
- 0002:000BE62B       pl_names_len_tbl_copy
- 0002:000BE64B       prev_last_player
- 0002:000BE64F       prev_last_team_played
- 0002:000BE653       ball_defensive_x
- 0002:000BE655       ball_defensive_y
- 0002:000BE657       ball_defensive_z
- 0002:000BE659       ball_not_high_x
- 0002:000BE65B       ball_not_high_y
- 0002:000BE65D       ball_not_high_z
- 0002:000BE65F       strike_dest_x
- 0002:000BE665       ball_next_x_2
- 0002:000BE667       ball_next_y_2
- 0002:000BE669       ball_next_z_dead
- 0002:000BE66B       ball_in_upper_penalty_area
- 0002:000BE66D       ball_in_lower_penalty_area
- 0002:000BE66F       ball_in_goalkeeper_area
+ 0002:000BE62B       plNamesLengthTableCopy
+ 0002:000BE64B       prevLastPlayer
+ 0002:000BE64F       prevLastTeamPlayed
+ 0002:000BE653       ballDefensiveX
+ 0002:000BE655       ballDefensiveY
+ 0002:000BE657       ballDefensiveZ
+ 0002:000BE659       ballNotHighX
+ 0002:000BE65B       ballNotHighY
+ 0002:000BE65D       ballNotHighZ
+ 0002:000BE65F       strikeDestX
+ 0002:000BE665       ballNextX_2
+ 0002:000BE667       ballNextY_2
+ 0002:000BE669       ballNextZ_dead
+ 0002:000BE66B       ballInUpperPenaltyArea
+ 0002:000BE66D       ballInLowerPenaltyArea
+ 0002:000BE66F       ballInGoalkeeperArea
+ 0002:000BE681       bottomBallOutOfPlayPositions
+ 0002:000BE701       topBallOutOfPlayPositions
+ 0002:000BE939       bottomStartingPositions
+ 0002:000BEE65       bottomPenaltyPositions
+ 0002:000BEE91       topPenaltyPositions
  0002:000BEF08       team_pl_ofs24_table
  0002:000BEF44       some_AI_direction_allowed_flag
- 0002:000BEF46       AI_begin_play_timer
+ 0002:000BEF46       AI_beginPlayTimer
  0002:000BEF48       AI_rand
  0002:000BEF62       AI_counter
  0002:000BEF64       AI_team_num_maybe
  0002:000BEF70       dta
- 0002:000BEF9C       asciiz_file_spec
- 0002:000BEF9D       ext_1
- 0002:000BEF9E       ext_2
- 0002:000BEF9F       ext_3
- 0002:000BEFA0       ext_4
- 0002:000BEFA4       file_number
- 0002:000BEFA6       total_number_of_files
- 0002:000BEFA8       saving_file
- 0002:000BEFAA       menu_title
- 0002:000BEFAE       extension
- 0002:000BEFB2       found_files_ptr_table
- 0002:000BF3B2       extensions_buffer
- 0002:000BF7B2       tmp_filename_buffer
- 0002:000BF7BF       selected_filename
- 0002:000BF7CC       num_matched_files_div_3
- 0002:000BF7CE       num_matched_files_copy
- 0002:000BF7D2       num_matched_files
- 0002:000BF7D8       select_files_menu
+ 0002:000BEF9C       asciizFileSpec
+ 0002:000BEF9D       ext1
+ 0002:000BEF9E       ext2
+ 0002:000BEF9F       ext3
+ 0002:000BEFA0       ext4
+ 0002:000BEFA4       numFiles
+ 0002:000BEFA6       totalNumberOfFiles
+ 0002:000BEFA8       savingFile
+ 0002:000BEFAA       menuTitle
+ 0002:000BEFAE       g_extension
+ 0002:000BEFB2       foundFilesPtrTable
+ 0002:000BF3B2       extensionsBuffer
+ 0002:000BF7B2       tmpFilenameBuffer
+ 0002:000BF7BF       selectedFilename
+ 0002:000BF7CC       numMatchedFilesDiv3
+ 0002:000BF7CE       numMatchedFilesCopy
+ 0002:000BF7D2       numMatchedFiles
+ 0002:000BF7D8       selectFilesMenu
  0002:000BFC08       highlights_menu
  0002:000BFCBC       aArcWin_flc
  0002:000BFCC8       aArcWcup_flc
@@ -4904,7 +4971,7 @@
  0002:000C3288       page_offset
  0002:000C32C8       __GDAptr
  0002:000C32CC       __D16Infoseg
- 0002:000C32D0       memory_locked
+ 0002:000C32D0       memoryLocked
  0002:000C32D8       lock_memory_2
  0002:000C32E8       _dynend
  0002:000C32EC       _curbrk
@@ -4931,12 +4998,13 @@
  0002:000C3F68       aSample
  0002:000C3FF0       aTimb_0
  0002:000C4286       aStackOverflow
- 0002:000C4630       _edata
- 0002:000C46B8       midi_sequence_handle
+ 0002:000C4630       sampleHandles
+ 0002:000C46B0       maxSampleIndex
+ 0002:000C46B8       midiSequenceHandle
  0002:000C46BC       AILDIGDriver
- 0002:000C46C0       sample_index3
+ 0002:000C46C0       commentarySample
  0002:000C46CC       htimer1
- 0002:000C46D0       EOS_var3
+ 0002:000C46D0       endGameSample
  0002:000C46D4       xmidiHandle
  0002:000C46D8       AIL_debug_file
  0002:000C46E0       AIL_SYS_DEBUG_flag

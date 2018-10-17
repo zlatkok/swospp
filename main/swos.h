@@ -648,7 +648,7 @@ static inline __attribute__((always_inline)) void calla_ebp_safe(void *addr)
 #define PatchByte(where, ofs, value) (*(byte *)((char *)(where) + (dword)(ofs)) = (byte)(value))
 
 /** Use this macro to patch in a function call directly in code, when it's not feasible to patch
-    call instructions themselves (i.e. function is call from many places). It will create folowing
+    call instructions themselves (i.e. function is called from many places). It will create following
     machine code (calla equivalent):
 
     mov  eax, offset hookFn  ; b8 xx xx xx xx

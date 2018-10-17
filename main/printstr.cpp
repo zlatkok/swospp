@@ -148,7 +148,7 @@ int Text2Sprite(int x, int y, int spriteIndex, const char *text, const void *cha
 */
 void DrawBitmap(int x, int y, int width, int height, const char *data)
 {
-    char *dest = lin_adr_384k + WIDTH * y + x;
+    char *dest = linAdr384k + WIDTH * y + x;
     int delta = WIDTH - width;
     assert(width >= 0 && height >= 0 && data);
     while (height--) {
