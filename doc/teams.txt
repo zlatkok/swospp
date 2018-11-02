@@ -500,7 +500,7 @@ Velicina 145 bajtova.
 
 
 ===============================================================================
-Struktura koja sadrzi informacije o statistici timova:
+Structure that contains informations about team statistics:
 
 offset:  size:  desc.
 -------  -----  -----
