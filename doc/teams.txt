@@ -1,13 +1,13 @@
 Format of the team file (team.* in \data directory):
 
-Size of whole team is 684 bytes. Maximum size of team file is 64000 bytes, as
-that is the size of the fixed buffer SWOS uses, anything above that will cause
-immediate SWOS termination. Inside the team files team seem to be sorted
-alphabetically.
+Size of the team structure used in files is 684 bytes. Maximum size of team
+file is 64000 bytes, as that is the size of the fixed buffer SWOS uses,
+anything above that will cause immediate SWOS termination. Inside the team
+files teams seem to be sorted alphabetically.
 
-First we have a word, big endian - number of teams in file,
+First we have a word, big endian - number of teams in the file
 then there is team header, 76 bytes
-header is followed by 16 structure that represent players,
+header is followed by 16 structures that represent players
 size is 38 bytes each
 
 team header:
@@ -180,10 +180,11 @@ offset:  size:  description:
                             bits 0,1 are:
                              zero: cards <- 0
                              non-zero: cards <- 2 (red card)
+                           I think it's cards from previous game(s)
                 bits 5,6,7 - injuries
+                    bit 5 marks very bad injury (player can't play next game)
                 value of this field is not read from file, before the game bits
                 5,6,7 are set to random values
-                could it be injuries?
   28       1    (h.o. nibble) ???
                 (l.o.  -||- ) passing (values 0..15)
   29       1    (h.o.  -||- ) shooting
@@ -294,7 +295,7 @@ offset:  size:  desc.
   33       1    finishing
   34       1    0..7, related to goalkeeper, index into a table of pointers
                 which ends up written to ofs24
-  35       1    OR with player_file ofs103 & 0xff1f, bits 7,6 and 5 mean
+  35       1    OR with PlayerFile ofs103 & 0xff1f, bits 7,6 and 5 mean
                 something - seems to be red cross blinking speed when a player
                 is injured; if this is zero player is not injured; if whole
                 field is not zero, and bit 5 isn't set, seems to be permanent
@@ -372,17 +373,18 @@ offset:  size:  desc.
   46       2    current direction, or -1 if nothing is pressed
                 changes with each frame
   48       1    rapid fire; very quick firing (-1 = true)
-  49       1    short fire flag; kratak pritisak na dugme; ali ne brzo
-                uzastopno, inace se setuje ofs48 (-1 = true)
-                nesto duze pucanje, samo u jednom frejmu setovano na -1
-  50       1    pucanje, = -1 sve dok je pritisnuto, 0 kad je pusteno
-  51       1    trenutno pucanje, setuje se na 1 vrlo kratko (na jedan frejm)
+  49       1    short fire flag; short button press, but if consecutive ofs48
+                gets set (-1 = true)
+                slightly longer press than rapid fire, it's set to -1 for only
+                a single frame
+  50       1    fire, = -1 as long as it's pressed, 0 when released
+  51       1    current fire, set to 1 very shortly (for one frame)
   52       2    ??? (UpdatePlayers ga setuje) (za vreme utakmice nula)
                 ako je razlicito od nule, resetuj joy1_short_fire_counter na
                 nulu (za CPU tim)
                 mislim da je true ako igrac udara glavom
-  54       2    fire counter; uvecava se dok je pucanje; resetuje se kad nije
-                bez ogranicenja izgleda
+  54       2    fire counter; increases while fire is held, resets when not
+                no limitations it seems
   56       2    pravac igraca koji kontrolise loptu:
                         0
                     7   |   1

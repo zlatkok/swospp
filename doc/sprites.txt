@@ -253,7 +253,9 @@ team2 bench players
 
 
 === In-game sprite structure
-This should perhaps be named Player structure, but too late now :).
+
+This structure is mostly tied to players but other entities are represented as
+well, such as the ball and corner flags.
 
 offset  length  description
 ------  ------  -----------
@@ -318,14 +320,14 @@ offset  length  description
                 could be a union, since there are places where ofs18 is used as
                 a word
   22        2   index of currently shown picture
-  24        2   ??? upisuje se prvi word iz tablica za sprajtove
-                mozda broj slicica, ili najvisi indeks
-  26        2   ciklicni tajmer za slicice, vrti se kad god je sprajt vidljiv
-                kada dodje na nulu, crta se sledeca slicica
-  28        2   neograniceni tajmer slicica, sa zastojem
-  30        4   x koordinata u fiksnom zarezu signed word.signed word (na +2 offset-u je celi deo)
-  34        4   y koordinata u fiksnom zarezu
-  38        4   z koordinata u fiksnom zarezu (ima smisla samo kod lopte)
+  24        2   ??? write first word from sprite tables
+                could be number of pictures, or highest index
+  26        2   cyclic timer for images, ticks whenever the sprite is visible
+                once it goes down to zero, next frame is drawn
+  28        2   unlimited image timer, with delay
+  30        4   x coordinate in fixed point signed word.signed word (+2 offset contains the whole part)
+  34        4   y coordinate in fixed point
+  38        4   z coordinate in fixed point (makes sense only for the ball)
                 -1 when player is controlling the ball
   42        2   pravac u kome je igrac okrenut, 0..7 (0 = gore, 4 = dole...)
                        0

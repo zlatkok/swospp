@@ -2,20 +2,22 @@
 
 === Player speed
 
-Igracu koji kontrolise loptu brzina se smanjuje na 87.5% kapaciteta (zato ga
-odbrambeni tako lako stizu). A kada je postignut gol, i igraci trce ka svojim
-pozicijama, brzina im je umanjena na 62.5% kapaciteta.
+Speed of the player that controls the ball is reduced to 87.5% of capacity
+(that's why defenders catch up so easily). When the goal is scored, and the
+players are running back to their positions, their speed is reduced to 62.5%
+of capacity.
 
-Na osnovu karakteristike brzine igraca (opseg smanjen na 0..7), i toga da li je
-igra u toku, uzima se brzina igraca iz sledecih tablica:
-dw 928, 974, 1020, 1066, 1112, 1158, 1204, 1250     ; igra u toku
-dw 1136, 1152, 1168, 1184, 1200, 1216, 1232, 1248   ; igra zaustavljena
+Based on players speed skill (range normalized to 0..7), and whether the game
+is in progress or not, effective speed is calculated using the following
+tables:
+dw 928, 974, 1020, 1066, 1112, 1158, 1204, 1250     ; game in progress
+dw 1136, 1152, 1168, 1184, 1200, 1216, 1232, 1248   ; game stopped
 
-1280 je izleda maksimalna brzina za igraca. Broj frejmova izmedju prelaska na
-sledecu slicicu animacije se odredjuje tako sto se brzina igraca oduzme od
-1280. Razlika se namesta na nulu ako je manja. Dalje se deli sa 128, na to se
-dodaje 6 i to je zadrska izmedju animacionih frejmova za igraca. Primetimo da
-ce ovako sporiji igraci imati vecu zadrsku.
+1280 seems to be the maximum player speed. Number of game frames between next
+animation frame switch is determined by subtracting player speed from maximum
+speed (1280). Result is further divided by 128, increased by 6 and that's how a
+delay between animation frames for the players is formed. Notice that this
+system forces larger delay for slower players.
 
 Najvisa tri bita offset-a 35 u in-game strukturi odredjuju tezinu povrede. Oni
 se koriste kao indeks u tablicu:
@@ -93,7 +95,7 @@ dw -288, -160, -32, -65440, -65312, -65184, -65056, -64928).
 Nova brzina lopte je vrednost iz tabele + ball_kicking_speed (2208).
 
 
-=== Uklizavanje
+=== Tackling
 
 Igrac provodi 55 frejmova u stanju uklizavanja. Medjutim ako je neka
 promenljiva setovana moze biti i manje.
@@ -113,7 +115,17 @@ igrive povrsine:
 11 <= y <= 111
 
 
-=== Koordinatni sistem
+=== Injuries
+
+Each team has a variable that holds the number of allowed injuries. For a
+friendly game 4 injuries are allowed, otherwise number of players unable to
+play the match is calculated, and the number of allowed injuries is 4 - num.
+disabled players for career, or 2 - n.d.p otherwise.
+When sending off the player number of injuries is decremented too (be it direct
+red or or double yellow card).
+
+
+=== Game's coordinate system
 
 X se povecava udesno, Y se povecava na dole, Z se povecava na gore (u visinu).
 
@@ -264,10 +276,10 @@ frame (it will be at least 1).
 
 === Misc.
 
-U neg_term_spr_array se nalaze svi sprajtovi koje igra iscrtava po frejmu.
+allSpritesArray contains all the sprites that the game draws in a single frame.
 
 
 === Team ofs 24 for goalkeepers
 
 Indexed based on skill (which is itself calculated based on price):
-
+TODO
