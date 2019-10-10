@@ -9,13 +9,13 @@ following registers:
 A5 - pointer to entry which is receiving the event
 A0 - pointer to function itself (since it's called indirectly through A0)
 
-Upon entry, init and afterDraw functions of the menu will have A6 point to menu
+Upon entry, init and onReturn functions of the menu will have A6 point to menu
 header.
 
 Header (size 22 bytes):
 
            +0  - init function (invoked only once, converting the menu)
-           +4  - afterDraw function (invoked when returning to this menu)
+           +4  - onReturn function (invoked when returning to this menu)
            +8  - onDraw function (invoked each frame, before drawing the items)
            +12 - pointer to currently selected entry
            +16 - number of entries in the menu
@@ -31,17 +31,17 @@ Menu entries, following the header:
        4  ; is it visible?
             0  - draw
             !0 - don't
-       6  ; is_disabled (word) (1 = disabled, 0 = not)
-       8  ; left item     ; ordinal of entry that's selected once left, right,
-       9  ; right item    ; up, down is pressed, respectively
-       10 ; up item
+       6  ; is disabled (word) (1 = disabled, 0 = not)
+       8  ; left item     ; ordinal of entry that's next to be selected once
+       9  ; right item    ; left, right, up, down is pressed on this entry,
+       10 ; up item       ; respectively
        11 ; down item
-       12 ; left          ; [0 = up, 1 = right, 2 = down, 3 = left]
-       13 ; right         ; direction of movement that is chosen once the entry
-       14 ; up            ; is disabled or invisible
+       12 ; left          ; [values: 0 = left, 1 = right, 2 = up, 3 = down]
+       13 ; right         ; direction of movement that is chosen once this
+       14 ; up            ; entry is disabled or invisible
        15 ; down
-       16 ; left entry    ; entry that's selected in case this entry is
-       17 ; right entry   ; disabled or invisible
+       16 ; left entry    ; ordinal of entry that's to be selected in case this
+       17 ; right entry   ; entry is disabled or invisible
        18 ; up entry
        19 ; down entry
        20 ; x
@@ -54,12 +54,12 @@ Menu entries, following the header:
                from offset 30 (dword) with x and y arguments in D0 and D1
                (custom draw background function)
             2: standard entry -- has background and frame
-               Low byte is background color, high byte is color of the internal
-               frame. If the color of internal frame is zero, don't draw it.
-               Outer frame is drawn only if there is room (height is greater
-               than 6 or 8). If background color is zero, no frame is drawn,
-               and the background is colored with color 15 (yellow-green-
-               black).
+               Ofs. 30 low byte is background color, high byte is color of the
+               internal frame. If the color of internal frame is zero, don't
+               draw it. Outer frame is drawn only if there is room (height is
+               greater than 6 or 8). If background color is zero, no frame is
+               drawn, and the background is colored with color 15
+               (yellow-green-black).
             3: sprite -- at offset 30 is its index into sprite.dat (word)
 
        30 ; switch(ofs28) {
@@ -113,14 +113,14 @@ Menu entries, following the header:
        42 ; onSelect function
        46 ; controls mask (gets AND-ed with control word)
        48 ; beforeDraw function, on entry esi = A5 -> entry that's drawn
-       52 ; afterDraw function
+       52 ; onReturn function
 
     sizeof(MenuItem) = 56
 
 x coordinates of menu entries are shifted right by 8 pixels. Therefore entry
 with x coordinate zero is in fact begins at eight pixel of the screen.
 
-beforeDraw function executes first, before anything has been drawn. afterDraw
+beforeDraw function executes first, before anything has been drawn. onReturn
 is executed after all the entry drawing has been done, but before flip so it's
 still possible to alter looks of the entry.
 
@@ -206,7 +206,7 @@ TYPE 1:  (invisible entry)
 
 ofs4 (isInvisible) = 1
 ---------------------------
-TYPE 2:  (positions)
+TYPE 2:  (next entries)
 
 Following 4 bytes set to offsets:
 +8   left
@@ -247,37 +247,37 @@ ofs34 = 1 (word)
 ofs36 = 0 (word)
 ofs38 = dword (function taking x and y parameters)
 ---------------------------
-TIP 8:  (string)
+TYPE 8:  (string)
 
 ofs34 = 2 (word)
 ofs36 = word (string flags)
 ofs38 = dword (text ptr)
 ---------------------------
-TIP 9:  (sprajt 2)
+TIP 9:  (sprite 2 (foreground))
 
 ofs34 = 3
 ofs36 = 0
-ofs38 = word (indeks sprajta)
-ofs40 = 0 (dopuni do dworda)
+ofs38 = word (sprite index)
+ofs40 = 0 (fill up to a dword)
 ---------------------------
-TIP 10: (string tabela)
+TIP 10: (string table)
 
 ofs34 = 4
 ofs36 = word (string flags)
-ofs38 = dword (pointer na string tabelu)
+ofs38 = dword (pointer to string table)
 ---------------------------
 TIP 11: (multi-line text)
 
 ofs34 = 5
 ofs36 = word (string flags)
-ofs38 = dword (pointer na bajt - broj stringova, zatim sami stringovi)
+ofs38 = dword (pointer to a byte - number of strings, followed by the strings)
 ---------------------------
-TIP 12: (broj)
+TIP 12: (number)
 
 ofs34 = 6
 ofs36 = word (string flags)
-ofs38 = word (broj koji se ispisuje)
-ofs40 = 0 (dopuni do dworda)
+ofs38 = word (number to print)
+ofs40 = 0 (filler to a dword)
 ---------------------------
 TIP 13: (on select funkcija - samo pucanje)
 
@@ -685,109 +685,6 @@ Njega crta DrawSelected. Svaki frejm se povecava promenljiva
 game_timer_index, koja se koristi kao indeks u tablicu koja sadrzi boje:
 color_table_shine dw 2, 2, 1, 1, 7, 7, 1, 1
 Kursor se azurira 70 puta u sekundi.
-
---------
-MenuProc
-
-- call ReadTimerDelta -> podesi last_timer_index, game_timer_index i
-                                timer_difference
-- nacrtaj meni (DrawMenu), sada je meni na virtualnom ekranu
-ax = check_here > 50 ? 4 : 2;
-while (timer_index < ax); // loop
-timer_index = 0;
-- call ReadGamePort -> podesi joy1_X, joy1_Y, joy2_X, joy2_Y
-- sacekaj retrace
-- reprogramiraj PIT na interval PIT_countdown
-- fejduj, ako je potrebno (menu_fade flag)
-- call CheckControls -> podesi gomilu promenljivih u vezi kontrola
-
-if (sound_off != 1 && cd_audio_playing == -1 && !(IOCTL_CDROM_Read & 0x200)) {
-    call FadeOutCDMusic
-    call CDROM_StopAudio
-    call TryMIDIPlay
-}
-
-if ((A5 = Menu.selected_entry) != 0) goto item_selected;
-if (final_controls_status < 0) return; // nista nije pritisnuto
-if (previous_item == 0) goto item_selected;
-Menu.selected_entry = previous_item;
-A0 = previous_item;
-goto is_visible;
-
-item_selected:
-controls_status = 0;
-if ((A0 = A5.on_select) == 0) goto controls_inactive;
-
-D7 = 0;
-D7 |= short_fire ? 0x20 : 0;
-D7 |= fire ? 0x01 : 0;
-D7 |= left ? 0x02 : 0;
-D7 |= right ? 0x04 : 0;
-D7 |= up ? 0x08 : 0;
-D7 |= down ? 0x10 : 0;
-
-if ((D0 = final_controls_status) < 0) goto nothing_joy1;
-if ((D0 >> 1) == 0) goto joy1_up;
-if ((D0 >> 1) == 0) goto joy1_right;
-if (D0 == 2) goto joy1_down;
-D7 |= 0x40;
-goto nothing_joy1;
-
-joy1_right:
-D7 |= 0x80; goto nothing_joy1;
-
-joy1_up:
-D7 |= 0x100; goto nothing_joy1;
-
-joy1_down:
-D7 |= 0x200;
-
-nothing_joy1:
-
-if (A5.controls_flag == -1 || A5.controls_flag & D7) {
-    if (sound_off != 1 && cd_audio_playing == -1) {
-        call FadeOutCDAudio
-        call CDROM_StopAudio
-        call TryMIDIPlay
-    }
-    controlsStatus = D7;
-    - izvrsi menu selected proc
-}
-
-controls_inactive:
-if (fire != 0) return;
-if ((D7 = final_controls_status) < 0) return;
-A0 = A5; // trenutna stavka
-D6 = D7; // final_controls_status
-A1 = dseg_115356; // neka tablica, dw 2, 1, 3, 0
-                     // 0 = gore, 1 = desno, 2 = dole, 3 = levo
-D6 &= 6;  // maskiraj, ostaju samo gore/desno/dole/levo vrednosti
-D6 = A1[D6];
-
-no_active_entry:
-D0 = [A0 + D6 + 8];
-if (D0 == -1) return;
-
-some_sort_of_loop:
-D0 &= 0xff;
-call CalcMenuEntryAddress; // A0 -> stavka D0
-if (A0.is_disabled != 0) goto disabled;
-if (A0.is_invisible == 0) goto is_visible;
-
-disabled:
-if ([A0 + D6 + 12] == -1) goto no_active_entry;
-D0 = [A0 + D6 + 16]; // izaberi sledeci entry
-D6 = [A0 + D6 + 12]; // izaberi pravac kojim se dalje ide
-goto some_sort_of_loop;
-
-is_visible:
-previous_item = Menu.selected_entry;
-Menu.selected_entry = A0;
-if (A5.entry_type1 == 0) goto DrawMenu
-else goto CallDrawMenuItem;
-
-@@out:
-retn
 
 
 Play match menu
