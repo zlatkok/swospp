@@ -21,8 +21,8 @@ VAR_DIR  := var
 DBG_DIR  := $(OBJ_DIR)/dbg
 REL_DIR  := $(OBJ_DIR)/rel
 
-$(shell mkdir -p $(BIN_DIR))
-$(shell mkdir -p $(VAR_DIR))
+$(shell "mkdir" -p $(BIN_DIR))
+$(shell "mkdir" -p $(VAR_DIR))
 
 all : rel dbg
 
