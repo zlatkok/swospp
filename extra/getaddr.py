@@ -168,7 +168,7 @@ def getLoadAddress():
                 if loadAddrMatch:
                     return int(loadAddrMatch.group('swosppLoadAddress'), 16), int(loadAddrMatch.group('swosCodeAddress'), 16), \
                         int(loadAddrMatch.group('swosDataAddress'), 16)
-    except FileException:
+    except IOError:
         pass
 
     defaultSwosppLoadAddress = 0x387000
@@ -187,7 +187,7 @@ def getBase(build):
                baseMatch = baseRegex.search(line)
                if baseMatch:
                    return int(baseMatch.group('base'), 16)
-    except FileException:
+    except IOError:
         pass
 
     return 0x401000

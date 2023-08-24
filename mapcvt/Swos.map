@@ -56,7 +56,7 @@
  0001:000066DC       nullsub_30
  0001:000066DD       nullsub_31
  0001:000066DE       AssignFakeGoalsToScorers
- 0001:00006A08       ReplayContinueMenuAfterFriendly
+ 0001:00006A08       ReplayExitMenuAfterFriendly
  0001:00006B62       DrawReplayContinueMenu
  0001:00006C99       DrawMenuBack150x20
  0001:00006F90       DrawReplayContinueShiningFrame
@@ -1007,10 +1007,10 @@
  0001:00062270       DrawSprites
  0001:00062548       InitTeamsData
  0001:00062944       StartPenalties
- 0001:00062ABB       TeamsControlsCheck
+ 0001:00062ABB       UpdateAndApplyTeamControls
  0001:00062E8B       UpdateControlledPlayer
  0001:0006319A       UpdatePlayerBeingPassedTo
- 0001:000635DD       SetAnimationTablesAndStoppageEvents
+ 0001:000635DD       UpdateCameraBreakMode
  0001:00063F58       ReadPitchFile
  0001:000640E7       FixupAndColorPitchFile
  0001:00064332       ResetGoalAttempt
@@ -3674,7 +3674,7 @@
  0002:00054B6E       selectedPlayerTacticsPosition
  0002:00054B70       pmSelectedPlayerEntry
  0002:00054B74       play_match_control_flags
- 0002:00054B76       player_started
+ 0002:00054B76       playerNumThatStarted
  0002:00054B78       D2_param
  0002:00054B7E       diy_selected
  0002:00054BC8       errorText
@@ -3880,9 +3880,9 @@
  0002:000708EA       plg_D0_param
  0002:000708EC       isGameFriendly
  0002:000708F0       secondLeg
- 0002:000708F2       savePitchTypeOrSeason
- 0002:000708F4       saveFriendlyPitchType
- 0002:000708F6       saveFriendlySeason
+ 0002:000708F2       gamePitchTypeOrSeason
+ 0002:000708F4       gamePitchType
+ 0002:000708F6       gameSeason
  0002:000708F8       gameCanceled
  0002:000708FA       pl1Tactics
  0002:000708FC       pl2Tactics
@@ -3929,6 +3929,7 @@
  0002:00070FF5       cameraYVelocity
  0002:00070FF7       hideBallShadow
  0002:00070FFB       lastPlayerTurnFlags
+ 0002:00070FFE       frameIndicesTablesStart
  0002:0007105E       playerRunningUpTeam1
  0002:00071068       playerRunningDownTeam1
  0002:00071072       playerRunningRightTeam1
@@ -3973,6 +3974,7 @@
  0002:000716C4       goalkeeperRunningUpLeftTeam2
  0002:000716CE       goalkeeperRunningDownRightTeam2
  0002:000716D8       goalkeeperRunningDownLeftTeam2
+ 0002:00071950       animTablesStart
  0002:00071950       static_header_anim_table
  0002:00071A54       static_strong_header_anim_table
  0002:00071AD6       jump_header_anim_table
@@ -4104,6 +4106,7 @@
  0002:000A8DED       writeOnlyAtEndOfHalf
  0002:000A8DEF       spritesIndex
  0002:000AAECF       trainingGame
+ 0002:000AAEE0       strongHeaderUpFrames
  0002:000AAED1       useColorTable
  0002:000AB3A2       choosingPreset
  0002:000AB3A4       numberOfFiles
@@ -4432,8 +4435,8 @@
  0002:000B1858       spaceReplayTimer
  0002:000B185A       subs_write_only
  0002:000B185C       playHighlightFlag
- 0002:000B185E       controlsSwapped
- 0002:000B1860       subsTeamSidesSwapped
+ 0002:000B185E       subsTeamsSwapped
+ 0002:000B1860       subsTrainingTopTeam
  0002:000B1864       subsStateCopy
  0002:000B1866       inSubstitutesMenu
  0002:000B1868       cameraLeavingSubsTimer
@@ -4444,6 +4447,7 @@
  0002:000B1872       bench1Called
  0002:000B1874       bench2Called
  0002:000B1876       cameraLeavingSubsLimit
+ 0002:000B1878       subsSomeCoordinate
  0002:000B187C       subsMenuX
  0002:000B187E       formationMenuX
  0002:000B1880       pl_leaving_x
@@ -4461,14 +4465,20 @@
  0002:000B18A2       plToBeSubstitutedPos
  0002:000B18A4       plToEnterGameIndex
  0002:000B18A6       benchTeam
- 0002:000B18AA       currentSubsTeam
- 0002:000B18B0       benchCounter
- 0002:000B18B2       benchCounter2
- 0002:000B18C0       subs_controls_moving
- 0002:000B18C2       subsFiring
- 0002:000B18C4       subs_movement
- 0002:000B18C6       subs_movement_delay_timer
- 0002:000B18C8       ingame_joy_final_status
+ 0002:000B18AA       benchTeamGame
+ 0002:000B18B0       pl1BenchTimeoutCounter
+ 0002:000B18B2       pl2BenchTimeoutCounter
+ 0002:000B18B4       subsPrevPl1Direction
+ 0002:000B18B6       subsPrevPl2Direction
+ 0002:000B18B8       subsPl1TapCount
+ 0002:000B18BA       subsPl2TapCount
+ 0002:000B18BC       pl1BenchBlockWhileHoldingDirection
+ 0002:000B18BE       pl2BenchBlockWhileHoldingDirection
+ 0002:000B18C0       subsBlockDirections
+ 0002:000B18C2       subsBlockFire
+ 0002:000B18C4       subsPrevDirection
+ 0002:000B18C6       subsMovementDelayTimer
+ 0002:000B18C8       subsDirection
  0002:000B18CA       ingameJoyFire
  0002:000B18CB       ingame_joy_secondary_fire
  0002:000B18CC       subsFireTimer
@@ -4698,7 +4708,7 @@
  0002:000BD068       otherTeamScored
  0002:000BD06A       animPatternsState
  0002:000BD418       tours_table
- 0002:000BD728       gameStoppedTimer
+ 0002:000BD728       benchPickTeamTimer
  0002:000BD72E       playerNumberString
  0002:000BD732       playerFacesTable
  0002:000BD738       benchColors
@@ -4777,7 +4787,7 @@
  0002:000BDD2E       penalty
  0002:000BDD30       goalOut
  0002:000BDD32       stoppageTimerWriteOnly
- 0002:000BDD34       statsFireExit
+ 0002:000BDD34       fireBlocked
  0002:000BDD36       lastPlayedTeam
  0002:000BDD3A       stoppageTimerTotal
  0002:000BDD3C       stoppageTickTimer
@@ -4896,12 +4906,14 @@
  0002:000BE326       playerSpeedsGameInProgress
  0002:000BE336       playerSpeedsGameStopped
  0002:000BE346       teamsStartingCoordinates
- 0002:000BE39E       goalie_something_table
+ 0002:000BE39E       goalieSkillTables
  0002:000BE3BE       injuriesSpeedPenalty
  0002:000BE3CE       playerWithBallOffsets
+ 0002:000BE3F8       goalieSkill7Table
+ 0002:000BE59C       goalieSkill0Table
  0002:000BE5DA       staticHeaderPlayerSpeed
  0002:000BE5DC       numberBuffer
- 0002:000BE5EB       plNamesLengthTable16
+ 0002:000BE5EB       plOrdinalsTable
  0002:000BE60B       plNamesLengthTable
  0002:000BE62B       plNamesLengthTableCopy
  0002:000BE64B       prevLastPlayer
@@ -4924,7 +4936,7 @@
  0002:000BE939       bottomStartingPositions
  0002:000BEE65       bottomPenaltyPositions
  0002:000BEE91       topPenaltyPositions
- 0002:000BEF08       team_pl_ofs24_table
+ 0002:000BEF08       teamPlOfs24Table
  0002:000BEF44       some_AI_direction_allowed_flag
  0002:000BEF46       AI_beginPlayTimer
  0002:000BEF48       AI_rand

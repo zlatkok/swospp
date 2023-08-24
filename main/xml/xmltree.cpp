@@ -177,7 +177,7 @@ static bool NodeUnmodified(const XmlNode *node)
 
     case XML_FUNC:
         RefreshFuncData(node);
-        /* assume fall-through */
+        [[fallthrough]];
 
     case XML_EMPTY:
         return true;

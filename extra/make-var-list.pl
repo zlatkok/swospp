@@ -4,7 +4,7 @@ $codeSWOS = 0x220000;
 $dataSWOS = 0x2c1000;
 $baseSWOSPP = 0x387000;
 
-$SWOS = $ENV{'SWOS'} || 'd:\\games\\swos';
+$SWOS = $ENV{'SWOS_DIR'} || 'f:\\games\\swos';
 $SWOSPP = $ENV{'SWOSPP'} || 'f:\\swos';
 
 # input

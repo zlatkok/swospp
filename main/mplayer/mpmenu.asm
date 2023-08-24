@@ -923,7 +923,7 @@ section .data
         ; [46] pitch type
         StartEntry 251, chat_y + 2 * 13, 54, 11, optPitchType
             EntryColor 13
-            StringTable 0, pitch_type_str_table
+            StringTable 0, pitchTypeStrTable
             OnSelect ChangePitchTypeAndNotify
             NextEntries -1, -1, gameLobbyMenu_optGameLength, 48
         EndEntry

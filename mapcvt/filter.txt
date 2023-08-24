@@ -7,6 +7,96 @@
 # Optional part following will also add the symbol to C header file, with
 # specified type. Symbols without type will not go into C header file.
 
+lastPlayerPlayed, Sprite *
+fireBlocked, word
+resultTimer, word
+KeepStatisticsOnScreen, function
+plOrdinalsTable, array byte
+subsPrevDirection, word
+subsBlockFire, word
+subsFireTimer, word
+subsTrainingTopTeam, word
+subsTeamsSwapped, word
+careerFileBuffer, array char
+careerTeam, TeamFile
+currentTeam, TeamFile
+minSubstitutes, word
+maxSubstitutes, word
+PlayTrainingGame, function
+SelectTraining, function
+trainingGame, word
+keyBuffer, array byte[10]
+spinBigS, word
+subsDirection, word
+subsPrevPl1Direction, int16_t
+subsPrevPl2Direction, int16_t
+pl1BenchBlockWhileHoldingDirection, word
+pl2BenchBlockWhileHoldingDirection, word
+pl1BenchTimeoutCounter, word
+pl2BenchTimeoutCounter, word
+subsPl1TapCount, word
+subsPl2TapCount, word
+team2Player10Sprite, Sprite
+extraTimeState, word
+penaltiesState, word
+GameOver, function
+cameraXVelocity, int16_t
+cameraYVelocity, int16_t
+timeDelta, word
+timerDifference, word
+gameSeconds, word
+secondsSwitchAccumulator, word
+pl1Left, byte
+pl1Right, byte
+pl1Up, byte
+pl1Down, byte
+pl1Fire, byte
+pl1SecondaryFire, byte
+pl2Left, byte
+pl2Right, byte
+pl2Up, byte
+pl2Down, byte
+pl2Fire, byte
+pl2SecondaryFire, byte
+playerNumThatStarted, word
+FIRE, byte
+QuitToDosPromptLoop, function
+ReplayExitMenuAfterFriendly, function
+gamePitchTypeOrSeason, word
+gamePitchType, word
+gameSeason, word
+statsTeam1Goals, word
+statsTeam2Goals, word
+DoAI, function
+choosingPreset, word
+strongHeaderUpFrames, array int16_t
+ballMovingFrameIndices, array int16_t
+ballStaticFrameIndices, array int16_t
+teamPlOfs24Table, array int16_t[30]
+goalieSkillTables, array int16_t *[8]
+goalieSkill7Table, array int16_t[30]
+goalieSkill0Table, array int16_t[30]
+big_S_Sprite, Sprite
+goal2BottomSprite, Sprite
+team1SpritesTable, array Sprite *[11]
+team2SpritesTable, array Sprite *[11]
+frameIndicesTablesStart, array char
+animTablesStart, array char
+gameTeam1, TeamFile *
+gameTeam2, TeamFile *
+leftTeamIngame, TeamGame
+rightTeamIngame, TeamGame
+StartMainGameLoop, function
+breakCameraMode
+PlayGame
+substituteInProgress, word
+subsMovementDelayTimer, word
+subsBlockDirections, word
+leavingSubsMenu, word
+MoveCamera, function
+cameraCoordinatesInvalid
+subsSomeCoordinate
+benchPlayerIndex, int16_t
 g_scanCode
 prevVideoMode, byte
 StopAIL
@@ -33,7 +123,7 @@ SetPrevVideoModeEndProgram
 EndProgram, prefix SWOS_, function
 CommonMenuExit
 nextGoalPtr
-goalBasePtr
+goalBasePtr, void *
 g_currentMenu, Menu *
 currentHilPtr
 hilNumGoals
@@ -50,7 +140,7 @@ WriteFile
 controlWord, word
 g_joy1Status, word
 g_joy2Status, word
-SetControlWord
+SetControlWord, function
 Joy2SetStatus, function
 Player1StatusProc, function
 Player2StatusProc, function
@@ -160,10 +250,10 @@ foundFilenamesBuffer
 BenchCheckControls
 SaveCoordinatesForHighlights
 inSubstitutesMenu, word
-goToSubsTimer
+goToSubsTimer, word
 SetHilFileHeader
 MainKeysCheck, function
-convertedKey
+convertedKey, byte
 lastKey, word
 DumpScreen
 VerifyJoypadControls, function
@@ -172,10 +262,11 @@ currentTick, prefix g_, volatile ushort
 seed, byte
 seed2, byte
 Rand, function
+Rand2, function
 ChangeGameLength
 ChangePitchType
 gameLengthStrTable
-pitch_type_str_table
+pitchTypeStrTable
 aPlayer_0
 aPitchType
 aGameLength
@@ -189,7 +280,7 @@ aOn
 g_exitMenu
 InputText
 DrawMenuBack
-MenuProc
+MenuProc, function
 WaitRetrace, function
 ReadGamePort, prefix SWOS_, function
 DrawOuterFrame
@@ -204,8 +295,8 @@ fire
 videoSpeedIndex
 menuCycleTimer
 finalControlsStatus
-keyCount
-shortFire
+keyCount, word
+shortFire, word
 GetKey, function
 aDataTeam_nnn, array char
 aCustoms_edt, array char
@@ -224,7 +315,7 @@ USER_D, array Tactics
 USER_E, array Tactics
 USER_F, array Tactics
 
-InitAndPlayGame
+InitAndPlayGame, function
 Joy1SetStatus, function
 player1ClearFlag
 player2ClearFlag
@@ -236,16 +327,14 @@ PlayMatchSelected
 ExitPlayMatch
 main_loop, function
 ReadTimerDelta, function
-pl1Fire
-pl2Fire
 teamSwitchCounter, word
 InitTeamsData, function
 leftTeamPlayerNo, word
 leftTeamCoachNo, word
 rightTeamPlayerNo, word
 rightTeamCoachNo, word
-leftTeamData, array TeamGeneralInfo
-rightTeamData, array TeamGeneralInfo
+leftTeamData, TeamGeneralInfo
+rightTeamData, TeamGeneralInfo
 SetupPlayers, function
 randomSeed, word
 stoppageTimer, volatile word
@@ -258,7 +347,7 @@ showingStats, word
 ClearBackground, function
 AllowStatistics, function
 StatisticsOff, function
-TeamsControlsCheck, function
+UpdateAndApplyTeamControls, function
 gameState, word
 gameStatePl, word
 replayState, word
@@ -267,7 +356,7 @@ bench2Called, word
 halfNumber, word
 replaySelected, word
 playGame, word
-AIL_stop_play, function
+StopAudio, function
 SWOS
 currentMenuPtr
 ExitChooseTeams
@@ -282,11 +371,9 @@ pl1LastFired, word
 pl2LastFired, word
 pl1ShortFireCounter, word
 pl2ShortFireCounter, word
-gameStoppedTimer, word
+benchPickTeamTimer, word
 goalCounter, word
 stateGoal, word
-benchCounter, word
-benchCounter2, word
 longFireCounter, word
 longFireTime, word
 ballSprite, array Sprite
@@ -318,7 +405,8 @@ firstGoalScoredTable, array char *[3]
 Text2Sprite, prefix SWOS_, function
 animPatternsState, word
 DrawAnimatedPatterns, function
-team1StatsData, pointer TeamStatsData
+team1StatsData, TeamStatsData
+team2StatsData, TeamStatsData
 DrawStatistics, function
 advert1Pointers, array byte *[8]
 advert2Pointers, array byte *[8]
@@ -334,7 +422,7 @@ DrawFormationMenu, prefix SWOS_, function
 SubstitutePlayerIfFiring, function
 EnqueueSubstituteSample, function
 subsState, short
-currentSubsTeam, TeamGame *
+benchTeamGame, TeamGame *
 plToBeSubstitutedPos, short
 plToEnterGameIndex, short
 selectedFormationEntry, word
@@ -395,7 +483,7 @@ SetNextPlayerFrame, function
 playerSpeedsGameInProgress, array const word[8]
 goalScored, word
 playerNormalStandingAnimTable, array const char
-UpdateTime
+UpdateTime, function
 FindTeamInCache
 GetPlayerByOrdinal, function
 InitIngameTeamStructure, function

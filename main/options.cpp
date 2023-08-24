@@ -366,7 +366,7 @@ void ParseCommandLine()
             switch (*p++) {
             case 's':
                 isServer = true;
-                /* pass through */
+                [[fallthrough]];
 
             case 'c':
                 SetDirectGameName(isServer, p, end = GetStringEnd(p));

@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include "bfile.h"
 
 static BFile logFile;
 static char logFileBuffer[4 * 1024];
@@ -20,9 +21,6 @@ static char logBuf[3 * 1024];
 /* provided in vsprinf.c */
 int __cdecl vsprintf(char *buf, const char *fmt, va_list arg);
 int __cdecl sprintf(char *buf, const char *fmt, ...);
-
-extern void swos_libc_exit(int);
-extern void ShutDownNetwork();
 
 static void WriteToLogFuncV(const char *fmt, va_list args);
 
@@ -98,7 +96,7 @@ extern "C" void FlushLogFile()
     CloseBFileUnmanaged(&logFile);
     assert_msg(OpenBFileUnmanaged(&logFile, logFileBuffer, sizeof(logFileBuffer), F_WRITE_ONLY, logFileName),
         "Failed to open debug log file.");
-    SeekBFile(&logFile, SEEK_END, 0, 0);
+    SeekBFile(&logFile, SEEK_END, 0);
 }
 
 /** WriteToLogFunc

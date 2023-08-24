@@ -287,7 +287,7 @@ char *CreateWatcherPacket(int *watcherPacketSize, int currentFrameNo)
     } else if (showingStats || (eventTimer && statsTimeout > 0)) {
         /* we will use space for scorers to send statistics */
         m_watcherPackets->flags |= showingStats ? SHOWING_STATS_FLAG : AUTO_SHOWING_STATS_FLAG;
-        memcpy(m_watcherPackets->sprites + numSprites, team1StatsData, 2 * sizeof(TeamStatsData));
+        memcpy(m_watcherPackets->sprites + numSprites, &team1StatsData, 2 * sizeof(TeamStatsData));
         m_watcherPackets->numScorers = 0;
         variablePartSize = 2 * sizeof(TeamStatsData);
     } else {
@@ -522,7 +522,7 @@ static void ApplyAdData(const WatcherPacket *wp)
 */
 static int PackBenchData(BenchInfo *benchInfo)
 {
-    static const TeamGeneralInfo *teams[2] = { leftTeamData, rightTeamData };
+    static const TeamGeneralInfo *teams[2] = { &leftTeamData, &rightTeamData };
     int packetLength = sizeof(BenchInfo);
 
     if (m_benchSpritesIndex < 0 && !hookFlags.showingSubsMenu && !hookFlags.showingFormationMenu)
@@ -531,7 +531,7 @@ static int PackBenchData(BenchInfo *benchInfo)
     benchInfo->showingSubsMenu = hookFlags.showingSubsMenu;
     benchInfo->showingFormationMenu = hookFlags.showingFormationMenu;
     /* swap team to display in 2nd half */
-    benchInfo->benchTeam = (benchTeam != leftTeamData) ^ (halfNumber - 1);
+    benchInfo->benchTeam = (benchTeam != &leftTeamData) ^ (halfNumber - 1);
 
     if (hookFlags.showingSubsMenu) {
         SubsMenuData *subs = (SubsMenuData *)&benchInfo[1];
@@ -757,8 +757,8 @@ static void SetupTeamForSubs(TeamGeneralInfo *team, const BenchMenuPlayer *bench
 
 static void DrawSubstitutesMenu(const SubsMenuData *subsData)
 {
-    SetupTeamForSubs(leftTeamData, subsData->players[0]);
-    SetupTeamForSubs(rightTeamData, subsData->players[1]);
+    SetupTeamForSubs(&leftTeamData, subsData->players[0]);
+    SetupTeamForSubs(&rightTeamData, subsData->players[1]);
     subsState = subsData->subsState;
     plToBeSubstitutedPos = subsData->plToBeSubstitutedPos;
     plToEnterGameIndex = subsData->plToEnterGameIndex;
@@ -778,8 +778,8 @@ static void DrawSubstitutesMenu(const SubsMenuData *subsData)
 static void ApplyBenchData(const BenchInfo *benchInfo)
 {
     HexDumpToLog(LM_WATCHER, benchInfo, sizeof(BenchInfo), "bench info");
-    benchTeam = benchInfo->benchTeam ? rightTeamData : leftTeamData;
-    currentSubsTeam = benchTeam->teamNumber == 2 ? rightTeamPtr : leftTeamPtr;
+    benchTeam = benchInfo->benchTeam ? &rightTeamData : &leftTeamData;
+    benchTeamGame = benchTeam->teamNumber == 2 ? rightTeamPtr : leftTeamPtr;
 
     if (benchInfo->showingSubsMenu)
         DrawSubstitutesMenu((const SubsMenuData *)&benchInfo[1]);
@@ -977,7 +977,7 @@ static void ApplyWatcherPacket(const WatcherPacket *packet)
 
     /* apply statistics only after drawing sprites so they remain in the back */
     if (packet->flags & (SHOWING_STATS_FLAG | AUTO_SHOWING_STATS_FLAG)) {
-        memcpy(team1StatsData, packet->sprites + packet->numSprites, 2 * sizeof(TeamStatsData));
+        memcpy(&team1StatsData, packet->sprites + packet->numSprites, 2 * sizeof(TeamStatsData));
         calla(DrawStatistics);
     } else if (packet->flags & SHOWING_BENCH_FLAG) {
         ApplyBenchData((BenchInfo *)&packet->sprites[packet->numSprites]);

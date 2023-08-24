@@ -34,7 +34,7 @@ void InitTacticsContextSwitcher(const Tactics *player1CustomTactics, const Tacti
     pl2Tactics = m_pl2RealTactics;
 
     /* let's keep tactics 1 as fixed at start */
-    VirtualizeTactics(2, m_pl2RealTactics, rightTeamData);
+    VirtualizeTactics(2, m_pl2RealTactics, &rightTeamData);
 
     /* overwrite selectedFormationEntry assignment with our call */
     PatchCall(ShowFormationMenu, 0x27, RestoreTactics);
@@ -120,7 +120,7 @@ static void VirtualizeTactics(int teamNo, word newTactics, TeamGeneralInfo *team
 static int getBenchTeamIndex()
 {
     assert(benchTeam && (benchTeam->playerNumber == 1 || benchTeam->playerNumber == 2));
-    return (benchTeam == rightTeamData) ^ (teamPlayingUp == 2);
+    return (benchTeam == &rightTeamData) ^ (teamPlayingUp == 2);
 }
 
 /* Restore tactics to "being able to show" state. Called when player opens up bench menu. */

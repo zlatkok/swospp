@@ -10,21 +10,23 @@
 */
 void DrawSprite(int x, int y, int width, int height, const char *spriteData, int saveSprite)
 {
-    int dummy;
+    D1 = x;
+    D2 = y;
+    D4 = width;
+    D7 = width / 2;
+    D5 = height;
+    A0 = (dword)spriteData;
+
+    int tmp;
     asm volatile (
-        "mov  %[tmp], offset SWOS_DrawSprite16Pixels + 0x88     \n"
-        "mov  [D1], %[x]            \n"
-        "mov  [D2], %[y]            \n"
-        "mov  [D4], %[width]        \n"
-        "shr  %[width], 1           \n"
-        "mov  [D7], %[width]        \n"
-        "mov  [D5], %[height]       \n"
-        "mov  [A0], %[spriteData]   \n"
-        "call %[tmp]                \n"
-        /* do not allow ebp as a choice here; eax is fixed as height */
-        : [tmp] "=&bcdSD" (dummy), [x] "+&bcdSD" (x), [y] "+&bcdSD" (y), [width] "+&bcdSD" (width),
-            [height] "+&a" (height), [spriteData] "+&bcdSD" (spriteData)
-        : [saveSprite] "r" (saveSprite) /* so this one has to end up as ebp */
+        // later gcc is boo-boo, disallows force-register-to-ebp trick, so less efficient code it is...
+        "push ebp\n"
+        "mov  ebp, %[saveSprite]\n"
+        "mov  %[tmp], offset SWOS_DrawSprite16Pixels + 0x88\n"
+        "call %[tmp]\n"
+        "pop  ebp\n"
+        : [tmp] "=g" (tmp)
+        : [saveSprite] "g" (saveSprite)
         : "cc", "memory"
     );
 }

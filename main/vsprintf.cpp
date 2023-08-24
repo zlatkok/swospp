@@ -341,9 +341,9 @@ static char *FormString(Specification *spec, va_list *args, char *buffer)
             *arg = '\0';
             spec->length = 0;
         } else {
-            ultoa(long_value, &buffer[spec->n0], radix);
+            ultoa(long_value, arg, radix);
             if (spec->type == 'X')
-                strupr(buffer);
+                strupr(arg);
             spec->length = strlen(arg);
         }
 

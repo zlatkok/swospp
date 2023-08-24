@@ -7,6 +7,7 @@
 #include "xmlparse.h"
 #include "xmltree.h"
 #include "qalloc.h"
+#include "bfile.h"
 
 struct XmlNodeListElem {
     XmlNode *node;

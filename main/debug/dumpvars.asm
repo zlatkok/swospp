@@ -1,6 +1,7 @@
 [list -]
 %include "swos.inc"
 %include "dump.inc"
+%include "dumpmac.inc"
 [list +]
 
 section .data
@@ -10,18 +11,18 @@ section .data
 global dump_vars
 dump_vars:
 
-    ;db 'w'
-    ;set_flags(ALIGN_UPLEFT)
-    ;dd statsTimeout
-    ;db '.'
-    ;declareStr "stats timeout"
+    db 'w'
+    set_flags(ALIGN_UPLEFT)
+    dd breakCameraMode
+    db '.'
+    declareStr "break Camera Mode"
 
     ;db 'w'
     ;set_flags(ALIGN_UPLEFT)
-    ;dd gameState
+    ;dd subsBlockDirections
     ;db '.'
-    ;declareStr "game state"
-    ;
+    ;declareStr "block directions"
+
     ;db 'w'
     ;set_flags(ALIGN_UPLEFT)
     ;dd eventTimer

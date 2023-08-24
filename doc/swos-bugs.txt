@@ -19,3 +19,7 @@
   unknown whether this is intentional or not.
 - DoUnchainSpriteInMenus starts with mov cx, word [D1] but uses full ecx later
 - game lengths are too short... only took 20 years to notice :D
+- when the bench is called while the goalkeeper holds the ball
+  GoalkeeperClaimedTheBall() is called without setting A2 to ball sprite
+  (it was randomly set to currentPlayerNameSprite when I checked), then the
+  speed of "ball" sprite is set to 0

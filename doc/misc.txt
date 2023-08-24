@@ -17,6 +17,9 @@ following:
 - direction flag has to be clear (it is assumed to be clear on entry)
 - if there were any parameters on the stack, called function has to clean it up
 
+The Watcom library compiled with the game seems to also use the same register
+calling convention.
+
 
 Mixing assembly code with GCC
 -----------------------------

@@ -155,7 +155,6 @@ char *CreateJoinedGameOkPacket(int *length, const LobbyState *state, const IPX_A
 
 bool UnpackJoinedGameOkPacket(const char *data, int length, LobbyState *state, IPX_Address **addresses)
 {
-
     if (length < (int)(3 + 3 + sizeof(IPX_Address) + sizeof(MP_Options)))
         return false;
 

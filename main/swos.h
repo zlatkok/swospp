@@ -336,7 +336,7 @@ struct TeamGeneralInfo {
     TeamStatsData *teamStatsPtr;
     word teamNumber;
     Sprite *(*players)[11];
-    void *someTablePtr;
+    int16_t *shotChanceTable;
     word tactics;
     word tensTimer;
     Sprite *controlledPlayerSprite;
@@ -348,7 +348,7 @@ struct TeamGeneralInfo {
     byte quickFire;
     byte normalFire;
     byte joyIsFiring;
-    byte joyTriggered;
+    byte fireThisFrame;
     word header;
     word fireCounter;
     word allowedPlDirection;
@@ -426,6 +426,7 @@ struct Tactics {
     byte someTable[10];
     byte ballOutOfPlayTactics;
 };
+static_assert(sizeof(Tactics) == 370, "TeamGeneralInfo is invalid");
 
 #pragma pack(pop)
 

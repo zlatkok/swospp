@@ -11,7 +11,7 @@
 #include "mpwatch.h"
 #include "mptact.h"
 
-static TeamGeneralInfo * const m_teams[2] = { leftTeamData, rightTeamData };
+static TeamGeneralInfo * const m_teams[2] = { &leftTeamData, &rightTeamData };
 
 static int m_currentFrameNo;            /* current frame we are in */
 static int m_nextSendFrameNo;           /* this is the next frame we need to send our input in */
@@ -129,12 +129,12 @@ static int m_frameHashIndex;        /* points to one after the last one */
 
 static dword GetActualTeam1Hash()
 {
-    return simpleHash((char *)leftTeamData + 24, 145 - 24);
+    return simpleHash((char *)&leftTeamData + 24, 145 - 24);
 }
 
 static dword GetActualTeam2Hash()
 {
-    return simpleHash((char *)rightTeamData + 24, 145 - 24);
+    return simpleHash((char *)&rightTeamData + 24, 145 - 24);
 }
 
 static void StoreCurrentHash()
@@ -144,8 +144,8 @@ static void StoreCurrentHash()
     if (m_frameHashes[lastHashIndex].frameNo != m_currentFrameNo) {
         m_frameHashes[m_frameHashIndex].team1Hash = GetActualTeam1Hash();
         m_frameHashes[m_frameHashIndex].team2Hash = GetActualTeam2Hash();
-        m_frameHashes[m_frameHashIndex].team1Data = *(TeamGeneralInfo *)leftTeamData;
-        m_frameHashes[m_frameHashIndex].team2Data = *(TeamGeneralInfo *)rightTeamData;
+        m_frameHashes[m_frameHashIndex].team1Data = leftTeamData;
+        m_frameHashes[m_frameHashIndex].team2Data = rightTeamData;
         m_frameHashes[m_frameHashIndex++].frameNo = m_currentFrameNo;
         m_frameHashIndex %= sizeofarray(m_frameHashes);
     }
@@ -203,8 +203,8 @@ static void VerifyReceivedPacket(const char *packet, int frameIndex, int frameNo
                 WriteToLog("Packet received (%d), hash mismatch for frame %d", f->frameNo, f->hashFrame);
                 WriteToLog("Saved hashes: %#x and %#x", h1, h2);
                 WriteToLog("Received hashes: %#x and %#x", f->team1Hash, f->team2Hash);
-                HexDumpToLog(leftTeamData, 145, "left team");
-                HexDumpToLog(rightTeamData, 145, "right team");
+                HexDumpToLog(&leftTeamData, 145, "left team");
+                HexDumpToLog(&rightTeamData, 145, "right team");
                 WriteToLog("State from last %d frames:\n----------------------------------------\n", sizeofarray(m_frameHashes));
                 DumpSavedStates();
             }
@@ -453,12 +453,12 @@ static void __attribute__((used)) SendNextFrame()
 
 bool IsBench1Allowed()
 {
-    return !replayState && (leftTeamData->playerNumber || leftTeamData->plCoachNum);
+    return !replayState && (leftTeamData.playerNumber || leftTeamData.plCoachNum);
 }
 
 bool IsBench2Allowed()
 {
-    return !replayState && (rightTeamData->playerNumber || rightTeamData->plCoachNum);
+    return !replayState && (rightTeamData.playerNumber || rightTeamData.plCoachNum);
 }
 
 /** GetControlScanPlayerNumber
@@ -483,7 +483,7 @@ static void GameEnded()
     WriteToLog("GameEnded, m_gameStatus = %d", m_gameStatus);
     if (m_gameStatus == GS_WATCHER_ABORTED || m_gameStatus == GS_WATCHER_ENDED) {
         GameFinished();
-        calla_ebp_safe(AIL_stop_play);
+        calla_ebp_safe(StopAudio);
         replaySelected = false;
         return;
     }
@@ -532,7 +532,7 @@ static void GameEnded()
     GameFinished();
     WriteToLog(LM_GAME_LOOP, "Game has ended, result code is %d.", m_gameStatus);
     replaySelected = false; /* no replay, we're done */
-    calla_ebp_safe(AIL_stop_play);
+    calla_ebp_safe(StopAudio);
 }
 
 /** HandleMPKeys
@@ -754,7 +754,7 @@ static void ResetSprites()
             s->x.setFraction(0);
             s->y.setFraction(0);
             s->ballDistance = 0;
-            s->deltaX = s->deltaY = s->deltaZ;
+            s->deltaX = s->deltaY = s->deltaZ = 0;
             s->playerDirection = 0;
             s->isMoving = 0;
             /* not sure what these are, but they gotta be synchronized too */
@@ -812,10 +812,10 @@ void InitMultiplayerGame(int playerNo, IPX_Address *playerAddresses, int numWatc
     memset(framesToRender, 0, sizeof(framesToRender));
     m_lastAppliedFrame = -1;
     teamSwitchCounter = 0;
-    gameStoppedTimer = 0;
+    benchPickTeamTimer = 0;
     goalCounter = 0;
     stateGoal = 0;
-    benchCounter = benchCounter2 = 0;
+    pl1BenchTimeoutCounter = pl2BenchTimeoutCounter = 0;
 
     /* not sure if we need these, but just in case */
     longFireFlag = longFireTime = longFireCounter = 0;
@@ -831,8 +831,8 @@ void InitMultiplayerGame(int playerNo, IPX_Address *playerAddresses, int numWatc
     EGA_graphics = 0;
 
     /* gotta reset teams as there are some timers in there */
-    memset((char *)leftTeamData + 24, 0, sizeof(*leftTeamData) - 24);
-    memset((char *)rightTeamData + 24, 0, sizeof(*leftTeamData) - 24);
+    memset((char *)&leftTeamData + 24, 0, sizeof(leftTeamData) - 24);
+    memset((char *)&rightTeamData + 24, 0, sizeof(leftTeamData) - 24);
 
     paused = 0;
     m_sentThisFrame = false;
@@ -906,8 +906,8 @@ void InitMultiplayerGame(int playerNo, IPX_Address *playerAddresses, int numWatc
        a better solution to this sometime. */
     PatchByte(UpdateStatistics, 0x36, 0xc3);
 
-    /* Disable stat_fire_exit in TeamsControlsCheck (doesn't increment teamSwitchCounter then) */
-    *(byte *)((char *)TeamsControlsCheck + 0xe) = 0xeb;
+    /* Disable stat_fire_exit in UpdateAndApplyTeamControls (doesn't increment teamSwitchCounter then) */
+    *(byte *)((char *)UpdateAndApplyTeamControls + 0xe) = 0xeb;
     *(dword *)((char *)GameLoop + 0x5b0) = (dword)GameEnded - (dword)GameLoop - 0x5af - 5;
 
     /* invoke FinishMultiplayerGame when exiting game loop, overwrite call to replay/continue menu */
@@ -978,7 +978,7 @@ extern "C" void FinishMultiplayerGame()
     PatchDword(InitIngameTeamStructure, 0x1bc, 0xffff4a95);
     PatchDword(GetPlayerByOrdinal, 0xd4, 0xfffd1b73);
     UnhookNetworkPoll();
-    PatchByte(TeamsControlsCheck, 0xe, 0x74);
+    PatchByte(UpdateAndApplyTeamControls, 0xe, 0x74);
     PatchDword(GameLoop, 0x663, 0x00000994);
     PatchDword(GameLoop, 0x5b0, 0x000851f6);
     /* use memcpy to avoid GCC warning about breaking strict-aliasing rules */
@@ -1031,8 +1031,8 @@ void OnGameLoopStart()
     WriteToLog(LM_GAME_LOOP, "OnGameLoopStart(), m_currentFrameNo = %d, currentTick = %d, teamPlayingUp = %d, "
         "paused = %d, showingStats = %d, teamSwitchCounter = %d, stoppageTimer = %d", m_currentFrameNo, g_currentTick,
         teamPlayingUp, paused, showingStats, teamSwitchCounter, stoppageTimer);
-    HexDumpToLog(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
-    HexDumpToLog(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
+    HexDumpToLog(LM_GAME_LOOP_STATE, &leftTeamData, 145, "left team");
+    HexDumpToLog(LM_GAME_LOOP_STATE, &rightTeamData, 145, "right team");
 
     /* watchers don't need to wait or send anything, just try to empty out the packet queue here,
        but also check if we got disconnected from the game */
@@ -1127,8 +1127,8 @@ void OnGameLoopEnd()
     memmove(framesToRender, framesToRender + 1, sizeof(framesToRender) - sizeof(framesToRender[0]));
     framesToRender[sizeofarray(framesToRender) - 1].type = PT_GAME_CONTROLS + 1;
     WriteToLog(LM_GAME_LOOP_STATE, "Game loop end, currentFrame = %d", m_currentFrameNo);
-    HexDumpToLog(LM_GAME_LOOP_STATE, leftTeamData, 145, "left team");
-    HexDumpToLog(LM_GAME_LOOP_STATE, rightTeamData, 145, "right team");
+    HexDumpToLog(LM_GAME_LOOP_STATE, &leftTeamData, 145, "left team");
+    HexDumpToLog(LM_GAME_LOOP_STATE, &rightTeamData, 145, "right team");
 }
 
 byte GetGameStatus()

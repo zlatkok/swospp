@@ -92,6 +92,27 @@ static inline __attribute__((always_inline)) dword CreateFile(enum DOS_fileAttri
     return result;
 }
 
+static inline __attribute__((always_inline)) bool CreateDirectory(const char *path)
+{
+    bool result;
+    asm volatile (
+        "mov  ah, 0x39          \n"
+        "int  0x21              \n"
+        "jnc  set_result        \n"
+        // check if it already exists
+        "cmp  ax, 5             \n"
+        "jnz  set_result        \n"
+        "xor  eax, eax          \n"
+"set_result:                    \n"
+        "sbb  eax, eax          \n"
+        "not  eax               \n"
+        : "=a" (result)
+        : "d" (path)
+        : "cc"
+    );
+    return result;
+}
+
 static inline __attribute__((always_inline)) int WriteFile(dword handle, const void *pData, int size)
 {
     int result;
@@ -144,6 +165,25 @@ static inline __attribute__((always_inline)) int SeekFile(dword handle, uchar mo
         : "=a" (result), [tmp] "=r" (dummy)
         : "b" (handle), "a" (mode), "c" (ofsHi), "d" (ofsLo)
         : "cc"
+    );
+    return result;
+}
+
+static inline __attribute__((always_inline)) int GetFilePos(dword handle)
+{
+    int result;
+    asm volatile (
+        "mov  ax, 0x4201        \n"
+        "xor  ecx, ecx          \n"
+        "xor  edx, edx          \n"
+        "int  0x21              \n"
+        "sbb  ecx, ecx          \n"
+        "shl  edx, 16           \n"
+        "or   eax, edx          \n"
+        "or   eax, ecx          \n"
+        : "=a" (result)
+        : "b" (handle)
+        : "cc", "ecx", "edx"
     );
     return result;
 }

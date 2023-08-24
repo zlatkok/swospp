@@ -30,11 +30,13 @@ my $DIS         = '';       # no need for wdis anymore, gcc can generate listing
 my $LINK        = 'alink';
 my $PCH         = 'stdinc.h';
 
-my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 -Wa,-adhlns=$(LST_DIR)/$*.lst -fno-ident ' .
-                  '-mno-red-zone -mrtd -march=i386 -nostdlib -ffreestanding -fno-leading-underscore -fno-stack-protector ' .
-                  '-mpush-args -mno-accumulate-outgoing-args -mno-stack-arg-probe -fno-exceptions -fno-unwind-tables ' .
-                  '-fno-asynchronous-unwind-tables -momit-leaf-frame-pointer -mpreferred-stack-boundary=2 ' .
-                  '-Wundef -fomit-frame-pointer -fverbose-asm -Wstack-usage=43008 -Wno-multichar -o$@ $<';
+my $CFLAGS      = '-m32 -c -Wall -Wextra -std=c++11 -mregparm=3 -masm=intel -O3 -Wa,-adhlns=$(LST_DIR)/$*.lst ' .
+                  '-fno-ident -Winvalid-pch -mno-red-zone -mrtd -march=i386 -nostdlib -ffreestanding ' .
+                  '-fno-leading-underscore -fno-stack-protector -mpush-args -mno-accumulate-outgoing-args ' .
+                  '-mno-stack-arg-probe -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables ' .
+                  '-momit-leaf-frame-pointer -mpreferred-stack-boundary=2 -Wundef -fomit-frame-pointer ' .
+                  '-fverbose-asm -Wstack-usage=43008 -Wno-multichar -Wno-class-memaccess ' .
+                  '-Wno-stringop-overread -Wno-stringop-overflow -o$@ $<';
 my $AFLAGS      = '-s -w+macro-params -w+orphan-labels -fwin32 -O3 -o$@ -l$(LST_DIR)/$*.asm.lst $<';
 
 my $CPP_INCLUDE_SWITCH = '-I';
@@ -112,6 +114,7 @@ if ($CLEAN) {
 # set debug flags
 if ($TARGET eq 'dbg') {
     $CFLAGS .= $DBG_CFLAGS;
+    $CFLAGS =~ s/-O3/-Og/g;
     $AFLAGS .= $DBG_AFLAGS;
 }
 ensureDirectories();
