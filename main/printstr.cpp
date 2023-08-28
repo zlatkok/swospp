@@ -1,50 +1,59 @@
-/** DrawSprite
+/** DrawSpriteInGame
 
-    saveSprite = -1 not saving, anything else to save background
-
-    Route it to SWOS' DrawSprite, skip over reading of sprite index.
+    Route it to SWOS' DrawSprite16Pixels.
 
     Important notice: DrawSprite16Pixels doesn't do proper clipping by x, it simply wraps it around. During
     the game screen has unused 64 pixels in each line, so it appears to clip properly - but that will not be
     true even in the game for sprites wider than 64 pixels.
 */
-void DrawSprite(int x, int y, int width, int height, const char *spriteData, int saveSprite)
+static void DrawSpriteInGame(int x, int y, int spriteIndex)
 {
+    deltaColor = 0;
+
+    const auto s = spritesIndex[spriteIndex];
+    int width = s->wquads * 16;
+
     D1 = x;
     D2 = y;
+
     D4 = width;
     D7 = width / 2;
-    D5 = height;
-    A0 = (dword)spriteData;
+    D5 = s->nlines;
+    A0 = (dword)s->data;
 
     int tmp;
     asm volatile (
         // later gcc is boo-boo, disallows force-register-to-ebp trick, so less efficient code it is...
         "push ebp\n"
-        "mov  ebp, %[saveSprite]\n"
-        "mov  %[tmp], offset SWOS_DrawSprite16Pixels + 0x88\n"
-        "call %[tmp]\n"
+        "xor  ebp, ebp\n"
+        "mov  eax, offset SWOS_DrawSprite16Pixels + 0x88\n"
+        "call eax\n"
         "pop  ebp\n"
-        : [tmp] "=g" (tmp)
-        : [saveSprite] "g" (saveSprite)
-        : "cc", "memory"
+        : "=eax" (tmp)  // output parameter is only to mark eax as dirty
+        : "eax" (D5)    // make sure to set ax to D5 (height)
+        : "ebx", "ecx", "edx", "esi", "edi", "cc", "memory"
     );
 }
 
-/** DrawSpriteInGame
-
-    Just a helper routine, wrapper around DrawSprite. All the work is done by SWOS.
-*/
-static void DrawSpriteInGame(int x, int y, const SpriteGraphics *s)
+static void DrawSpriteInMenus(int x, int y, int spriteIndex)
 {
     deltaColor = 0;
-    DrawSprite(x, y, s->wquads * 16, s->nlines, s->data, 0);
-}
 
-static void DrawSpriteInMenus(int x, int y, const SpriteGraphics *s)
-{
-    deltaColor = 0;
-    DrawSprite(x, y, s->wquads * 16, s->nlines, s->data, -1);
+    const auto sprite = spritesIndex[spriteIndex];
+    D1 = x;
+    D2 = y;
+    D4 = sprite->wquads * 16;
+    D5 = sprite->nlines;
+    D7 = sprite->wquads * 8;
+    A0 = (dword)sprite->data;
+
+    asm volatile (
+        "push ebp\n"
+        "mov  eax, offset DrawSprite_entry2\n"
+        "call eax\n"
+        "pop  ebp\n"
+        : : : "eax", "ebx", "ecx", "edx", "esi", "edi", "cc", "memory"
+    );
 }
 
 /** GetSmallNumberStringLength
@@ -77,28 +86,27 @@ static int GetSmallNumberStringLength(const char *num, const byte *digitWidths, 
 
    Prints small number, like the one that marks players during game, or the ones in edit tactics menu.
 */
-void PrintSmallNumber(int num, int x, int y, bool32 inGame)
+void PrintSmallNumber(int num, int x, int y, bool inGame)
 {
     assert(inGame == 0 || inGame == 1);
-    char *buf;
-    int length;
+
     static const byte inGameLengths[10] = { 3, 2, 3, 3, 3, 3, 3, 3, 3, 3 };
     static const byte editTacticsLenghts[10] = { 4, 2, 4, 4, 4, 4, 4, 4, 4, 4 };
     static const byte *digitLengths[2] = { editTacticsLenghts, inGameLengths };
     const byte *currentDigitLengths = digitLengths[inGame];
-    const int kerning = inGame;
-    const int startSprite = inGame ? 1188 : 162;
+    int kerning = inGame;
+    int startSprite = inGame ? 1188 : 162;
     char *eightMiddlePixel = &spritesIndex[inGame ? 1195 : 169]->data[16];
-    void (*drawFunc)(int, int, const SpriteGraphics *) = inGame ? DrawSpriteInGame : DrawSpriteInMenus;
+    void (*drawFunc)(int, int, int) = inGame ? DrawSpriteInGame : DrawSpriteInMenus;
     int widths[16], *currentDigitWidth = widths;
 
     if (num < 0)
         return;
 
-    buf = int2str(num);
+    auto buf = int2str(num);
     assert(inGame == 0 || inGame == 1);
     /* find out the length of number when printed to center it */
-    length = GetSmallNumberStringLength(buf, currentDigitLengths, kerning, widths);
+    int length = GetSmallNumberStringLength(buf, currentDigitLengths, kerning, widths);
 
     x -= length / 2;
     y -= inGame ? 2 : 5;
@@ -112,7 +120,7 @@ void PrintSmallNumber(int num, int x, int y, bool32 inGame)
             *buf = '8';
             zeroFixed = true;
         }
-        drawFunc(x, y, spritesIndex[startSprite + *buf++ - '0' - 1]);
+        drawFunc(x, y, startSprite + *buf++ - '0' - 1);
         if (zeroFixed)
             *eightMiddlePixel |= 0x02;
         x += *currentDigitWidth++;

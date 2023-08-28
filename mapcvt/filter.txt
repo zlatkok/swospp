@@ -147,6 +147,7 @@ Player2StatusProc, function
 smallCharsTable, pointer char
 DrawMenuText, function
 DrawSprite, prefix SWOS_, function
+DrawSprite_entry2, function
 FlipInMenu
 DrawMenuTextCentered
 linAdr384k, char *

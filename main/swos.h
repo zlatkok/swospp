@@ -584,7 +584,7 @@ extern void EndProgram(bool32 abnormalExit) __attribute__((noreturn));
 
 
 /* in printstr.c */
-void PrintSmallNumber(int num, int x, int y, bool32 inGame);
+void PrintSmallNumber(int num, int x, int y, bool inGame);
 
 /* use strictly these functions for interfacing with SWOS code */
 static inline __attribute__((always_inline)) void calla(void *addr)
