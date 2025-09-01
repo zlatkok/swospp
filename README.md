@@ -1,3 +1,7 @@
+⚠️ This project has been superseded by: https://github.com/zlatkok/swos-port (very precise multi-platform PC SWOS port).
+
+This repository will remain available for historical reference and, in rare cases, small bug fixes or minor issues. All active SWOS development has moved to `swos-port`.
+
 # SWOS++
 
 Add-on for legendary Sensible World of Soccer. Indispensable at tournaments. Features:
