@@ -277,7 +277,6 @@ bool DOSBoxDetected()
     Command line stuff
 */
 
-#ifndef SENSI_DAYS
 /** GetCommandLine
 
     buff -> buffer to receive the command line
@@ -343,7 +342,6 @@ static const char *ParseJoystickOptions(const char *p)
 
     return p;
 }
-#endif
 
 /** ParseCommandLine
 
@@ -353,17 +351,19 @@ static const char *ParseJoystickOptions(const char *p)
 */
 void ParseCommandLine()
 {
-#ifndef SENSI_DAYS
     char cmdLine[257];
     GetCommandLine(cmdLine);
 
     const char *end;
+#ifndef SENSI_DAYS
     bool isServer = false;
+#endif
 
     for (const char *p = cmdLine; *p; p++) {
         if (*p == '/') {
             end = ++p;
             switch (*p++) {
+#ifndef SENSI_DAYS
             case 's':
                 isServer = true;
                 [[fallthrough]];
@@ -383,6 +383,7 @@ void ParseCommandLine()
             case 'p':
                 SetNickname(p, end = GetStringEnd(p));
                 break;
+#endif
 
             case 'j':
                 end = ParseJoystickOptions(p);
@@ -394,6 +395,7 @@ void ParseCommandLine()
     }
 
     WriteToLog("Command line is: \"%s\"", cmdLine);
+#ifndef SENSI_DAYS
     DirectModeOnCommandLineParsingDone();
 #endif
 }

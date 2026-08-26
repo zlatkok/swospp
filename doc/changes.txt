@@ -1,3 +1,9 @@
+1.9.2.2
+- added SENSI DAYS offline version for tournaments
+- fixed joystick input locking or severely slowing down on physical hardware while preserving DOSBox handling
+- enabled joystick calibration by default outside DOSBox
+- SENSI DAYS supports /jb and /jc without enabling multiplayer command-line options
+
 1.9.2.1
 - joystick handling vastly improved when playing in DOSBox (go ahead, try it :))
 - watchers should work again

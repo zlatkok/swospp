@@ -21,6 +21,9 @@ SWOS++ additional command line switches:
                 default is off unless we're running under DOSBox
 /jc           - controls whether we calibrate joysticks or not, can be followed by =0 or 1, default is on
 
+The SENSI DAYS build supports only the /jb and /jc SWOS++ switches. Multiplayer-related
+switches (/s, /c, /t, /i and /p) are available only in the normal SWOS++ build.
+
 
 Parameters follow directly after switches, no spaces, If a string parameter
 contains spaces, place it in quotes.

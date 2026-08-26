@@ -1481,6 +1481,10 @@ ReadJoystickValues:
 ; Replacement for SWOS' game port reading routine. Return center values in case joystick was disconnected.
 ;
 ReadGamePort:
+        call DOSBoxDetected
+        test eax, eax
+        setnz ah                    ; warm up polling in DOSBox, trigger immediately on physical hardware
+
         xor  ecx, ecx
         dec  cx
         test ebx, ebx
@@ -1493,8 +1497,10 @@ ReadGamePort:
         movzx ecx, word [g_numLoopsJoy1]
 
 .init_poll_loop:
-        mov  ah, 1                  ; do one "fake" loop, to make sure that the monostable vibrators have stabilized
-        xor  esi, esi               ; it also helps ensure entire loop is in the cache
+        ; The cache-warming pass is cheap and useful in DOSBox, but on physical
+        ; hardware it can perform up to 65536 unnecessary port reads with interrupts
+        ; disabled, causing severe slowdown or an apparent input lock.
+        xor  esi, esi
         xor  ebx, ebx
         xor  edi, edi
         xor  ebp, ebp
